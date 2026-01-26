@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Chain Mining Farm</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+</head>
+<body>
+
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <div class="balance-group">
+                <h2>Toplam Kazılan BTC</h2>
+                <div class="balance-val"><span id="main-balance">0.00000000</span></div>
+            </div>
+            
+            <div class="stats-row">
+                <div class="wallet-group">
+                    <button id="btnEvm" class="connect-btn btn-evm" onclick="connectEVM()">
+                        <i class="fa-brands fa-ethereum"></i> <span>Bağla</span>
+                    </button>
+                    <button id="btnTon" class="connect-btn btn-ton" onclick="connectTON()">
+                        <i class="fa-brands fa-telegram"></i> <span>TON</span>
+                    </button>
+                </div>
+
+                <div class="mini-stat"><label>Aktif Cüzdan</label><div><span id="active-wallet-label" style="font-size:1rem; color:#888;">Yok</span></div></div>
+                <div class="mini-stat" style="border-color: var(--primary);"><label>Toplam Güç</label><div><span id="total-hash" style="color:var(--primary);">0</span> <small style="font-size:0.8rem; color:var(--primary);">TH/s</small></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="middle-section">
+        <div class="chart-container">
+            <div class="panel-header">
+                <div class="panel-title"><div id="chart-status-dot" class="live-dot green"></div> SİSTEM PERFORMANSI</div>
+                <div style="font-size:0.8rem; color:#888;">Live Hashrate</div>
+            </div>
+            <canvas id="hashChart"></canvas>
+        </div>
+        <div class="terminal-container">
+            <div class="panel-header" style="border:none; padding-bottom:5px; margin-bottom:5px;">
+                <div class="panel-title" style="font-size:0.9rem; color:var(--text-muted);"> root@miner-pro:~# tail -f system.log</div>
+            </div>
+            <div class="terminal-logs" id="log-window"></div>
+        </div>
+    </div>
+
+    <div class="machines-section">
+        <div class="section-header"><i class="fa-solid fa-server"></i> MINING FARM DONANIMLARI</div>
+        <div class="machine-grid" id="machine-container"></div>
+    </div>
+
+    <div id="ton-connect-trigger" style="display:none;"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
