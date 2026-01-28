@@ -1,4 +1,3 @@
-// firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -15,7 +14,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🔥 Firebase Config Hazır!");
+console.log("🔥 Firebase Config Yüklendi!");
 
-// BU SATIR HAYATİ ÖNEM TAŞIYOR 👇
 export { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where };
