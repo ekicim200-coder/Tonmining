@@ -2,182 +2,182 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS MINER - Pro Structure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS MINER - Tek Dosya Modu</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 12px; }
+        .btn { background: #00f2ff; color: #000; font-weight: bold; border-radius: 8px; padding: 10px; width: 100%; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
+    </style>
 </head>
-<body class="flex">
+<body class="p-4 flex flex-col gap-4">
 
-    <canvas id="bg-canvas"></canvas>
-    <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
-    <div id="toast-container"></div>
+    <div class="flex justify-between items-center glass p-4">
+        <div>
+            <div class="text-xs text-gray-400">BAKİYE</div>
+            <div id="ui-balance" class="text-2xl font-bold text-cyan-400">---</div>
+        </div>
+        <div id="save-status" class="text-xs text-yellow-500 font-bold">Bağlanıyor...</div>
+    </div>
 
-    <div id="offline-modal">
-        <div class="modal-content">
-            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500">
-                <i class="fa-solid fa-sack-dollar text-3xl"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
-            <p class="text-gray-400 text-sm mb-6">Your rigs continued mining while you were away.</p>
-            
-            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
-                <div class="text-xs text-gray-500 uppercase tracking-wider">Offline Earnings</div>
-                <div class="text-3xl font-bold text-white digit-font neon-green mt-1" id="offline-amount">0.00</div>
-                <div class="text-xs text-green-500 font-bold">TON COIN</div>
-            </div>
+    <h2 class="text-lg font-bold mt-4">Market</h2>
+    <div id="market-list" class="grid grid-cols-2 gap-4">
+        </div>
 
-            <button onclick="window.gameApp.closeModal()" class="w-full btn-main py-3 rounded-xl font-bold uppercase">Collect & Continue</button>
+    <h2 class="text-lg font-bold mt-4">Envanterim</h2>
+    <div id="inventory-list" class="glass p-4 min-h-[100px] text-xs text-gray-400">
+        Henüz cihaz yok.
+    </div>
+
+    <div id="error-box" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
+        <div class="bg-red-900 border border-red-500 p-6 rounded-xl w-full">
+            <h2 class="text-xl font-bold text-red-500 mb-2">HATA OLUŞTU!</h2>
+            <p id="error-text" class="text-white text-xs font-mono mb-4 break-all"></p>
+            <button onclick="location.reload()" class="btn bg-white text-black">Sayfayı Yenile</button>
         </div>
     </div>
 
-    <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20">
-        <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
-                <i class="fa-solid fa-cube text-xl"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl font-black tracking-widest text-white italic">NEXUS</h1>
-                <span class="text-[10px] text-cyan-400 tracking-[0.3em] font-bold">PROTOCOL</span>
-            </div>
-        </div>
-        <nav class="flex-1 p-6 space-y-4">
-            <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Dashboard</span>
-            </div>
-            <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Global Market</span>
-            </div>
-            <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-server text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Inventory</span>
-            </div>
-            <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Wallet</span>
-            </div>
-        </nav>
-        <div class="p-6 text-xs text-gray-500 text-center">
-            v14.0 Production Ready<br>Client-Side Core
-        </div>
-    </aside>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    <main class="flex-1 h-full overflow-y-auto relative no-scrollbar bg-gradient-to-b from-[#020205] to-[#0a0f1e]">
-        
-        <div class="sticky top-0 z-40 p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
-            <div class="flex items-center gap-4">
-                <div class="hidden md:block">
-                    <h2 class="text-gray-400 text-xs tracking-widest uppercase">Mined Assets</h2>
-                    <div class="text-3xl font-bold text-white digit-font neon-blue mt-1" id="main-balance">0.0000000</div>
-                </div>
-                <div class="md:hidden flex items-center gap-2">
-                    <i class="fa-solid fa-gem text-cyan-400"></i> <span class="font-bold text-xl digit-font">NEXUS</span>
-                </div>
-            </div>
-            <div class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.2)]">
-                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                <span id="status-text">STANDBY</span>
-            </div>
-        </div>
+        // 1. AYARLAR
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
+            authDomain: "tonm-77373.firebaseapp.com",
+            projectId: "tonm-77373",
+            storageBucket: "tonm-77373.firebasestorage.app",
+            messagingSenderId: "507031118335",
+            appId: "1:507031118335:web:1d209e303dca154ec487ca",
+            measurementId: "G-5EV1T50VK8"
+        };
 
-        <div class="p-4 md:p-8 max-w-7xl mx-auto">
+        // 2. BAŞLATMA
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log("🔥 Firebase Başladı");
+        } catch (e) {
+            showError("Firebase Başlatılamadı: " + e.message);
+        }
+
+        // 3. OYUN VERİLERİ
+        const userID = "PATRON_USER_SABIT"; // Sabit ID
+        let gameState = {
+            balance: 10,
+            inventory: {}
+        };
+
+        const products = [
+            { id: 1, name: "Nano Node", price: 10 },
+            { id: 2, name: "Micro Rig", price: 30 }
+        ];
+
+        // 4. FONKSİYONLAR
+        function updateUI() {
+            document.getElementById('ui-balance').innerText = gameState.balance.toFixed(2) + " TON";
             
-            <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
-                <div class="text-gray-400 text-xs font-bold tracking-widest mb-1">WALLET BALANCE</div>
-                <div class="text-3xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
-                <div class="text-cyan-500 text-xs font-bold mt-1 tracking-widest">TON NETWORK</div>
-            </div>
+            // Envanter
+            const invDiv = document.getElementById('inventory-list');
+            const items = Object.entries(gameState.inventory);
+            if(items.length > 0) {
+                invDiv.innerHTML = items.map(([id, count]) => {
+                    const p = products.find(x => x.id == id);
+                    return `<div>${p.name}: <span class="text-white font-bold">x${count}</span></div>`;
+                }).join('');
+            } else {
+                invDiv.innerText = "Henüz cihaz yok.";
+            }
+        }
 
-            <div id="page-dashboard" class="page-section active">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Hash Power</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
-                        <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Active Rigs</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
-                    </div>
+        function renderMarket() {
+            const list = document.getElementById('market-list');
+            list.innerHTML = products.map(p => `
+                <div class="glass p-4 text-center">
+                    <div class="font-bold">${p.name}</div>
+                    <div class="text-xs text-gray-400 mb-2">${p.price} TON</div>
+                    <button onclick="window.buyItem(${p.id})" class="btn">SATIN AL</button>
                 </div>
-                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-2 border-t-cyan-500/50">
-                    <h3 class="text-lg font-bold text-white mb-6"><i class="fa-solid fa-chart-area text-cyan-400"></i> Network Hashrate</h3>
-                    <div class="w-full h-64 md:h-80"><canvas id="miningChart"></canvas></div>
-                </div>
-            </div>
+            `).join('');
+        }
 
-            <div id="page-market" class="page-section">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
-                        </h2>
-                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
-                    </div>
-                </div>
-                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            </div>
+        // --- KRİTİK BÖLÜM: KAYDETME VE YÜKLEME ---
 
-            <div id="page-inventory" class="page-section">
-                <h2 class="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
-                <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
+        async function saveGame() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Kaydediliyor...";
+            status.className = "text-xs text-yellow-500 font-bold animate-pulse";
 
-            <div id="page-wallet" class="page-section">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass-panel p-8 rounded-3xl text-center border border-gray-700 h-fit">
-                        <div class="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
-                            <i class="fa-solid fa-wallet text-3xl text-cyan-400"></i>
-                        </div>
-                        <div class="text-gray-400 text-sm tracking-widest uppercase mb-2">Withdrawable Balance</div>
-                        <div class="text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
-                        <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
+            try {
+                await setDoc(doc(db, "users", userID), gameState, { merge: true });
+                
+                status.innerText = "✅ Kaydedildi";
+                status.className = "text-xs text-green-500 font-bold";
+                setTimeout(() => { status.innerText = "Hazır"; status.className = "text-xs text-gray-500"; }, 2000);
+            } catch (error) {
+                console.error(error);
+                status.innerText = "❌ HATA!";
+                status.className = "text-xs text-red-500 font-bold";
+                
+                if(error.message.includes("permission-denied")) {
+                    showError("KAYIT BAŞARISIZ! Firebase Kuralları (Rules) hala kilitli. Lütfen Firebase Konsolundan kuralları 'allow read, write: if true;' yapıp YAYINLA butonuna bas.");
+                } else {
+                    showError("Kayıt Hatası: " + error.message);
+                }
+            }
+        }
 
-                        <div class="text-left space-y-4">
-                            <div>
-                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
-                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
-                            </div>
-                            <div>
-                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
-                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
-                            </div>
-                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4">
-                                <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
-                            </button>
-                        </div>
-                    </div>
-                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
-                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
-                        </h3>
-                        <div class="flex-1 overflow-y-auto pr-2 space-y-3 custom-scroll" id="history-list">
-                            <div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+        async function loadGame() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Yükleniyor...";
+            
+            try {
+                const docSnap = await getDoc(doc(db, "users", userID));
+                if (docSnap.exists()) {
+                    gameState = { ...gameState, ...docSnap.data() };
+                    status.innerText = "Veri Yüklendi";
+                    updateUI();
+                } else {
+                    status.innerText = "Yeni Kullanıcı";
+                    saveGame(); // İlk kaydı oluştur
+                }
+            } catch (error) {
+                console.error(error);
+                showError("Veri Okuma Hatası: " + error.message);
+            }
+        }
 
-    <nav class="bottom-nav">
-        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
-        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
-        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
-        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
-    </nav>
+        // Global Fonksiyonlar
+        window.buyItem = (id) => {
+            const p = products.find(x => x.id == id);
+            if(gameState.balance >= p.price) {
+                gameState.balance -= p.price;
+                if(!gameState.inventory[id]) gameState.inventory[id] = 0;
+                gameState.inventory[id]++;
+                updateUI();
+                saveGame(); // Satın alınca kaydet
+            } else {
+                alert("Yetersiz Bakiye!");
+            }
+        };
 
-    <script type="module" src="app.js"></script>
+        function showError(msg) {
+            document.getElementById('error-box').classList.remove('hidden');
+            document.getElementById('error-text').innerText = msg;
+        }
+
+        // BAŞLAT
+        renderMarket();
+        updateUI();
+        loadGame();
+
+    </script>
 </body>
 </html>
