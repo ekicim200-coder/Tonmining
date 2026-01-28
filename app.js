@@ -1,23 +1,39 @@
-// --- CONFIGURATION ---
+// --- 1. KULLANICI KİMLİĞİ VE AYARLAR ---
 const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
 
-// PRICES: priceTON (In-Game Balance), priceStars (External Payment - Display Only)
+// En önemli kısım: Tarayıcı hafızasından ID okuma
+let userID = localStorage.getItem('nexus_player_id');
+
+// Eğer hafızada yoksa (ve Telegram değilse) yeni oluştur ve kaydet
+if (!userID) {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+        userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+    } else {
+        userID = "user_" + Math.floor(Math.random() * 10000000);
+    }
+    localStorage.setItem('nexus_player_id', userID); // ID'yi hafızaya kilitle
+}
+
+console.log("AKTİF KULLANICI ID:", userID); // Konsolda bunu kontrol et, hep aynı kalmalı
+
+// --- 2. ÜRÜN LİSTESİ ---
 const products = [
-    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,    hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
-    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,   hash: 300,  icon: "fa-memory",    color: "text-green-400" },
-    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,   hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
-    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,   hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
-    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,   hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
-    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,   hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
-    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,   hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
+    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
+    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
+    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,  hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
+    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,  hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
+    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,  hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
+    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,  hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
+    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,  hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
 products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
 
+// --- 3. OYUN DURUMU (DEFAULT) ---
 let gameState = {
-    balance: 10.0000000, // TON only
+    balance: 10.0000000, 
     mining: false,
     hashrate: 0,
     income: 0,
@@ -26,128 +42,82 @@ let gameState = {
     lastLogin: Date.now()
 };
 
-// --- KULLANICI KİMLİĞİ (SABİTLEME SİSTEMİ) ---
-let userID;
-
-// 1. Durum: Eğer Telegram içindeysek, gerçek Telegram ID'sini al
-if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-    userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
-    console.log("Telegram Kullanıcısı Tespit Edildi:", userID);
-} 
-// 2. Durum: Tarayıcıdaysak (Chrome/Opera), hafızaya bak
-else {
-    // Daha önce bu tarayıcıya ID kaydettik mi?
-    let savedID = localStorage.getItem('nexus_player_id');
-    
-    if (savedID) {
-        // Evet, eski ID'yi kullan (Böylece F5 atınca veri gitmez)
-        userID = savedID;
-        console.log("Eski Kullanıcı Geri Döndü:", userID);
-    } else {
-        // Hayır, ilk defa giriyor. Yeni ID oluştur ve hafızaya kaydet.
-        userID = "user_" + Math.floor(Math.random() * 10000000);
-        localStorage.setItem('nexus_player_id', userID);
-        console.log("Yeni Kullanıcı Oluşturuldu:", userID);
-    }
-}
-
-
-// --- INIT ---
+// --- 4. BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
-    const tg = window.Telegram.WebApp;
-    tg.expand(); 
+    console.log("Oyun Başlatılıyor...");
+    
+    if(window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.expand();
+    }
 
-    // Cloud Load Başlat
-    loadGame(); 
-
+    // Önce arayüzü çiz
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
-    document.getElementById('btn-withdraw').addEventListener('click', processWithdraw);
-     
-    // Otomatik kayıt (Her 60 saniyede bir)
-    setInterval(() => { saveGame(); }, 60000);
-    window.addEventListener('beforeunload', () => { saveGame(); });
+    // SONRA VERİYİ YÜKLE
+    loadGame(); 
+
+    // Kayıt Tetikleyiciler
+    document.getElementById('btn-withdraw')?.addEventListener('click', processWithdraw);
+    setInterval(() => { saveGame(false); }, 30000); // 30 saniyede bir otomatik kaydet (Sessiz)
+    window.addEventListener('beforeunload', () => { saveGame(true); });
 });
 
-// --- TOAST ---
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check');
-    toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
-    container.appendChild(toast);
-    setTimeout(() => { toast.remove(); }, 3000);
-}
-
-// --- FIREBASE CORE FUNCTIONS ---
-
-// YENİ KAYDETME FONKSİYONU (FIREBASE)
-async function saveGame() {
-    // Son giriş zamanını güncelle
+// --- 5. FIREBASE KAYIT SİSTEMİ ---
+async function saveGame(showIcon = true) {
     gameState.lastLogin = Date.now();
-     
-    // Görsel bildirim
+    
     const ind = document.getElementById('save-indicator');
-    if(ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
+    if(showIcon && ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
 
     try {
-        // window üzerinden firebase fonksiyonlarına erişiyoruz (firebase-config.js'den gelenler)
         if (window.firebaseDB) {
             const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-             
-            // Veriyi Firebase'e yaz
+            // MERGE TRUE: Var olan verinin üzerine yaz
             await window.firebaseSetDoc(userRef, gameState, { merge: true });
-             
-            if(ind) { 
-                ind.innerHTML = '<i class="fa-solid fa-check"></i> Cloud Saved'; 
+            console.log("Veri Buluta Kaydedildi ✅");
+            
+            if(showIcon && ind) { 
+                ind.innerHTML = '<i class="fa-solid fa-check"></i> Saved'; 
                 setTimeout(() => { ind.style.opacity = '0'; }, 2000);
             }
         }
     } catch (error) {
-        console.error("Firebase Hatası:", error);
-        if(ind) { ind.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Save Failed'; }
+        console.error("KAYIT HATASI:", error);
     }
 }
 
-// YENİ YÜKLEME FONKSİYONU (FIREBASE)
 async function loadGame() {
-    console.log("Veri Buluttan Çekiliyor...");
-
+    console.log("Veri Çekiliyor... ID:", userID);
     try {
         if (window.firebaseDB) {
             const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
             const docSnap = await window.firebaseGetDoc(userRef);
 
             if (docSnap.exists()) {
-                // Veri varsa oyuna yükle
                 const parsed = docSnap.data();
+                // Gelen veriyi mevcut state ile birleştir
                 gameState = { ...gameState, ...parsed };
-                console.log("Veri başarıyla yüklendi:", parsed);
+                console.log("Veri Yüklendi:", gameState);
+                showToast("Data Loaded from Cloud", "success");
             } else {
-                console.log("Yeni kullanıcı, varsayılan veri ile başlanıyor.");
-                saveGame(); // İlk defa oluştur
+                console.log("Kayıtlı veri yok, yeni kullanıcı başlatılıyor.");
+                saveGame(true); // İlk kaydı oluştur
             }
         }
     } catch (error) {
-        console.error("Veri çekme hatası:", error);
-        // Hata olursa LocalStorage dene (Yedek plan)
-        const localData = localStorage.getItem('nexusMinerV14');
-        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
+        console.error("YÜKLEME HATASI:", error);
     }
 
-    // İŞLEMLER BİTTİKTEN SONRA OYUNU BAŞLAT
     finalizeLoad();
 }
 
-// YÜKLEME SONRASI İŞLEMLER
 function finalizeLoad() {
     recalcStats();
-     
-    // OFFLINE KAZANÇ HESAPLAMA
+    
+    // Offline Kazanç Hesapla
     if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
         const now = Date.now();
         const secondsPassed = (now - gameState.lastLogin) / 1000;
@@ -159,17 +129,19 @@ function finalizeLoad() {
         }
     }
 
-    // OTOMATİK BAŞLATMA
+    // Sistem Başlatma
     if (gameState.hashrate > 0) {
         gameState.mining = true;
         activateSystem();
     } else {
         deactivateSystem();
     }
-     
+    
     renderHistory();
     updateUI();
 }
+
+// --- 6. OYUN FONKSİYONLARI ---
 
 function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
 
@@ -189,61 +161,79 @@ function recalcStats() {
 function activateSystem() {
     const ind = document.getElementById('status-indicator');
     const txt = document.getElementById('status-text');
-    ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse');
-    txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.add('pulse-active');
+    if(ind) { ind.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse"; }
+    if(txt) { txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold"; }
     startLoop();
 }
 
 function deactivateSystem() {
     const ind = document.getElementById('status-indicator');
     const txt = document.getElementById('status-text');
-    ind.classList.remove('bg-green-500', 'animate-pulse'); ind.classList.add('bg-gray-500');
-    txt.innerText = "STANDBY"; txt.className = "text-gray-500 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.remove('pulse-active');
+    if(ind) { ind.className = "w-2 h-2 rounded-full bg-gray-500"; }
+    if(txt) { txt.innerText = "STANDBY"; txt.className = "text-gray-500 font-bold"; }
     clearInterval(minLoop);
 }
 
-function showPage(pageId) {
-    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-    document.getElementById('page-' + pageId).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    const mob = document.getElementById('nav-' + pageId);
-    if(mob) mob.classList.add('active');
-    const deskIds = ['side-dashboard', 'side-market', 'side-inventory', 'side-wallet'];
-    deskIds.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) { el.classList.remove('bg-white/10'); el.querySelector('i').classList.remove('text-cyan-400'); el.querySelector('i').classList.remove('text-yellow-400'); }
-    });
-    const activeDesk = document.getElementById('side-' + pageId);
-    if(activeDesk) {
-        activeDesk.classList.add('bg-white/10');
-        if(pageId === 'market') activeDesk.querySelector('i').classList.add('text-yellow-400');
-        else activeDesk.querySelector('i').classList.add('text-cyan-400');
+// --- SATIN ALMA ---
+
+function buyWithTON(id) {
+    const p = products.find(x => x.id === id);
+    if(gameState.balance >= p.priceTON) {
+        gameState.balance -= p.priceTON;
+        addMachine(id, "Bought with TON");
+    } else {
+        showToast("Insufficient TON Balance", 'error');
     }
-    if(pageId === 'inventory') renderInventory();
 }
+
+function buyWithStars(id) {
+    // SİMÜLASYON: Para gitmez ama makine de gelmez (İsteğin buydu)
+    // Eğer makine de gelsin istiyorsan: addMachine(id) eklemelisin.
+    showToast("Star Payment Simulation: Success (No Charge)", 'star');
+}
+
+function addMachine(id, source) {
+    const p = products.find(x => x.id === id);
+    if(!gameState.inventory[id]) gameState.inventory[id] = 0;
+    gameState.inventory[id]++;
+    
+    if(!gameState.mining) {
+        gameState.mining = true;
+        activateSystem();
+    }
+
+    showToast(`Purchased ${p.name}!`, 'success');
+
+    recalcStats();
+    updateUI();
+    renderMarket();
+    
+    // KRİTİK: İşlem biter bitmez kaydet!
+    saveGame(true);
+}
+
+// --- ARAYÜZ ---
 
 function renderMarket() {
     const list = document.getElementById('market-list');
+    if(!list) return;
     list.innerHTML = '';
     products.forEach(p => {
-        if(!gameState.inventory[p.id]) gameState.inventory[p.id] = 0;
+        const count = gameState.inventory[p.id] || 0;
         const dailyInc = (p.income * 86400).toFixed(2);
-         
+        
         const div = document.createElement('div');
         div.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50";
         div.innerHTML = `
             <div class="flex justify-between items-start mb-4">
                 <div class="p-4 bg-black/40 rounded-xl ${p.color} text-2xl shadow-inner border border-white/5"><i class="fa-solid ${p.icon}"></i></div>
-                <div class="text-xs bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-700">Owned: ${gameState.inventory[p.id]}</div>
+                <div class="text-xs bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-700">Owned: ${count}</div>
             </div>
             <div class="mb-4">
                 <h3 class="font-bold text-lg text-white">${p.name}</h3>
                 <div class="flex items-center gap-3 mt-2 text-xs"><span class="text-gray-400"><i class="fa-solid fa-bolt text-yellow-500"></i> ${p.hash} TH/s</span></div>
                 <div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div>
             </div>
-             
             <div class="flex gap-2">
                 <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">
                     ${p.priceTON} TON
@@ -258,51 +248,31 @@ function renderMarket() {
     updateUI();
 }
 
-// --- BUY LOGIC ---
-function buyWithTON(id) {
-    const p = products.find(x => x.id === id);
-    if(gameState.balance >= p.priceTON) {
-        gameState.balance -= p.priceTON;
-        addMachine(id, "Bought with TON");
-    } else {
-        showToast("Insufficient TON Balance", 'error');
-    }
-}
-
-function buyWithStars(id) {
-    // SIMULATED FAILURE
-    const btn = event.currentTarget;
-    const originalContent = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
-    btn.disabled = true;
-
-    setTimeout(() => {
-        showToast("⚠️ Star Purchase Disabled in Simulation", 'error');
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
-    }, 1000); 
-}
-
-function addMachine(id, source) {
-    const p = products.find(x => x.id === id);
-    gameState.inventory[id]++;
-     
-    if(!gameState.mining) {
-        gameState.mining = true;
-        activateSystem();
-        showToast("System Auto-Started!", 'success');
-    } else {
-        if(source.includes("TON")) showToast(`Purchased ${p.name}!`, 'success');
-    }
-
-    recalcStats();
-    updateUI();
-    renderMarket();
-    saveGame(); // Saves to Cloud now
+function updateUI() {
+    const b = gameState.balance.toFixed(7);
+    
+    const elMain = document.getElementById('main-balance');
+    const elMob = document.getElementById('mobile-balance');
+    const elWal = document.getElementById('wallet-balance-display');
+    
+    if(elMain) elMain.innerText = b + " TON";
+    if(elMob) elMob.innerText = b; 
+    if(elWal) elWal.innerText = b;
+    
+    if(document.getElementById('dash-hash')) document.getElementById('dash-hash').innerText = gameState.hashrate.toLocaleString();
+    if(document.getElementById('dash-daily')) document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
+    if(document.getElementById('dash-income')) document.getElementById('dash-income').innerText = gameState.income.toFixed(7);
+    if(document.getElementById('dash-devices')) document.getElementById('dash-devices').innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
+    
+    document.querySelectorAll('.btn-ton-check').forEach(btn => {
+        const price = parseFloat(btn.getAttribute('data-price'));
+        btn.disabled = gameState.balance < price;
+    });
 }
 
 function renderInventory() {
     const list = document.getElementById('inventory-list');
+    if(!list) return;
     list.innerHTML = '';
     let empty = true;
     products.forEach(p => {
@@ -327,6 +297,7 @@ function renderInventory() {
 
 function renderHistory() {
     const list = document.getElementById('history-list');
+    if(!list) return;
     if(gameState.history.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>'; return; }
     list.innerHTML = '';
     gameState.history.forEach(tx => {
@@ -343,29 +314,22 @@ function renderHistory() {
             <div class="text-right">
                 <div class="text-xs text-pending font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> ${tx.status}</div>
                 <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
-                <div class="text-[9px] text-cyan-500 font-mono truncate max-w-[80px] ml-auto">${tx.addr}</div>
             </div>
         `;
         list.appendChild(item);
     });
 }
 
-function updateUI() {
-    const b = gameState.balance.toFixed(7);
-    document.getElementById('main-balance').innerText = b + " TON";
-    document.getElementById('mobile-balance').innerText = b; 
-    document.getElementById('wallet-balance-display').innerText = b;
-    document.getElementById('dash-hash').innerText = gameState.hashrate.toLocaleString();
-    document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
-    document.getElementById('dash-income').innerText = gameState.income.toFixed(7);
-    document.getElementById('dash-devices').innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
-     
-    // Check TON balance for buttons
-    const tonButtons = document.querySelectorAll('.btn-ton-check');
-    tonButtons.forEach(btn => {
-        const price = parseFloat(btn.getAttribute('data-price'));
-        if(gameState.balance >= price) btn.disabled = false; else btn.disabled = true;
-    });
+function showPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById('page-' + pageId);
+    if(target) target.classList.add('active');
+    
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    const mob = document.getElementById('nav-' + pageId);
+    if(mob) mob.classList.add('active');
+    
+    if(pageId === 'inventory') renderInventory();
 }
 
 function processWithdraw() {
@@ -373,24 +337,35 @@ function processWithdraw() {
     const amountInput = document.getElementById('withdraw-amount');
     const walletAddr = walletInput.value.trim();
     const val = parseFloat(amountInput.value);
-     
+    
     if(walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
     if(!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
     if(val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
     if(val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
-     
+    
     gameState.balance -= val;
-    const newTx = { 
-        id: Date.now(), amount: val, status: "Pending", date: new Date().toLocaleTimeString(), addr: walletAddr
-    };
+    const newTx = { id: Date.now(), amount: val, status: "Pending", date: new Date().toLocaleTimeString(), addr: walletAddr };
     gameState.history.unshift(newTx);
     amountInput.value = '';
+    
     updateUI();
     renderHistory();
-    saveGame(); // Cloud Save
+    saveGame(true); // İşlem sonrası hemen kaydet
     showToast("Withdrawal Request Sent", 'success');
 }
 
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if(!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check');
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3000);
+}
+
+// --- LOOP & CHART ---
 let minLoop;
 function startLoop() {
     clearInterval(minLoop);
@@ -401,10 +376,11 @@ function startLoop() {
     }, 100);
 }
 
-// --- VISUALS ---
 let chart;
 function initChart() {
-    const ctxChart = document.getElementById('miningChart').getContext('2d');
+    const el = document.getElementById('miningChart');
+    if(!el) return;
+    const ctxChart = el.getContext('2d');
     let gradient = ctxChart.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)'); gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
     chart = new Chart(ctxChart, {
@@ -414,12 +390,15 @@ function initChart() {
     });
 }
 function updateChart(val) {
+    if(!chart) return;
     const f = (Math.random() - 0.5) * (val * 0.15); let v = val > 0 ? val + f : 0; if(v<0) v=0;
     chart.data.datasets[0].data.push(v); chart.data.datasets[0].data.shift(); chart.update();
 }
 
 function initBg() {
-    const cvs = document.getElementById('bg-canvas'); const ctx = cvs.getContext('2d');
+    const cvs = document.getElementById('bg-canvas'); 
+    if(!cvs) return;
+    const ctx = cvs.getContext('2d');
     let w, h; const parts = [];
     function resize() { w=window.innerWidth; h=window.innerHeight; cvs.width=w; cvs.height=h; parts.length=0; const c=Math.min(Math.floor(w/15),100); for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); }
     window.addEventListener('resize', resize); resize();
@@ -427,11 +406,5 @@ function initBg() {
     anim();
 }
 
-// Expose functions
-window.gameApp = {
-    buyWithTON,
-    buyWithStars,
-    processWithdraw,
-    closeModal,
-    showPage
-};
+// GLOBAL ERİŞİM
+window.gameApp = { buyWithTON, buyWithStars, processWithdraw, closeModal, showPage };
