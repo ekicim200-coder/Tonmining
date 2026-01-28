@@ -1,8 +1,7 @@
 // app.js
 
-// 1. ÖNCE FIREBASE'İ İÇERİ ALIYORUZ (IMPORT)
-// Not: firebase-config.js dosyanın yolunun doğru olduğundan emin ol.
-import { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from './firebase-config.js';
+// 1. IMPORT KISMI GÜNCELLENDİ ('where' EKLENDİ)
+import { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where } from './firebase-config.js';
 
 console.log("🚀 Oyun Başlatılıyor...");
 
@@ -126,10 +125,10 @@ function finalizeLoad() {
         deactivateSystem(); 
     }
     
-    // Geçmişi yüklemiyoruz, onu Wallet sayfası açılınca yükleyeceğiz.
     updateUI();
 }
 
+// --- GÜNCELLENMİŞ PROCESS WITHDRAW (2. ADIM) ---
 async function processWithdraw() {
     const walletInput = document.getElementById('wallet-address');
     const amountInput = document.getElementById('withdraw-amount');
@@ -139,18 +138,21 @@ async function processWithdraw() {
     const walletAddr = walletInput.value.trim();
     const val = parseFloat(amountInput.value);
     
-    if (walletAddr.length < 5 || !val || val < 50 || val > gameState.balance) { 
-        showToast("Invalid Request / Min 50 TON", 'error'); 
-        return; 
-    } 
+    if (walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
+    if (!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
+    if (val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
+    if (val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
     
     // Bakiyeden düş ve kaydet
     gameState.balance -= val;
     saveGame(true); 
     
     try {
-        const withdrawRef = collection(db, "users", userID, "withdrawals");
+        // DİKKAT: Artık "users -> ID -> withdrawals" DEĞİL, direkt "withdrawals" koleksiyonu
+        const withdrawRef = collection(db, "withdrawals");
+        
         await addDoc(withdrawRef, {
+            userId: userID, // <--- ÖNEMLİ: Kimin istediğini buraya yazıyoruz
             amount: val,
             addr: walletAddr,
             status: "Pending",
@@ -158,34 +160,44 @@ async function processWithdraw() {
             timestamp: Date.now()
         });
         
-        showToast("Request Sent", 'success');
+        showToast("Request Sent to Admin", 'success');
         amountInput.value = '';
-        fetchAndRenderHistory(); // Listeyi güncelle
+        
+        // Listeyi güncelle
+        fetchAndRenderHistory();
     } catch (error) {
         console.error("Hata:", error);
         gameState.balance += val; // Hata olursa parayı iade et
-        showToast("Error processing request", 'error');
+        showToast("Connection Error", 'error');
     }
 }
 
-// --- 7. GEÇMİŞ İŞLEMLERİ (GÜNCELLENMİŞ VERSİYON) ---
+// --- GÜNCELLENMİŞ GEÇMİŞ İŞLEMLERİ (3. ADIM) ---
 async function fetchAndRenderHistory() {
     const list = document.getElementById('history-list');
     if (!list) return;
 
     // Yükleniyor ikonu göster
-    list.innerHTML = '<div class="text-center text-gray-500 text-xs py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading history...</div>';
+    list.innerHTML = '<div class="text-center text-gray-500 text-xs py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>';
 
     try {
-        const historyRef = collection(db, "users", userID, "withdrawals");
-        // timestamp'e göre sırala (Yeniden eskiye)
-        const q = query(historyRef, orderBy("timestamp", "desc"));
+        // 1. Ana 'withdrawals' koleksiyonuna git
+        const historyRef = collection(db, "withdrawals");
+        
+        // 2. FİLTRELE: Sadece userId'si benimkiyle aynı olanları getir
+        // VE Sırala: En yeniden eskiye
+        const q = query(
+            historyRef, 
+            where("userId", "==", userID), // <--- FİLTRE BURADA
+            orderBy("timestamp", "desc")
+        );
+        
         const querySnapshot = await getDocs(q);
         
         list.innerHTML = ''; // Temizle
         
         if (querySnapshot.empty) { 
-            list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>'; 
+            list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history.</div>'; 
             return; 
         }
 
@@ -217,12 +229,13 @@ async function fetchAndRenderHistory() {
     } catch (error) {
         console.error("Geçmiş Yükleme Hatası:", error);
         
-        // Index hatası kontrolü
-        if(error.message && error.message.includes("requires an index")) {
+        // Index hatası kontrolü (where ve orderBy aynı anda kullanıldığı için)
+        if(error.message && error.message.includes("index")) {
             console.warn("⚠️ FIREBASE INDEX GEREKLİ: Lütfen konsoldaki linke tıklayarak index oluşturun.");
+            list.innerHTML = '<div class="text-center text-yellow-500 text-xs py-4">Setup required. Check Console.</div>';
+        } else {
+            list.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Error loading history.</div>';
         }
-        
-        list.innerHTML = '<div class="text-center text-red-400 text-xs py-4">History load failed.<br>Check console for permissions or index error.</div>';
     }
 }
 
@@ -376,7 +389,7 @@ function showPage(pageId) {
     // Sayfaya özel işlemler
     if(pageId === 'inventory') renderInventory(); 
     
-    // === DÜZELTME BURADA YAPILDI: Wallet açılınca geçmişi çek ===
+    // Wallet açılınca geçmişi çek
     if(pageId === 'wallet') fetchAndRenderHistory(); 
 }
 
