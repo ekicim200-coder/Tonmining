@@ -1,9 +1,29 @@
 /* NEXUS MINER - FINAL STABLE VERSION (app.js)
-   Bu sürümde "Agresif Kayıt" aktiftir. Veri kaybını önlemek için
-   hem zamanlayıcı hem de çoklu olay dinleyicisi kullanılır.
+   Bu sürümde "Mıknatıs Modu" aktiftir. Kimlik ve Veri asla kaybolmaz.
 */
 
-// --- 1. OYUN VERİSİ VE AYARLAR ---
+// --- 1. KULLANICI KİMLİĞİ VE AYARLAR (MIKNATIS MODU) ---
+const ROI_DAYS = 15;
+const SECONDS_IN_DAY = 86400;
+
+// 1. Önce hafızaya bak: Eskiden kalan bir kimlik var mı?
+let userID = localStorage.getItem('nexus_player_id');
+
+// 2. Eğer hafıza boşsa, yeni oluştur
+if (!userID) {
+    // Telegram'dan mı girmiş?
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+        userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+    } else {
+        // Hayır, tarayıcıdan girmiş. Rastgele sayı üret.
+        userID = "user_" + Math.floor(Math.random() * 10000000);
+    }
+    // 3. VE EN ÖNEMLİSİ: Bunu hafızaya kaydet!
+    localStorage.setItem('nexus_player_id', userID);
+}
+console.log("SABİT KULLANICI ID:", userID); // Konsolda bu sayı F5 atınca DEĞİŞMEMELİ
+
+// --- 2. OYUN VERİSİ (BAŞLANGIÇ) ---
 let gameData = {
     balance: 0.0000000,
     hashrate: 0,
@@ -16,11 +36,11 @@ let gameData = {
 
 const MINING_DIFFICULTY = 0.0000001; 
 
-// --- 2. BAŞLANGIÇ (INIT) ---
+// --- 3. BAŞLANGIÇ (INIT) ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Sistem başlatılıyor...");
+    console.log("Sistem başlatılıyor... ID:", userID);
     
-    // 1. Önce veriyi yükle
+    // 1. Önce veriyi yükle (Kullanıcı ID'sine göre)
     loadGame();     
     
     // 2. Arayüzü kur
@@ -33,79 +53,72 @@ document.addEventListener('DOMContentLoaded', () => {
     checkOfflineEarnings(); 
 
     // *** GARANTİ KAYIT SİSTEMİ ***
-    // Her 3 saniyede bir otomatik kaydet. 
-    // Sunucu olmadığı için bu tarayıcıyı yormaz, en güvenli yöntemdir.
     setInterval(() => {
         saveGame();
     }, 3000);
 });
 
-// --- 3. GÜÇLENDİRİLMİŞ KAYIT SİSTEMİ ---
+// --- 4. GÜÇLENDİRİLMİŞ KAYIT SİSTEMİ (ID ENTEGRELİ) ---
 
-// Farklı tarayıcılar için tüm çıkış senaryolarını yakala
-document.addEventListener('visibilitychange', saveGame); // Sekme değiştirince
-window.addEventListener('pagehide', saveGame); // Mobilde tarayıcıyı alta atınca
-window.addEventListener('blur', saveGame); // Pencere odağını kaybedince
-window.addEventListener('beforeunload', saveGame); // Sayfa kapatılınca
+// Çıkış senaryoları
+document.addEventListener('visibilitychange', saveGame);
+window.addEventListener('pagehide', saveGame);
+window.addEventListener('blur', saveGame);
+window.addEventListener('beforeunload', saveGame);
 
 function saveGame() {
     try {
         gameData.lastLogin = Date.now();
         const jsonString = JSON.stringify(gameData);
-        localStorage.setItem('nexus_miner_save', jsonString);
         
-        // Debug için konsola yaz (F12'de görebilirsin)
-        // console.log("Oyun Kaydedildi:", gameData.balance);
+        // ÖNEMLİ: Her kullanıcının verisi kendi ID'sine kaydedilir
+        localStorage.setItem(`nexus_miner_save_${userID}`, jsonString);
         
-        // Görsel bildirim (Çok sık çıkmaması için sadece manuel işlemlerde gösterilebilir ama şimdilik kalsın)
         const indicator = document.getElementById('save-indicator');
         if(indicator && indicator.style.opacity === '0') {
-            indicator.style.opacity = '0.5'; // Hafif silik göster
+            indicator.style.opacity = '0.5';
             setTimeout(() => { indicator.style.opacity = '0'; }, 1000);
         }
     } catch (error) {
         console.error("Kayıt Hatası:", error);
-        // Eğer disk doluysa veya izinsizse kullanıcıyı uyar
-        showToast("Save Error: Storage Full or Blocked", "error");
+        showToast("Save Error: Storage Full", "error");
     }
 }
 
 function loadGame() {
     try {
-        const saved = localStorage.getItem('nexus_miner_save');
+        // ÖNEMLİ: Sadece bu kullanıcının verisini çek
+        const saved = localStorage.getItem(`nexus_miner_save_${userID}`);
+        
         if (saved) {
             const parsed = JSON.parse(saved);
             
-            // Veri bütünlüğünü koru (Eksik alan varsa tamamla)
+            // Veri bütünlüğünü koru
             gameData = {
                 ...gameData,
                 ...parsed,
-                inventory: parsed.inventory || gameData.inventory // Envanter boşsa varsayılanı koruma
+                inventory: parsed.inventory || gameData.inventory
             };
             
             console.log("Veri başarıyla yüklendi. Bakiye:", gameData.balance);
         } else {
-            console.log("Kayıtlı veri bulunamadı, yeni oyun başlatılıyor.");
+            console.log("Bu ID için kayıt bulunamadı, yeni oyun başlatılıyor.");
         }
     } catch (error) {
         console.error("Yükleme Hatası:", error);
-        localStorage.removeItem('nexus_miner_save'); // Bozuksa sil
     }
     updateDisplays();
 }
 
-// --- 4. MADENCİLİK MOTORU ---
+// --- 5. MADENCİLİK MOTORU ---
 
 function startMining() {
     calculateTotalHashrate();
     
-    // Görsel sayaç (1 saniyede bir)
     setInterval(() => {
         if(gameData.hashrate > 0) {
             const incomePerSecond = gameData.hashrate * MINING_DIFFICULTY;
             gameData.balance += incomePerSecond;
-            
-            // Ekrana yansıt
             updateDisplays();
         }
     }, 1000);
@@ -128,7 +141,6 @@ function checkOfflineEarnings() {
     const lastTime = gameData.lastLogin || now;
     const diffSeconds = (now - lastTime) / 1000;
     
-    // 60 saniyeden uzun süre kapalı kaldıysa
     if (diffSeconds > 60 && gameData.hashrate > 0) {
         const offlineIncome = diffSeconds * (gameData.hashrate * MINING_DIFFICULTY);
         gameData.balance += offlineIncome;
@@ -140,21 +152,19 @@ function checkOfflineEarnings() {
             amountEl.innerText = offlineIncome.toFixed(5);
             modal.style.display = 'flex';
         }
-        saveGame(); // Kazancı ekler eklemez kaydet
+        saveGame();
     }
 }
 
-// --- 5. ARAYÜZ YÖNETİMİ ---
+// --- 6. ARAYÜZ YÖNETİMİ ---
 
 function updateDisplays() {
-    // Sayılar NaN (Not a Number) olursa 0 yap
     if (isNaN(gameData.balance)) gameData.balance = 0;
     
     const formattedBalance = gameData.balance.toFixed(7);
     const dailyEst = (gameData.hashrate * MINING_DIFFICULTY * 86400).toFixed(2);
     const incomePerSec = (gameData.hashrate * MINING_DIFFICULTY).toFixed(7);
 
-    // Helper: Element varsa güncelle
     const setTxt = (id, val) => { 
         const el = document.getElementById(id); 
         if(el) el.innerText = val; 
@@ -174,7 +184,7 @@ function updateDisplays() {
     renderInventory();
 }
 
-// --- 6. ETKİLEŞİM VE MARKET ---
+// --- 7. ETKİLEŞİM VE MARKET ---
 
 window.gameApp = {
     showPage: function(pageId) {
@@ -240,7 +250,7 @@ window.gameApp = {
             }
             
             calculateTotalHashrate();
-            saveGame(); // Satın alımda ANINDA KAYIT
+            saveGame();
             updateDisplays();
             showToast(`${name} Purchased!`, 'success');
         } else {
@@ -248,10 +258,10 @@ window.gameApp = {
         }
     },
     
-    // Debug amaçlı: Verileri manuel sıfırlama komutu
     resetData: function() {
         if(confirm("Are you sure? All progress will be lost.")) {
-            localStorage.removeItem('nexus_miner_save');
+            // Sadece bu kullanıcıyı sıfırla
+            localStorage.removeItem(`nexus_miner_save_${userID}`);
             location.reload();
         }
     }
