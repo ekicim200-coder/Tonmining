@@ -4,13 +4,13 @@ const SECONDS_IN_DAY = 86400;
 
 // PRICES: priceTON (In-Game Balance), priceStars (External Payment - Display Only)
 const products = [
-    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
-    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
-    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,  hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
-    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,  hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
-    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,  hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
-    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,  hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
-    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,  hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
+    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,    hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
+    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,   hash: 300,  icon: "fa-memory",    color: "text-green-400" },
+    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,   hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
+    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,   hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
+    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,   hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
+    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,   hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
+    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,   hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
@@ -26,15 +26,30 @@ let gameState = {
     lastLogin: Date.now()
 };
 
-// --- USER ID SETUP (FIREBASE) ---
-// Kullanıcı Kimliğini Belirle (Telegram ID yoksa Rastgele ID)
-let userID = "sim_user_" + Math.floor(Math.random() * 1000000);
+// --- KULLANICI KİMLİĞİ (SABİTLEME SİSTEMİ) ---
+let userID;
 
-// Eğer Telegram içindeysek gerçek ID'yi al
+// 1. Durum: Eğer Telegram içindeysek, gerçek Telegram ID'sini al
 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
     userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+    console.log("Telegram Kullanıcısı Tespit Edildi:", userID);
+} 
+// 2. Durum: Tarayıcıdaysak (Chrome/Opera), hafızaya bak
+else {
+    // Daha önce bu tarayıcıya ID kaydettik mi?
+    let savedID = localStorage.getItem('nexus_player_id');
+    
+    if (savedID) {
+        // Evet, eski ID'yi kullan (Böylece F5 atınca veri gitmez)
+        userID = savedID;
+        console.log("Eski Kullanıcı Geri Döndü:", userID);
+    } else {
+        // Hayır, ilk defa giriyor. Yeni ID oluştur ve hafızaya kaydet.
+        userID = "user_" + Math.floor(Math.random() * 10000000);
+        localStorage.setItem('nexus_player_id', userID);
+        console.log("Yeni Kullanıcı Oluşturuldu:", userID);
+    }
 }
-console.log("Aktif Kullanıcı ID:", userID);
 
 
 // --- INIT ---
@@ -51,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initBg();
 
     document.getElementById('btn-withdraw').addEventListener('click', processWithdraw);
-    
+     
     // Otomatik kayıt (Her 60 saniyede bir)
     setInterval(() => { saveGame(); }, 60000);
     window.addEventListener('beforeunload', () => { saveGame(); });
@@ -74,7 +89,7 @@ function showToast(message, type = 'info') {
 async function saveGame() {
     // Son giriş zamanını güncelle
     gameState.lastLogin = Date.now();
-    
+     
     // Görsel bildirim
     const ind = document.getElementById('save-indicator');
     if(ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
@@ -83,10 +98,10 @@ async function saveGame() {
         // window üzerinden firebase fonksiyonlarına erişiyoruz (firebase-config.js'den gelenler)
         if (window.firebaseDB) {
             const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-            
+             
             // Veriyi Firebase'e yaz
             await window.firebaseSetDoc(userRef, gameState, { merge: true });
-            
+             
             if(ind) { 
                 ind.innerHTML = '<i class="fa-solid fa-check"></i> Cloud Saved'; 
                 setTimeout(() => { ind.style.opacity = '0'; }, 2000);
@@ -131,7 +146,7 @@ async function loadGame() {
 // YÜKLEME SONRASI İŞLEMLER
 function finalizeLoad() {
     recalcStats();
-    
+     
     // OFFLINE KAZANÇ HESAPLAMA
     if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
         const now = Date.now();
@@ -151,7 +166,7 @@ function finalizeLoad() {
     } else {
         deactivateSystem();
     }
-    
+     
     renderHistory();
     updateUI();
 }
@@ -215,7 +230,7 @@ function renderMarket() {
     products.forEach(p => {
         if(!gameState.inventory[p.id]) gameState.inventory[p.id] = 0;
         const dailyInc = (p.income * 86400).toFixed(2);
-        
+         
         const div = document.createElement('div');
         div.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50";
         div.innerHTML = `
@@ -228,7 +243,7 @@ function renderMarket() {
                 <div class="flex items-center gap-3 mt-2 text-xs"><span class="text-gray-400"><i class="fa-solid fa-bolt text-yellow-500"></i> ${p.hash} TH/s</span></div>
                 <div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div>
             </div>
-            
+             
             <div class="flex gap-2">
                 <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">
                     ${p.priceTON} TON
@@ -271,7 +286,7 @@ function buyWithStars(id) {
 function addMachine(id, source) {
     const p = products.find(x => x.id === id);
     gameState.inventory[id]++;
-    
+     
     if(!gameState.mining) {
         gameState.mining = true;
         activateSystem();
@@ -344,7 +359,7 @@ function updateUI() {
     document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
     document.getElementById('dash-income').innerText = gameState.income.toFixed(7);
     document.getElementById('dash-devices').innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
-    
+     
     // Check TON balance for buttons
     const tonButtons = document.querySelectorAll('.btn-ton-check');
     tonButtons.forEach(btn => {
@@ -358,12 +373,12 @@ function processWithdraw() {
     const amountInput = document.getElementById('withdraw-amount');
     const walletAddr = walletInput.value.trim();
     const val = parseFloat(amountInput.value);
-    
+     
     if(walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
     if(!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
     if(val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
     if(val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
-    
+     
     gameState.balance -= val;
     const newTx = { 
         id: Date.now(), amount: val, status: "Pending", date: new Date().toLocaleTimeString(), addr: walletAddr
