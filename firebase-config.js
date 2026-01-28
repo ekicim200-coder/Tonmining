@@ -1,4 +1,7 @@
+// firebase-config.js (DÜZELTİLMİŞ)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+// 1. BURADA 'where' VAR MI? (Evet, ekledik)
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -14,7 +17,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("✅ Firebase Config Dosyası Okundu!");
+console.log("🔥 Config Yüklendi");
 
-// BU SATIR ÇOK ÖNEMLİ. BU OLMAZSA APP.JS ÇÖKER!
+// 2. VE EN ÖNEMLİSİ: BURADA 'where' VAR MI?
+// Eğer burada yoksa app.js çalışmaz!
 export { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where };
