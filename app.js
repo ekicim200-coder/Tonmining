@@ -1,14 +1,11 @@
 /* NEXUS MINER - CORE LOGIC (app.js)
-   OPTIMİZE EDİLMİŞ VERSİYON:
-   - Görsel güncelleme: 1 saniye (Akıcılık için)
-   - Veri Kaydetme: 2 dakika (Sunucu/Disk performansı için)
+   FIX: F5 atınca veri kaybını önleyen 'beforeunload' eklendi.
 */
 
 // --- 1. OYUN VERİSİ VE AYARLAR ---
 let gameData = {
     balance: 0.0000000,
     hashrate: 0, // TH/s
-    clickMultiplier: 1,
     lastLogin: Date.now(),
     inventory: [
         { id: 'starter_rig', name: 'Genesis Rig', power: 5, count: 1 }
@@ -21,38 +18,63 @@ const MINING_DIFFICULTY = 0.0000001;
 
 // --- 2. BAŞLANGIÇ (INIT) FONKSİYONU ---
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Önce kayıtlı veriyi yükle
     loadGame();     
+    
+    // 2. Arayüzü kur
     setupUI();      
+    
+    // 3. Madenciliği görsel olarak başlat
     startMining();  
+    
+    // 4. Çevrimdışı kazancı hesapla
     checkOfflineEarnings(); 
 
-    // ÖNEMLİ DEĞİŞİKLİK BURADA:
-    // Kayıt işlemini (Save) 2 dakikada bir (120.000 ms) yapıyoruz.
-    // Bu sayede sunucu/disk yorulmuyor.
-    setInterval(saveGame, 120000); 
+    // 5. Periyodik Kayıt (2 Dakikada bir - Yedekleme amaçlı)
+    setInterval(() => {
+        saveGame();
+        console.log("Otomatik yedekleme alındı (2dk).");
+    }, 120000); 
+});
+
+// *** KRİTİK DÜZELTME BURASI ***
+// Sayfa yenilenirken (F5) veya sekme kapatılırken çalışır.
+window.addEventListener('beforeunload', () => {
+    saveGame();
 });
 
 // --- 3. KAYDETME VE YÜKLEME SİSTEMİ ---
 
 function saveGame() {
     gameData.lastLogin = Date.now();
+    // LocalStorage senkrondur, yani işlem bitmeden tarayıcı kapanmaz.
     localStorage.setItem('nexus_miner_save', JSON.stringify(gameData));
     
-    // Kullanıcıya "Kaydedildi" mesajı verelim
+    // Görsel bildirim (Eğer sayfa hala açıksa görünür)
     const indicator = document.getElementById('save-indicator');
     if(indicator) {
         indicator.style.opacity = '1';
         setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
     }
-    console.log("Sistem: Veriler 2 dakikalık periyotla kaydedildi.");
 }
 
 function loadGame() {
     const saved = localStorage.getItem('nexus_miner_save');
     if (saved) {
-        const parsed = JSON.parse(saved);
-        gameData = { ...gameData, ...parsed }; 
+        try {
+            const parsed = JSON.parse(saved);
+            // Mevcut veri yapısı ile kayıtlı veriyi birleştir (Merge)
+            gameData = { ...gameData, ...parsed };
+            
+            // Eğer inventory boş gelirse veya hatalıysa başlangıç cihazını ver
+            if (!gameData.inventory || gameData.inventory.length === 0) {
+                 gameData.inventory = [{ id: 'starter_rig', name: 'Genesis Rig', power: 5, count: 1 }];
+            }
+        } catch (e) {
+            console.error("Kayıt dosyası bozuk, sıfırdan başlanıyor.", e);
+        }
     }
+    // Yükleme sonrası ekranı hemen güncelle
     updateDisplays();
 }
 
@@ -61,12 +83,13 @@ function loadGame() {
 function startMining() {
     calculateTotalHashrate();
     
-    // Burası hala 1 saniyede çalışır AMA sadece RAM'de işlem yapar.
-    // Sunucuya gitmez, internet harcamaz. Sadece görseli günceller.
+    // Görsel sayaç (1 saniyede bir artar - Sadece görüntü)
     setInterval(() => {
-        const incomePerSecond = gameData.hashrate * MINING_DIFFICULTY;
-        gameData.balance += incomePerSecond;
-        updateDisplays();
+        if(gameData.hashrate > 0) {
+            const incomePerSecond = gameData.hashrate * MINING_DIFFICULTY;
+            gameData.balance += incomePerSecond;
+            updateDisplays();
+        }
     }, 1000);
     
     initChart();
@@ -74,25 +97,38 @@ function startMining() {
 
 function calculateTotalHashrate() {
     let total = 0;
-    gameData.inventory.forEach(item => {
-        total += item.power * item.count;
-    });
+    if (gameData.inventory) {
+        gameData.inventory.forEach(item => {
+            total += item.power * item.count;
+        });
+    }
     gameData.hashrate = total;
 }
 
 function checkOfflineEarnings() {
     const now = Date.now();
-    const diffSeconds = (now - gameData.lastLogin) / 1000;
+    // Son giriş yoksa şu anı kabul et
+    const lastTime = gameData.lastLogin || now;
+    const diffSeconds = (now - lastTime) / 1000;
     
-    // 2 dakikadan (120 sn) fazla kapalı kaldıysa kazanç ver
-    if (diffSeconds > 120 && gameData.hashrate > 0) {
+    // 60 saniyeden fazla kapalı kaldıysa kazanç ver
+    if (diffSeconds > 60 && gameData.hashrate > 0) {
         const offlineIncome = diffSeconds * (gameData.hashrate * MINING_DIFFICULTY);
         gameData.balance += offlineIncome;
         
-        document.getElementById('offline-amount').innerText = offlineIncome.toFixed(5);
-        document.getElementById('offline-modal').style.display = 'flex';
+        const modal = document.getElementById('offline-modal');
+        const amountEl = document.getElementById('offline-amount');
+        
+        if(modal && amountEl) {
+            amountEl.innerText = offlineIncome.toFixed(5);
+            modal.style.display = 'flex';
+        }
+        
+        // Kazancı ekledikten sonra hemen kaydet ki F5 atınca tekrar vermesin
+        saveGame();
     } else {
-        document.getElementById('offline-modal').style.display = 'none';
+        const modal = document.getElementById('offline-modal');
+        if(modal) modal.style.display = 'none';
     }
 }
 
@@ -103,16 +139,19 @@ function updateDisplays() {
     const dailyEst = (gameData.hashrate * MINING_DIFFICULTY * 86400).toFixed(2);
     const incomePerSec = (gameData.hashrate * MINING_DIFFICULTY).toFixed(7);
 
-    if(document.getElementById('main-balance')) document.getElementById('main-balance').innerText = formattedBalance;
-    if(document.getElementById('mobile-balance')) document.getElementById('mobile-balance').innerText = formattedBalance;
-    if(document.getElementById('wallet-balance-display')) document.getElementById('wallet-balance-display').innerText = formattedBalance;
+    // Güvenli element seçimi (Element yoksa hata vermez)
+    const setOne = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+
+    setOne('main-balance', formattedBalance);
+    setOne('mobile-balance', formattedBalance);
+    setOne('wallet-balance-display', formattedBalance);
     
-    if(document.getElementById('dash-hash')) document.getElementById('dash-hash').innerText = gameData.hashrate;
-    if(document.getElementById('dash-daily')) document.getElementById('dash-daily').innerText = dailyEst;
-    if(document.getElementById('dash-income')) document.getElementById('dash-income').innerText = incomePerSec;
+    setOne('dash-hash', gameData.hashrate);
+    setOne('dash-daily', dailyEst);
+    setOne('dash-income', incomePerSec);
     
     const totalDevices = gameData.inventory.reduce((acc, item) => acc + item.count, 0);
-    if(document.getElementById('dash-devices')) document.getElementById('dash-devices').innerText = totalDevices;
+    setOne('dash-devices', totalDevices);
 
     renderInventory();
 }
@@ -124,20 +163,24 @@ window.gameApp = {
         document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
         
-        document.getElementById('page-' + pageId).classList.add('active');
+        const page = document.getElementById('page-' + pageId);
+        if(page) page.classList.add('active');
         
         const navBtn = document.getElementById('nav-' + pageId);
         if(navBtn) navBtn.classList.add('active');
     },
 
     closeModal: function() {
-        document.getElementById('offline-modal').style.display = 'none';
-        saveGame(); 
+        const modal = document.getElementById('offline-modal');
+        if(modal) modal.style.display = 'none';
     },
 
     processWithdraw: function() {
-        const amount = parseFloat(document.getElementById('withdraw-amount').value);
-        const address = document.getElementById('wallet-address').value;
+        const amountEl = document.getElementById('withdraw-amount');
+        const addressEl = document.getElementById('wallet-address');
+        
+        const amount = parseFloat(amountEl.value);
+        const address = addressEl.value;
 
         if (!address || address.length < 5) {
             showToast('Invalid Wallet Address!', 'error');
@@ -159,11 +202,11 @@ window.gameApp = {
             status: 'Processing'
         });
         
-        saveGame(); // Para çekince hemen kaydetmek güvenlik için şarttır
+        saveGame(); // İşlem sonrası kritik kayıt
         showToast('Withdrawal Request Sent!', 'success');
         updateDisplays();
         renderHistory();
-        document.getElementById('withdraw-amount').value = '';
+        amountEl.value = '';
     },
     
     buyItem: function(id, cost, power, name) {
@@ -178,7 +221,7 @@ window.gameApp = {
             }
             
             calculateTotalHashrate();
-            saveGame(); // Satın alma işlemi kritiktir, hemen kaydedilmeli
+            saveGame(); // Satın alım sonrası kritik kayıt
             updateDisplays();
             showToast(`${name} Purchased!`, 'success');
         } else {
@@ -197,6 +240,8 @@ function setupUI() {
 
 function showToast(msg, type = 'success') {
     const container = document.getElementById('toast-container');
+    if(!container) return;
+    
     const toast = document.createElement('div');
     toast.className = `p-4 mb-2 rounded-xl text-white font-bold text-sm shadow-lg transform transition-all duration-500 translate-x-full ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
     toast.innerText = msg;
@@ -242,7 +287,7 @@ function renderInventory() {
     const container = document.getElementById('inventory-list');
     if(!container) return;
 
-    if(gameData.inventory.length === 0) {
+    if(!gameData.inventory || gameData.inventory.length === 0) {
         container.innerHTML = '<div class="text-gray-500 col-span-2 text-center">No active rigs.</div>';
         return;
     }
@@ -267,7 +312,7 @@ function renderHistory() {
     const container = document.getElementById('history-list');
     if(!container) return;
     
-    if(gameData.transactions.length === 0) {
+    if(!gameData.transactions || gameData.transactions.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>';
         return;
     }
