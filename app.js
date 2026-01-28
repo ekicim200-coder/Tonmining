@@ -5,20 +5,14 @@ console.log("🚀 Oyun Başlatılıyor...");
 
 // ... kodların geri kalanı aynı şekilde devam etsin ...
 
-// --- 2. KULLANICI KİMLİĞİ ---
+// --- 2. KULLANICI KİMLİĞİ (SABİTLENDİ) ---
 const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
 
-let userID = localStorage.getItem('nexus_player_id');
-if (!userID) {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-        userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
-    } else {
-        userID = "user_" + Math.floor(Math.random() * 10000000);
-    }
-    localStorage.setItem('nexus_player_id', userID);
-}
-console.log("👤 ID:", userID);
+// ARTIK RASTGELE YOK! SENİN ADIN HEP "PATRON" OLACAK.
+let userID = "patron_user_1"; 
+
+console.log("👤 SABİT ID İLE GİRİŞ YAPILDI:", userID);
 
 // --- 3. ÜRÜN LİSTESİ ---
 const products = [
@@ -213,4 +207,5 @@ function updateChart(val) { if(!chart) return; const f = (Math.random() - 0.5) *
 function initBg() { const cvs = document.getElementById('bg-canvas'); if(!cvs) return; const ctx = cvs.getContext('2d'); let w, h; const parts = []; function resize() { w=window.innerWidth; h=window.innerHeight; cvs.width=w; cvs.height=h; parts.length=0; const c=Math.min(Math.floor(w/15),100); for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); } window.addEventListener('resize', resize); resize(); function anim() { ctx.clearRect(0,0,w,h); for(let i=0;i<parts.length;i++) { let p=parts[i]; p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.s,0,Math.PI*2); ctx.fillStyle=`rgba(0,242,255,${0.3+Math.random()*0.2})`; ctx.fill(); for(let j=i+1;j<parts.length;j++) { let p2=parts[j]; let d=Math.hypot(p.x-p2.x,p.y-p2.y); if(d<120) { ctx.beginPath(); ctx.strokeStyle=`rgba(0,242,255,${1-d/120})`; ctx.lineWidth=0.5; ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } } requestAnimationFrame(anim); } anim(); }
 
 window.gameApp = { buyWithTON, buyWithStars, processWithdraw, closeModal, showPage, fetchAndRenderHistory };
+
 
