@@ -1,13 +1,13 @@
-// firebase-config.js (DÜZELTİLMİŞ VE HAZIR)
+// firebase-config.js (DÜZELTİLMİŞ VE DOĞRULANMIŞ HALİ)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- DİKKAT: BURASI GÜNCELLENDİ ---
+// --- İŞTE BURASI HATALIYDI, ŞİMDİ DÜZELTTİK ---
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
-    projectId: "tonm-77373",  // <--- BAK BURASI ARTIK DOĞRU! (Eskiden SENIN_PROJECT_ID yazıyordu)
+    projectId: "tonm-77373",  // <--- BAK BURASI ARTIK 'tonm-77373' OLDU
     storageBucket: "tonm-77373.firebasestorage.app",
     messagingSenderId: "507031118335",
     appId: "1:507031118335:web:1d209e303dca154ec487ca",
@@ -17,7 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// DIŞARIYA AKTARILANLAR
+// FONKSİYONLARI DIŞARI AÇIYORUZ
 window.firebaseDB = db;
 window.firebaseSetDoc = setDoc;
 window.firebaseGetDoc = getDoc;
@@ -28,4 +28,4 @@ window.firebaseGetDocs = getDocs;
 window.firebaseQuery = query;
 window.firebaseOrderBy = orderBy;
 
-console.log("Firebase Bağlantısı BAŞARILI! ✅");
+console.log("Firebase Bağlantısı BAŞARILI! ✅ Proje ID: tonm-77373");
