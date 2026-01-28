@@ -1,6 +1,6 @@
 // firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-// BURAYA DİKKAT: 'where' komutunu buraya ekledik
+// DİKKAT: Buraya 'where' eklendi
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🔥 Firebase Config (Update) Yüklendi!");
+console.log("🔥 Firebase Config (Ayrı Dosya) Hazır!");
 
-// EN ÖNEMLİ KISIM: 'where' komutunu dışarıya aktarıyoruz (Export)
+// DİKKAT: 'where' komutunu dışarı aktarıyoruz
 export { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs, where };
