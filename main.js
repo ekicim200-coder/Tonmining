@@ -1,4 +1,4 @@
-// main.js - FULL ENTEGRE SÜRÜM
+// main.js - FULL ENTEGRE SÜRÜM (DÜZELTİLMİŞ)
 
 // --- 1. BÖLÜM: FIREBASE AYARLARI ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -28,13 +28,13 @@ const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
 
 const products = [
-    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
-    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
-    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,  hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
-    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,  hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
-    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,  hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
-    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,  hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
-    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,  hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
+    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,    hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
+    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,   hash: 300,  icon: "fa-memory",    color: "text-green-400" },
+    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,   hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
+    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,   hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
+    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,   hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
+    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,   hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
+    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,   hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
@@ -56,7 +56,7 @@ let gameState = { ...defaultState };
 let minLoop;
 let chart;
 
-// --- 3. BÖLÜM: BAŞLATMA VE AUTH ---
+// --- 3. BÖLÜM: BAŞLATMA VE AUTH (DÜZELTİLDİ) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     // UI Başlat
@@ -69,9 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     initBg();
 
-    // Buton Dinleyicisi
-    const withdrawBtn = document.getElementById('btn-withdraw');
-    if(withdrawBtn) withdrawBtn.addEventListener('click', processWithdraw);
+    // Hata veren "btn-withdraw" listener'ı buradan kaldırıldı.
+    // İşlem artık HTML'deki onclick="window.gameApp.processWithdraw()" üzerinden yürüyor.
 
     // Otomatik Kayıt
     setInterval(() => { if(isDataLoaded) saveGame(); }, 60000);
@@ -455,6 +454,5 @@ function initBg() {
     const cvs = document.getElementById('bg-canvas');
     if(cvs) {
         cvs.width = window.innerWidth; cvs.height = window.innerHeight;
-        // ... (Canvas animasyon kodu buraya eklenebilir, dosya şişmesin diye kısalttım)
     }
 }
