@@ -1,4 +1,5 @@
-var firebaseConfig = {
+// --- BURAYI KENDİ BİLGİLERİNLE DOLDUR ---
+const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
     projectId: "tonm-77373",
@@ -8,13 +9,14 @@ var firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Hata önleyici kontrol: Eğer daha önce başladıysa tekrar başlatma
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+// Firebase'i Başlat
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Veritabanı ve Kimlik Sistemini Global Yap (app.js görsün diye)
-window.db = firebase.firestore();
-window.auth = firebase.auth();
+// Bu fonksiyonları app.js'de kullanmak için dışarı açıyoruz
+window.firebaseDB = db;
+window.firebaseSetDoc = setDoc;
+window.firebaseGetDoc = getDoc;
+window.firebaseDoc = doc;
 
-console.log("🔥 Firebase Ayarları Yüklendi.");
+console.log("Firebase Bağlantısı Hazır!");
