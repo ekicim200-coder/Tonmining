@@ -1,4 +1,4 @@
-// main.js - FULL ENTEGRE SÜRÜM (DÜZELTİLMİŞ)
+// main.js - FULL ENTEGRE SÜRÜM (FİNAL)
 
 // --- 1. BÖLÜM: FIREBASE AYARLARI ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -56,7 +56,7 @@ let gameState = { ...defaultState };
 let minLoop;
 let chart;
 
-// --- 3. BÖLÜM: BAŞLATMA VE AUTH (DÜZELTİLDİ) ---
+// --- 3. BÖLÜM: BAŞLATMA VE AUTH (DÜZELTİLMİŞ) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     // UI Başlat
@@ -69,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     initBg();
 
-    // Hata veren "btn-withdraw" listener'ı buradan kaldırıldı.
-    // İşlem artık HTML'deki onclick="window.gameApp.processWithdraw()" üzerinden yürüyor.
+    // DİKKAT: Burada 'btn-withdraw' için addEventListener YOK. 
+    // İşlem HTML tarafındaki onclick="window.gameApp.processWithdraw()" ile yapılıyor.
 
     // Otomatik Kayıt
     setInterval(() => { if(isDataLoaded) saveGame(); }, 60000);
