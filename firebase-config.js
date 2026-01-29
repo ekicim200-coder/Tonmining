@@ -1,8 +1,6 @@
 // firebase-config.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Senin Proje Bilgilerin
+// 1. Firebase Ayarları
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
@@ -13,11 +11,16 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Uygulamayı Başlat
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-console.log("🔥 Config Dosyası Yüklendi ve Hazır.");
-
-// Diğer dosyalarda kullanmak için dışa aktarıyoruz
-export { db, doc, setDoc, getDoc, collection, updateDoc };
+// 2. Başlatma (Hata korumalı)
+try {
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // Veritabanını diğer dosyaların görmesi için PENCEREYE (Window) sabitliyoruz
+    window.db = db; 
+    
+    console.log("✅ Firebase Bağlantısı Başarılı!");
+} catch (error) {
+    console.error("Firebase Hatası:", error);
+    alert("Bağlantı Hatası: " + error.message);
+}
