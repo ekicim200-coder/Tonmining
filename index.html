@@ -6,65 +6,19 @@
     <title>NEXUS MINER - Pro Structure</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="flex">
-
-    <!-- Firebase ÖNCE yüklensin -->
-    <script type="module">
-        // Firebase Config (Direkt HTML içinde)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
-            authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373",
-            storageBucket: "tonm-77373.firebasestorage.app",
-            messagingSenderId: "507031118335",
-            appId: "1:507031118335:web:1d209e303dca154ec487ca",
-            measurementId: "G-5EV1T50VK8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        window.firebaseDB = db;
-        window.firebaseAuth = auth;
-        window.firebaseDoc = doc;
-        window.firebaseSetDoc = setDoc;
-        window.firebaseGetDoc = getDoc;
-
-        console.log("🔥 Firebase SDK yüklendi");
-
-        // Auth durumunu dinle
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.firebaseAuthUID = user.uid;
-                console.log("🔐 Firebase Auth Başarılı! UID:", user.uid);
-                
-                // Auth hazır olduğunda event fırlat
-                window.dispatchEvent(new CustomEvent('firebaseReady'));
-            } else {
-                // Anonim giriş yap
-                console.log("🔄 Anonim giriş yapılıyor...");
-                signInAnonymously(auth).catch((error) => {
-                    console.error("❌ Auth Hatası:", error.code, error.message);
-                });
-            }
-        });
-    </script>
 
     <canvas id="bg-canvas"></canvas>
     <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
     <div id="toast-container"></div>
 
-    <!-- Offline Modal -->
     <div id="offline-modal">
         <div class="modal-content">
             <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500">
@@ -83,7 +37,6 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
     <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20">
         <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
             <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
@@ -109,11 +62,10 @@
             </div>
         </nav>
         <div class="p-6 text-xs text-gray-500 text-center">
-            v14.1 Firebase Ready<br>Secure Cloud Storage
+            v14.0 Production Ready<br>Client-Side Core
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="flex-1 h-full overflow-y-auto relative no-scrollbar bg-gradient-to-b from-[#020205] to-[#0a0f1e]">
         
         <div class="sticky top-0 z-40 p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
@@ -227,8 +179,8 @@
         <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
     </nav>
 
-    <!-- app.js EN SON yüklensin -->
-    <script src="app.js"></script>
+    <script type="module" src="firebase-config.js"></script>
 
+    <script src="app.js"></script>
 </body>
 </html>
