@@ -1,4 +1,5 @@
 // firebase-config.js
+// IMPORT YOK! index.html'deki script taglarından geliyor.
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
@@ -10,31 +11,12 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// Firebase'i başlat
+firebase.initializeApp(firebaseConfig);
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Değişkenleri window'a ata ki app.js erişebilsin
+window.db = firebase.firestore();
+window.auth = firebase.auth();
+window.isFirebaseReady = true; // Bayrak
 
-// Global değişkenler
-window.firebaseDB = db;
-window.firebaseDoc = doc;
-window.firebaseSetDoc = setDoc;
-window.firebaseGetDoc = getDoc;
-window.firebaseAuthReady = false; // Auth durumunu kontrol için bayrak
-
-// Auth Durumunu Dinle (Daha güvenli yöntem)
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        console.log("🔐 Firebase User ID:", user.uid);
-        window.firebaseAuthUID = user.uid;
-        window.firebaseAuthReady = true;
-    } else {
-        // Oturum açılmamışsa anonim giriş yap
-        signInAnonymously(auth).catch((error) => {
-            console.error("Auth Error:", error);
-        });
-    }
-});
+console.log("🔥 Firebase Config Yüklendi ve Hazır!");
