@@ -1,91 +1,39 @@
-// app.js
+// YENİ YÜKLEME FONKSİYONU (FIREBASE) - Bekleme mekanizması eklenmiş
+async function loadGame() {
+    console.log("Veri Buluttan Çekiliyor...");
 
-const USER_ID = "PATRON_SABIT_KULLANICI"; // Asla değişmez
-let gameState = {
-    balance: 0,
-    items: 0
-};
+    // Firebase hazır olana kadar bekle
+    let attempts = 0;
+    while (!window.firebaseDB && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
 
-// Sayfa tamamen açılınca çalışır
-window.onload = function() {
-    // Config dosyasından db geldi mi kontrol et
-    if (!window.db) {
-        document.getElementById('status').innerText = "❌ HATA: Veritabanı Bulunamadı!";
-        document.getElementById('status').className = "text-red-500 font-bold border border-red-500 p-2 inline-block rounded";
+    if (!window.firebaseDB) {
+        console.error("Firebase yüklenemedi! LocalStorage kullanılıyor.");
+        const localData = localStorage.getItem('nexusMinerV14');
+        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
+        finalizeLoad();
         return;
     }
 
-    loadGame();
-};
+    try {
+        const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
+        const docSnap = await window.firebaseGetDoc(userRef);
 
-// --- VERİ YÜKLEME ---
-function loadGame() {
-    updateStatus("Veri Çekiliyor...", "yellow");
-
-    window.db.collection("users").doc(USER_ID).get()
-    .then((doc) => {
-        if (doc.exists) {
-            gameState = doc.data(); // Veriyi al
-            updateStatus("✅ Çevrimiçi (Veri Geldi)", "green");
+        if (docSnap.exists()) {
+            const parsed = docSnap.data();
+            gameState = { ...gameState, ...parsed };
+            console.log("✅ Veri başarıyla yüklendi:", parsed);
         } else {
-            // Veri yoksa oluştur
-            gameState.balance = 100; 
-            saveGame(); 
-            updateStatus("🆕 Yeni Kayıt Açıldı", "green");
+            console.log("🆕 Yeni kullanıcı, varsayılan veri ile başlanıyor.");
+            await saveGame(); // İlk defa oluştur
         }
-        updateUI();
-    })
-    .catch((error) => {
-        console.error(error);
-        updateStatus("❌ BAĞLANTI HATASI", "red");
-    });
-}
-
-// --- VERİ KAYDETME ---
-function saveGame() {
-    updateStatus("Kaydediliyor...", "yellow");
-
-    window.db.collection("users").doc(USER_ID).set(gameState, { merge: true })
-    .then(() => {
-        updateStatus("✅ KAYDEDİLDİ", "green");
-        setTimeout(() => updateStatus("✅ Çevrimiçi", "green"), 2000);
-    })
-    .catch((error) => {
-        console.error(error);
-        updateStatus("❌ KAYIT HATASI (İzin Yok)", "red");
-        alert("Kayıt yapılamadı! Firebase Rules (Kurallar) kapalı olabilir.");
-    });
-}
-
-// --- İŞLEMLER ---
-window.addMoney = function() {
-    gameState.balance += 50;
-    updateUI();
-    saveGame(); // Anında kaydet
-};
-
-window.buyItem = function() {
-    if (gameState.balance >= 10) {
-        gameState.balance -= 10;
-        gameState.items += 1;
-        updateUI();
-        saveGame();
-    } else {
-        alert("Yetersiz Bakiye!");
+    } catch (error) {
+        console.error("❌ Veri çekme hatası:", error);
+        const localData = localStorage.getItem('nexusMinerV14');
+        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
     }
-};
 
-// --- GÖRÜNTÜ GÜNCELLEME ---
-function updateUI() {
-    document.getElementById('balance').innerText = gameState.balance.toFixed(2);
-    document.getElementById('items').innerText = gameState.items;
-}
-
-function updateStatus(msg, color) {
-    const el = document.getElementById('status');
-    el.innerText = msg;
-    
-    if (color === "green") el.className = "text-green-500 font-bold border border-green-500 p-2 inline-block rounded";
-    else if (color === "red") el.className = "text-red-500 font-bold border border-red-500 p-2 inline-block rounded";
-    else el.className = "text-yellow-500 font-bold border border-yellow-500 p-2 inline-block rounded";
+    finalizeLoad();
 }
