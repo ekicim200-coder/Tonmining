@@ -1,5 +1,5 @@
-// Eğer daha önce tanımlandıysa hata vermemesi için kontrol ekledik
-var config = {
+// firebase-config.js
+var firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
     projectId: "tonm-77373",
@@ -9,10 +9,11 @@ var config = {
     measurementId: "G-5EV1T50VK8"
 };
 
+// Çakışmayı ve tekrar başlatmayı önler
 if (!firebase.apps.length) {
-    firebase.initializeApp(config);
+    firebase.initializeApp(firebaseConfig);
+    console.log("🔥 Firebase Başlatıldı.");
 }
 
-// Global veritabanı değişkenini tanımla
+// Global veritabanı erişimi
 window.db = firebase.firestore();
-console.log("✅ Firebase ve DB başarıyla bağlandı.");
