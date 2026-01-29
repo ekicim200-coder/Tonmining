@@ -2,120 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NEXUS - KESİN ÇÖZÜM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS - FINAL SYSTEM</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <style>
-        body { background-color: #111; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
-        .box { border: 2px solid #333; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 10px; background: #222; }
-        .btn { background: #00f2ff; color: black; font-weight: bold; padding: 15px; width: 100%; border: none; cursor: pointer; border-radius: 5px; margin-top: 10px; }
-        .btn:hover { background: #00c8ff; }
-        #status { font-weight: bold; margin-bottom: 10px; }
-        .success { color: #0f0; }
-        .error { color: #f00; }
+        body { background-color: #050505; color: white; font-family: monospace; padding: 20px; }
+        .panel { border: 1px solid #333; background: #111; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+        .btn { padding: 15px; width: 100%; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <h1>🔥 FİNAL VERSİYON 🔥</h1>
-    <p>Modül sistemi iptal edildi. Klasik sistem devrede.</p>
-
-    <div class="box">
-        <div id="status">Veritabanına Bağlanıyor...</div>
-        <hr style="border-color: #444; margin: 15px 0;">
-        
-        <div style="font-size: 12px; color: #888;">SUNUCUDAKİ BAKİYE:</div>
-        <div id="balance" style="font-size: 40px; font-weight: bold;">---</div>
-        
-        <button onclick="addMoney()" class="btn">💰 50 TON EKLE VE KAYDET</button>
-        <button onclick="location.reload()" class="btn" style="background: #444; color: white;">🔄 SAYFAYI YENİLE (TEST)</button>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-cyan-400">NEXUS MINER</h1>
+        <div id="status-box" class="text-xs font-bold text-yellow-500">Hazırlanıyor...</div>
     </div>
 
-    <script>
-        // 1. AYARLAR (Senin Bilgilerin)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
-            authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373",
-            storageBucket: "tonm-77373.firebasestorage.app",
-            messagingSenderId: "507031118335",
-            appId: "1:507031118335:web:1d209e303dca154ec487ca",
-            measurementId: "G-5EV1T50VK8"
-        };
+    <div class="panel">
+        <div class="text-gray-500 text-xs">MEVCUT BAKİYE</div>
+        <div id="balance-display" class="text-4xl font-bold text-white my-2">---</div>
+        <div class="text-cyan-500 text-xs">TON COIN</div>
+    </div>
 
-        // 2. BAŞLATMA (Eski Usül - Hata vermez)
-        try {
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-            console.log("Firebase Başladı.");
+    <div class="panel">
+        <div class="text-gray-500 text-xs">CİHAZLAR</div>
+        <div class="text-xl font-bold">Sahip Olunan: <span id="item-display" class="text-green-400">0</span></div>
+    </div>
 
-            // SABİT KİMLİK (Asla değişmez)
-            const USER_ID = "PATRON_FINAL_FIX";
-            let currentBalance = 0;
+    <div class="grid grid-cols-2 gap-4">
+        <button onclick="window.addMoney()" class="btn bg-gray-700 text-white">
+            💰 +50 TON EKLE
+        </button>
+        <button onclick="window.buyItem()" class="btn bg-blue-600 text-black hover:bg-blue-500">
+            🛒 CİHAZ AL (10 TON)
+        </button>
+    </div>
 
-            const statusEl = document.getElementById('status');
-            const balanceEl = document.getElementById('balance');
+    <div class="mt-8 text-center text-xs text-gray-600">
+        ID: PATRON_KULLANICI_01 (Sabitlendi)
+    </div>
 
-            // --- VERİ OKUMA ---
-            function loadData() {
-                statusEl.innerText = "⏳ Veri Çekiliyor...";
-                
-                db.collection("users").doc(USER_ID).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        currentBalance = doc.data().balance;
-                        balanceEl.innerText = currentBalance + " TON";
-                        statusEl.innerHTML = "<span class='success'>✅ BAŞARILI: Veri Geldi!</span>";
-                    } else {
-                        statusEl.innerText = "🆕 Kayıt Yok. Yeni oluşturuluyor...";
-                        saveData(10); // İlk açılışta 10 ver
-                    }
-                })
-                .catch((error) => {
-                    console.error("Okuma Hatası:", error);
-                    statusEl.innerHTML = "<span class='error'>❌ OKUMA HATASI: " + error.message + "</span>";
-                });
-            }
+    <script type="module" src="app.js"></script>
 
-            // --- VERİ YAZMA ---
-            function saveData(newBal) {
-                statusEl.innerText = "💾 Kaydediliyor...";
-                
-                if(newBal !== undefined) currentBalance = newBal;
-
-                db.collection("users").doc(USER_ID).set({
-                    balance: currentBalance,
-                    lastUpdate: new Date().toISOString()
-                }, { merge: true })
-                .then(() => {
-                    balanceEl.innerText = currentBalance + " TON";
-                    statusEl.innerHTML = "<span class='success'>✅ KAYDEDİLDİ! (Şimdi yenile)</span>";
-                })
-                .catch((error) => {
-                    console.error("Yazma Hatası:", error);
-                    statusEl.innerHTML = "<span class='error'>❌ YAZMA HATASI: " + error.message + "</span>";
-                    
-                    if(error.message.includes("permission-denied")) {
-                        alert("HATA: Firebase 'Kurallar' (Rules) kısmı hala kilitli! Lütfen 'Publish' butonuna bastığından emin ol.");
-                    }
-                });
-            }
-
-            // Buton Fonksiyonu
-            window.addMoney = function() {
-                currentBalance += 50;
-                saveData();
-            }
-
-            // Oyunu Başlat
-            loadData();
-
-        } catch (e) {
-            alert("KRİTİK HATA: " + e.message);
-        }
-    </script>
 </body>
 </html>
