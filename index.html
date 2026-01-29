@@ -91,4 +91,96 @@
             <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
                 <div class="text-gray-400 text-xs font-bold tracking-widest mb-1">WALLET BALANCE</div>
-                <div class="text-3
+                <div class="text-3xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
+                <div class="text-cyan-500 text-xs font-bold mt-1 tracking-widest">TON NETWORK</div>
+            </div>
+
+            <div id="page-dashboard" class="page-section active">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="glass-panel p-5 rounded-2xl relative">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Hash Power</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl relative">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl relative">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
+                        <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl relative">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Active Rigs</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-2 border-t-cyan-500/50">
+                    <h3 class="text-lg font-bold text-white mb-6"><i class="fa-solid fa-chart-area text-cyan-400"></i> Network Hashrate</h3>
+                    <div class="w-full h-64 md:h-80"><canvas id="miningChart"></canvas></div>
+                </div>
+            </div>
+
+            <div id="page-market" class="page-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
+                        </h2>
+                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
+                    </div>
+                </div>
+                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            </div>
+
+            <div id="page-inventory" class="page-section hidden">
+                <h2 class="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
+                <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <div id="page-wallet" class="page-section hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="glass-panel p-8 rounded-3xl text-center border border-gray-700 h-fit">
+                        <div class="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
+                            <i class="fa-solid fa-wallet text-3xl text-cyan-400"></i>
+                        </div>
+                        <div class="text-gray-400 text-sm tracking-widest uppercase mb-2">Withdrawable Balance</div>
+                        <div class="text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
+                        <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
+
+                        <div class="text-left space-y-4">
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
+                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
+                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
+                            </div>
+                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
+                            </button>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
+                        </h3>
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-3 custom-scroll" id="history-list">
+                            <div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav md:hidden">
+        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
+        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
+        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
+        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
