@@ -3,18 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS MINER - Professional</title>
+    <title>NEXUS MINER - Pro Structure</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="flex">
 
     <canvas id="bg-canvas"></canvas>
-    <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Auto-Saved</div>
+    <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
+    <div id="toast-container"></div>
+
+    <div id="offline-modal">
+        <div class="modal-content">
+            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500">
+                <i class="fa-solid fa-sack-dollar text-3xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
+            <p class="text-gray-400 text-sm mb-6">Your rigs continued mining while you were away.</p>
+            
+            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Offline Earnings</div>
+                <div class="text-3xl font-bold text-white digit-font neon-green mt-1" id="offline-amount">0.00</div>
+                <div class="text-xs text-green-500 font-bold">TON COIN</div>
+            </div>
+
+            <button onclick="window.gameApp.closeModal()" class="w-full btn-main py-3 rounded-xl font-bold uppercase">Collect & Continue</button>
+        </div>
+    </div>
 
     <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20">
         <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
@@ -31,7 +52,7 @@
                 <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Dashboard</span>
             </div>
             <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-microchip text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Rig Market</span>
+                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Global Market</span>
             </div>
             <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
                 <i class="fa-solid fa-server text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Inventory</span>
@@ -41,7 +62,7 @@
             </div>
         </nav>
         <div class="p-6 text-xs text-gray-500 text-center">
-            v3.5.0 Stable<br>Client-Side Core
+            v14.0 Production Ready<br>Client-Side Core
         </div>
     </aside>
 
@@ -50,16 +71,17 @@
         <div class="sticky top-0 z-40 p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
             <div class="flex items-center gap-4">
                 <div class="hidden md:block">
-                    <h2 class="text-gray-400 text-xs tracking-widest uppercase">Total Assets</h2>
+                    <h2 class="text-gray-400 text-xs tracking-widest uppercase">Mined Assets</h2>
                     <div class="text-3xl font-bold text-white digit-font neon-blue mt-1" id="main-balance">0.0000000</div>
                 </div>
                 <div class="md:hidden flex items-center gap-2">
                     <i class="fa-solid fa-gem text-cyan-400"></i> <span class="font-bold text-xl digit-font">NEXUS</span>
                 </div>
             </div>
-            <button id="toggleMining" class="btn-start px-8 py-3 rounded-full font-bold text-sm transition transform hover:scale-105 flex items-center gap-3">
-                <i class="fa-solid fa-power-off"></i> <span>START SYSTEM</span>
-            </button>
+            <div class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.2)]">
+                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                <span id="status-text">STANDBY</span>
+            </div>
         </div>
 
         <div class="p-4 md:p-8 max-w-7xl mx-auto">
@@ -78,12 +100,11 @@
                         <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
                     </div>
                     <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Est. Daily Income</div>
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
                         <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
-                        <div class="text-[9px] text-gray-500 mt-1">ROI: ~15 Days</div>
                     </div>
                     <div class="glass-panel p-5 rounded-2xl relative">
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Income</div>
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
                         <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
                     </div>
                     <div class="glass-panel p-5 rounded-2xl relative">
@@ -98,7 +119,14 @@
             </div>
 
             <div id="page-market" class="page-section">
-                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3"><i class="fa-solid fa-shop text-cyan-400"></i> Hardware Store</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
+                        </h2>
+                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
+                    </div>
+                </div>
                 <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             </div>
 
@@ -118,15 +146,19 @@
                         <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
 
                         <div class="text-left space-y-4">
-                            <label class="text-xs text-gray-500 ml-1">Withdraw Amount (Min 50)</label>
-                            <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
-                            <button id="btn-withdraw" class="w-full btn-glow py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4">
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
+                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
+                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
+                            </div>
+                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4">
                                 <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
                             </button>
-                            <div id="withdraw-status" class="text-center text-xs h-6 mt-2 font-mono"></div>
                         </div>
                     </div>
-                    
                     <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
                         <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
                             <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
@@ -147,6 +179,6 @@
         <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
     </nav>
 
-    <script src="js/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
