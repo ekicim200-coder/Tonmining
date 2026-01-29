@@ -1,4 +1,3 @@
-// firebase-config.js
 var firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
@@ -9,11 +8,8 @@ var firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Çakışmayı ve tekrar başlatmayı önler
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
-    console.log("🔥 Firebase Başlatıldı.");
+    console.log("🔥 Firebase Bağlantısı Kuruldu.");
 }
-
-// Global veritabanı erişimi
 window.db = firebase.firestore();
