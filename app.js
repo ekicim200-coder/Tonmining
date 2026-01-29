@@ -1,99 +1,128 @@
 // app.js
+const ROI_DAYS = 15;
+const SEC_DAY = 86400;
+
 const products = [
-    { id: 1, name: "Nano Node", price: 10, income: 0.0000077 },
-    { id: 2, name: "Micro Rig", price: 30, income: 0.0000231 }
+    { id: 1, name: "Nano Node", price: 10, hash: 100, income: 10 / (ROI_DAYS * SEC_DAY) },
+    { id: 2, name: "Micro Rig", price: 30, hash: 300, income: 30 / (ROI_DAYS * SEC_DAY) },
+    { id: 3, name: "GTX Cluster", price: 60, hash: 600, income: 60 / (ROI_DAYS * SEC_DAY) }
 ];
 
-let gameState = { balance: 10, inventory: {}, lastLogin: Date.now() };
-let currentUser = null;
+let gameState = { balance: 10, inventory: {}, hashrate: 0, income: 0, lastLogin: Date.now() };
+let currentUserUID = null;
+let isLoaded = false;
 
-// Sayfa yüklendiğinde çalışacaklar
 document.addEventListener('DOMContentLoaded', () => {
-    renderMarketUI();
-    initFirebaseLogic();
-});
-
-function initFirebaseLogic() {
-    window.auth.onAuthStateChanged((user) => {
-        if (user) {
-            currentUser = user;
-            console.log("🔐 Giriş Yapıldı:", user.uid);
-            loadUserData();
+    if(window.Telegram?.WebApp) window.Telegram.WebApp.expand();
+    
+    // UI Init
+    renderMarket();
+    initChart();
+    
+    // Auth Listener
+    window.auth.onAuthStateChanged(user => {
+        if(user) {
+            currentUserUID = user.uid;
+            syncData();
         } else {
-            console.log("👤 Anonim Giriş Yapılıyor...");
             window.auth.signInAnonymously();
         }
     });
-}
+});
 
-function loadUserData() {
-    window.db.collection("users").doc(currentUser.uid).onSnapshot((doc) => {
-        if (doc.exists) {
+function syncData() {
+    window.db.collection("users").doc(currentUserUID).onSnapshot(doc => {
+        if(doc.exists) {
             gameState = doc.data();
-            updateUI();
-            document.getElementById('status-badge').innerText = "ONLINE";
-            document.getElementById('status-badge').className = "text-green-500 font-bold";
+            if(!isLoaded) { startMining(); isLoaded = true; }
         } else {
-            console.log("🆕 Yeni kullanıcı kaydı oluşturuluyor...");
-            saveUserData();
+            save(); // İlk kayıt
         }
-    }, (error) => {
-        console.error("❌ Firestore Hatası (Muhtemelen Rules hatası):", error);
-        document.getElementById('status-badge').innerText = "PERMISSION DENIED";
+        updateUI();
+        document.getElementById('status-indicator').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+        document.getElementById('status-text').innerText = "ONLINE";
+    }, err => {
+        console.error("Firestore Error:", err);
+        document.getElementById('status-text').innerText = "DB ERROR";
     });
 }
 
-function saveUserData() {
-    if (!currentUser) return;
-    window.db.collection("users").doc(currentUser.uid).set(gameState, { merge: true });
+function save() {
+    if(!currentUserUID) return;
+    gameState.lastLogin = Date.now();
+    window.db.collection("users").doc(currentUserUID).set(gameState, { merge: true });
 }
 
-function renderMarketUI() {
-    const list = document.getElementById('market-list');
-    if (!list) return;
-    list.innerHTML = "";
-    products.forEach(p => {
-        list.innerHTML += `
-            <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 flex justify-between items-center">
-                <div>
-                    <div class="font-bold">${p.name}</div>
-                    <div class="text-xs text-green-400">+${(p.income * 86400).toFixed(2)} TON / Day</div>
-                </div>
-                <button onclick="buyMachine(${p.id})" class="bg-blue-600 px-4 py-2 rounded-lg font-bold text-sm">
-                    ${p.price} TON
-                </button>
-            </div>
-        `;
-    });
+function startMining() {
+    setInterval(() => {
+        if(gameState.income > 0) {
+            gameState.balance += (gameState.income / 10);
+            updateUI();
+        }
+    }, 100);
+    setInterval(save, 30000); // 30 sn bir buluta yedekle
 }
 
-function updateUI() {
-    document.getElementById('main-balance').innerText = gameState.balance.toFixed(7);
-}
-
-// Global fonksiyon (Butonlar için)
-window.buyMachine = (id) => {
-    const p = products.find(x => x.id === id);
-    if (gameState.balance >= p.price) {
-        gameState.balance -= p.price;
-        gameState.inventory[id] = (gameState.inventory[id] || 0) + 1;
-        saveUserData();
-        alert("Satın alma başarılı!");
-    } else {
-        alert("Bakiye yetersiz!");
+window.gameApp = {
+    buyWithTON: (id) => {
+        const p = products.find(x => x.id === id);
+        if(gameState.balance >= p.price) {
+            gameState.balance -= p.price;
+            gameState.inventory[id] = (gameState.inventory[id] || 0) + 1;
+            gameState.hashrate += p.hash;
+            gameState.income += p.income;
+            save();
+            showToast(`Success: ${p.name} acquired!`);
+        } else {
+            showToast("Error: Insufficient balance!");
+        }
+    },
+    showPage: (id) => {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
+        document.getElementById('page-' + id).classList.remove('hidden');
+    },
+    processWithdraw: () => {
+        const addr = document.getElementById('wallet-address').value;
+        const amt = parseFloat(document.getElementById('withdraw-amount').value);
+        if(!addr || amt < 50) return showToast("Min 50 TON & Valid Addr Required");
+        if(amt > gameState.balance) return showToast("Insufficient Funds");
+        gameState.balance -= amt;
+        save();
+        showToast("Withdrawal Requested!");
     }
 };
 
-// Mining Döngüsü (Her saniye bakiye artır)
-setInterval(() => {
-    let totalIncome = 0;
-    products.forEach(p => {
-        const count = gameState.inventory[p.id] || 0;
-        totalIncome += p.income * count;
-    });
+function updateUI() {
+    document.getElementById('main-balance').innerText = gameState.balance.toFixed(7);
+    document.getElementById('dash-hash').innerText = gameState.hashrate;
+    document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
+}
 
-    if (totalIncome > 0) {
-        gameState.balance += totalIncome;
-        updateUI();
-    }
-}, 1000);
+function renderMarket() {
+    const list = document.getElementById('market-list');
+    if(!list) return;
+    list.innerHTML = '';
+    products.forEach(p => {
+        list.innerHTML += `
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between border border-gray-800">
+                <div>
+                    <h3 class="font-bold text-lg text-white">${p.name}</h3>
+                    <div class="text-xs text-cyan-400 mt-1">${p.hash} TH/s</div>
+                </div>
+                <button onclick="window.gameApp.buyWithTON(${p.id})" class="w-full bg-blue-600/20 text-blue-400 border border-blue-500/30 py-3 rounded-xl mt-4 font-bold hover:bg-blue-600 hover:text-white transition">
+                    ${p.price} TON
+                </button>
+            </div>`;
+    });
+}
+
+function showToast(m) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = "bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl text-white text-sm mb-2";
+    t.innerText = m;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+function initChart() { /* Chart.js ayarları buraya... */ }
