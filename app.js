@@ -1,4 +1,4 @@
-// main.js - SIFIR HATA SÜRÜMÜ
+// main.js - SIFIR HATA SÜRÜMÜ (FİNAL)
 
 // --- 1. BÖLÜM: FIREBASE AYARLARI ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -54,7 +54,9 @@ let gameState = { ...defaultState };
 let minLoop;
 let chart;
 
-// --- 3. BÖLÜM: BAŞLATMA (DÜZELTİLDİ: addEventListener YOK) ---
+// --- 3. BÖLÜM: BAŞLATMA ---
+// NOT: Burada hata veren 'btn-withdraw' dinleyicisi SİLİNMİŞTİR.
+// İşlemler window.gameApp.processWithdraw() ile yapılır.
 
 document.addEventListener('DOMContentLoaded', () => {
     // UI Başlat
