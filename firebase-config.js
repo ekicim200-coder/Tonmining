@@ -9,16 +9,26 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Firebase SDK'yı import et (CDN üzerinden)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Firebase'i başlat
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// Global değişkenlere ata (app.js tarafından kullanılabilsin)
+// Anonim giriş yap
+signInAnonymously(auth)
+    .then((userCredential) => {
+        console.log("🔐 Firebase Auth Başarılı! UID:", userCredential.user.uid);
+        window.firebaseAuthUID = userCredential.user.uid;
+    })
+    .catch((error) => {
+        console.error("❌ Auth Hatası:", error);
+    });
+
 window.firebaseDB = db;
+window.firebaseAuth = auth;
 window.firebaseDoc = doc;
 window.firebaseSetDoc = setDoc;
 window.firebaseGetDoc = getDoc;
