@@ -4,13 +4,13 @@ const SECONDS_IN_DAY = 86400;
 
 // PRICES: priceTON (In-Game Balance), priceStars (External Payment - Display Only)
 const products = [
-    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
-    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
-    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,  hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
-    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,  hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
-    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,  hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
-    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,  hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
-    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,  hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
+    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,    hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
+    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,   hash: 300,  icon: "fa-memory",    color: "text-green-400" },
+    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,   hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
+    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,   hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
+    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,   hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
+    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,   hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
+    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,   hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
@@ -26,19 +26,36 @@ let gameState = {
     lastLogin: Date.now()
 };
 
+// Global User ID (Default to 'test_user' if not in Telegram)
+let currentUserId = "test_user_01"; 
+
 // --- INIT ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const tg = window.Telegram.WebApp;
     tg.expand(); 
 
-    loadGame();
+    // 1. TELEGRAM ID ALMA
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        currentUserId = tg.initDataUnsafe.user.id.toString();
+        console.log("Telegram User Detected:", currentUserId);
+    } else {
+        console.log("No Telegram User, running in Test Mode.");
+    }
+
+    // Yükleme işlemini bekle
+    await loadGame();
+    
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
     document.getElementById('btn-withdraw').addEventListener('click', processWithdraw);
+    
+    // Her 60 saniyede bir Cloud Save
     setInterval(() => { saveGame(); }, 60000);
+    
+    // Sayfa kapanırken kaydet
     window.addEventListener('beforeunload', () => { saveGame(); });
 });
 
@@ -53,30 +70,70 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-// --- CORE FUNCTIONS ---
+// --- CORE FUNCTIONS (FIREBASE INTEGRATED) ---
+
 function saveGame() {
     gameState.lastLogin = Date.now();
+    
+    // 1. Local Backup (Hızlı erişim için)
     localStorage.setItem('nexusMinerV14', JSON.stringify(gameState));
+    
+    // 2. Cloud Save (Firebase)
+    if (window.nexusFirebase) {
+        window.nexusFirebase.saveUserData(currentUserId, gameState);
+    }
+
+    // UI Feedback
     const ind = document.getElementById('save-indicator');
     ind.style.opacity = '1'; setTimeout(() => { ind.style.opacity = '0'; }, 2000);
 }
 
-function loadGame() {
-    const saved = localStorage.getItem('nexusMinerV14');
-    if(saved) {
-        const parsed = JSON.parse(saved);
-        gameState = { ...gameState, ...parsed };
+async function loadGame() {
+    let loadedData = null;
+
+    // 1. Önce Firebase'den veriyi çekmeye çalış
+    if (window.nexusFirebase) {
+        showToast("Syncing with Cloud...", "info");
+        try {
+            const cloudData = await window.nexusFirebase.loadUserData(currentUserId);
+            if (cloudData) {
+                loadedData = cloudData;
+                console.log("Loaded from Cloud");
+            }
+        } catch (e) {
+            console.error("Cloud load failed, falling back to local.");
+        }
+    }
+
+    // 2. Firebase başarısızsa veya veri yoksa LocalStorage'a bak
+    if (!loadedData) {
+        const localSaved = localStorage.getItem('nexusMinerV14');
+        if (localSaved) {
+            loadedData = JSON.parse(localSaved);
+            console.log("Loaded from LocalStorage");
+        }
+    }
+
+    // 3. Veriyi State'e İşle
+    if (loadedData) {
+        gameState = { ...gameState, ...loadedData };
         recalcStats();
         
-        // OFFLINE EARNINGS
+        // OFFLINE EARNINGS (Çevrimdışı Kazanç)
         if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
             const now = Date.now();
             const secondsPassed = (now - gameState.lastLogin) / 1000;
+            
+            // Eğer 10 saniyeden fazla kapalı kaldıysa kazanç ver
             if (secondsPassed > 10) {
                 const earned = secondsPassed * gameState.income;
                 gameState.balance += earned;
+                
                 document.getElementById('offline-amount').innerText = earned.toFixed(7);
                 document.getElementById('offline-modal').style.display = 'flex';
+                
+                // Kazancı ekledikten sonra tekrar kaydet
+                saveGame();
             }
         }
 
@@ -111,7 +168,11 @@ function activateSystem() {
     const txt = document.getElementById('status-text');
     ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse');
     txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.add('pulse-active');
+    // Check if element exists before adding class to avoid errors
+    const hashEl = document.getElementById('dash-hash');
+    if(hashEl && hashEl.parentElement && hashEl.parentElement.parentElement) {
+         hashEl.parentElement.parentElement.classList.add('pulse-active');
+    }
     startLoop();
 }
 
@@ -120,7 +181,11 @@ function deactivateSystem() {
     const txt = document.getElementById('status-text');
     ind.classList.remove('bg-green-500', 'animate-pulse'); ind.classList.add('bg-gray-500');
     txt.innerText = "STANDBY"; txt.className = "text-gray-500 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.remove('pulse-active');
+    
+    const hashEl = document.getElementById('dash-hash');
+    if(hashEl && hashEl.parentElement && hashEl.parentElement.parentElement) {
+         hashEl.parentElement.parentElement.classList.remove('pulse-active');
+    }
     clearInterval(minLoop);
 }
 
@@ -191,6 +256,7 @@ function buyWithTON(id) {
 
 function buyWithStars(id) {
     // SIMULATED FAILURE: Logic requirement "Absolutely do not buy"
+    // Gerçek uygulamada burada Telegram Stars API tetiklenir
     const btn = event.currentTarget;
     const originalContent = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
@@ -218,7 +284,7 @@ function addMachine(id, source) {
     recalcStats();
     updateUI();
     renderMarket();
-    saveGame();
+    saveGame(); // Bu artık Firebase'e de kaydediyor
 }
 
 function renderInventory() {
@@ -273,7 +339,7 @@ function renderHistory() {
 function updateUI() {
     const b = gameState.balance.toFixed(7);
     document.getElementById('main-balance').innerText = b + " TON";
-    document.getElementById('mobile-balance').innerText = b; // FIXED: Full precision on mobile
+    document.getElementById('mobile-balance').innerText = b; 
     document.getElementById('wallet-balance-display').innerText = b;
     document.getElementById('dash-hash').innerText = gameState.hashrate.toLocaleString();
     document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
@@ -307,7 +373,7 @@ function processWithdraw() {
     amountInput.value = '';
     updateUI();
     renderHistory();
-    saveGame();
+    saveGame(); // Bakiyeyi düşür ve kaydet
     showToast("Withdrawal Request Sent", 'success');
 }
 
