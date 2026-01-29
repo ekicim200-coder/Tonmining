@@ -1,8 +1,9 @@
+// app.js - FIRESTORE INTEGRATED VERSION
+
 // --- CONFIGURATION ---
 const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
 
-// PRICES: priceTON (In-Game Balance), priceStars (External Payment - Display Only)
 const products = [
     { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
     { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
@@ -16,8 +17,9 @@ const products = [
 
 products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
 
-let gameState = {
-    balance: 10.0000000, // TON only
+// Varsayılan State
+let defaultState = {
+    balance: 10.0000000,
     mining: false,
     hashrate: 0,
     income: 0,
@@ -26,52 +28,141 @@ let gameState = {
     lastLogin: Date.now()
 };
 
-// --- USER ID SETUP (FIREBASE AUTH) ---
-let userID = null;
-
-// Firebase Auth hazır olana kadar bekle ve User ID'yi al
-async function initUserID() {
-    let attempts = 0;
-    while (!window.firebaseAuthUID && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-    }
-    
-    if (window.firebaseAuthUID) {
-        userID = window.firebaseAuthUID;
-        console.log("✅ Aktif Kullanıcı UID:", userID);
-    } else {
-        console.error("❌ Firebase Auth başarısız! Fallback ID kullanılıyor.");
-        userID = "fallback_" + Math.floor(Math.random() * 1000000);
-    }
-}
+let gameState = { ...defaultState };
+let isDataLoaded = false; // Veri yüklenmeden kaydetmeyi engellemek için kritik değişken
 
 // --- INIT ---
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     const tg = window.Telegram.WebApp;
     tg.expand(); 
 
-    // Önce User ID'yi al (Firebase Auth bekle)
-    await initUserID();
-    
-    // Sonra oyunu yükle
-    await loadGame(); 
-
+    // UI Başlat
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
-    document.getElementById('btn-withdraw').addEventListener('click', processWithdraw);
+    // Buton Dinleyicileri
+    document.getElementById('btn-withdraw')?.addEventListener('click', processWithdraw); // btn-withdraw HTML'de yoksa hata vermesin diye ? koydum
     
-    // Otomatik kayıt (Her 60 saniyede bir)
-    setInterval(() => { saveGame(); }, 60000);
-    window.addEventListener('beforeunload', () => { saveGame(); });
+    // Otomatik Kayıt (Sadece veri yüklendiyse çalışır)
+    setInterval(() => { 
+        if(isDataLoaded) saveGame(); 
+    }, 60000);
+
+    window.addEventListener('beforeunload', () => { 
+        if(isDataLoaded) saveGame(); 
+    });
+
+    // FIREBASE BAĞLANTISINI BEKLE VE OYUNU BAŞLAT
+    waitForFirebase();
 });
+
+// --- FIREBASE WAIT LOOP ---
+function waitForFirebase() {
+    showToast("Connecting to server...", "info");
+    
+    const checkInterval = setInterval(() => {
+        if (window.firebaseAuthReady && window.firebaseAuthUID) {
+            clearInterval(checkInterval);
+            console.log("✅ Firebase Bağlantısı Hazır. Veriler Çekiliyor...");
+            loadGameFromFirebase();
+        }
+    }, 500); // 0.5 saniyede bir kontrol et
+}
+
+// --- CORE FUNCTIONS (FIRESTORE) ---
+
+async function loadGameFromFirebase() {
+    try {
+        const uid = window.firebaseAuthUID;
+        const docRef = window.firebaseDoc(window.firebaseDB, "users", uid);
+        const docSnap = await window.firebaseGetDoc(docRef);
+
+        if (docSnap.exists()) {
+            console.log("📥 Veri Buluttan Geldi:", docSnap.data());
+            const cloudData = docSnap.data();
+            
+            // Bulut verisi ile gameState'i birleştir
+            gameState = { ...defaultState, ...cloudData };
+            
+            // OFFLINE EARNINGS (Bulut verisindeki zamana göre)
+            handleOfflineEarnings();
+
+        } else {
+            console.log("🆕 Yeni Kullanıcı Kaydı Oluşturuluyor...");
+            gameState = { ...defaultState };
+            saveGame(); // İlk veriyi oluştur
+        }
+
+        // Veri yüklendi, artık kaydetmeye izin ver
+        isDataLoaded = true; 
+        
+        // Sistemi başlat
+        recalcStats();
+        if (gameState.hashrate > 0) {
+            gameState.mining = true;
+            activateSystem();
+        } else {
+            deactivateSystem();
+        }
+        
+        renderHistory();
+        updateUI();
+        showToast("Game Data Loaded!", "success");
+
+    } catch (error) {
+        console.error("Yükleme Hatası:", error);
+        showToast("Connection Error!", "error");
+        // Hata durumunda localstorage fallback yapılabilir ama şimdilik veri bütünlüğü için yapmıyoruz
+    }
+}
+
+async function saveGame() {
+    if (!isDataLoaded || !window.firebaseAuthUID) return;
+
+    gameState.lastLogin = Date.now();
+    
+    // UI Göstergesi
+    const ind = document.getElementById('save-indicator');
+    if(ind) { ind.style.opacity = '1'; setTimeout(() => { ind.style.opacity = '0'; }, 2000); }
+
+    try {
+        const uid = window.firebaseAuthUID;
+        const docRef = window.firebaseDoc(window.firebaseDB, "users", uid);
+        
+        // Firestore'a yaz (merge: true sadece değişenleri günceller)
+        await window.firebaseSetDoc(docRef, gameState, { merge: true });
+        console.log("☁️ Veri Buluta Kaydedildi.");
+        
+    } catch (error) {
+        console.error("Kayıt Hatası:", error);
+        showToast("Save Failed (Network)", "error");
+    }
+}
+
+function handleOfflineEarnings() {
+    if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
+        const now = Date.now();
+        const secondsPassed = (now - gameState.lastLogin) / 1000;
+        
+        if (secondsPassed > 10) {
+            const earned = secondsPassed * gameState.income;
+            gameState.balance += earned;
+            
+            const offlineEl = document.getElementById('offline-amount');
+            const offlineModal = document.getElementById('offline-modal');
+            
+            if(offlineEl) offlineEl.innerText = earned.toFixed(7);
+            if(offlineModal) offlineModal.style.display = 'flex';
+        }
+    }
+}
 
 // --- TOAST ---
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
+    if(!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check');
@@ -80,116 +171,12 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-// --- FIREBASE CORE FUNCTIONS ---
+// --- GAME LOGIC (UNCHANGED MOSTLY) ---
 
-// YENİ KAYDETME FONKSİYONU (FIREBASE)
-async function saveGame() {
-    if (!userID) {
-        console.warn("⚠️ User ID henüz hazır değil, kayıt atlandı.");
-        return;
-    }
-
-    // Son giriş zamanını güncelle
-    gameState.lastLogin = Date.now();
-    
-    // Görsel bildirim
-    const ind = document.getElementById('save-indicator');
-    if(ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
-
-    try {
-        if (window.firebaseDB) {
-            const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-            
-            // Veriyi Firebase'e yaz
-            await window.firebaseSetDoc(userRef, gameState, { merge: true });
-            
-            if(ind) { 
-                ind.innerHTML = '<i class="fa-solid fa-check"></i> Cloud Saved'; 
-                setTimeout(() => { ind.style.opacity = '0'; }, 2000);
-            }
-            console.log("💾 Veri kaydedildi:", userID);
-        }
-    } catch (error) {
-        console.error("❌ Firebase Kayıt Hatası:", error);
-        if(ind) { ind.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Save Failed'; }
-    }
+function closeModal() { 
+    const m = document.getElementById('offline-modal');
+    if(m) m.style.display = 'none'; 
 }
-
-// YENİ YÜKLEME FONKSİYONU (FIREBASE)
-async function loadGame() {
-    console.log("📥 Veri Buluttan Çekiliyor...");
-
-    if (!userID) {
-        console.warn("⚠️ User ID henüz hazır değil, yükleme atlandı.");
-        finalizeLoad();
-        return;
-    }
-
-    // Firebase hazır olana kadar bekle
-    let attempts = 0;
-    while (!window.firebaseDB && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-    }
-
-    if (!window.firebaseDB) {
-        console.error("❌ Firebase yüklenemedi! LocalStorage kullanılıyor.");
-        const localData = localStorage.getItem('nexusMinerV14');
-        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
-        finalizeLoad();
-        return;
-    }
-
-    try {
-        const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-        const docSnap = await window.firebaseGetDoc(userRef);
-
-        if (docSnap.exists()) {
-            const parsed = docSnap.data();
-            gameState = { ...gameState, ...parsed };
-            console.log("✅ Veri başarıyla yüklendi:", parsed);
-        } else {
-            console.log("🆕 Yeni kullanıcı, varsayılan veri ile başlanıyor.");
-            await saveGame(); // İlk defa oluştur
-        }
-    } catch (error) {
-        console.error("❌ Veri çekme hatası:", error);
-        const localData = localStorage.getItem('nexusMinerV14');
-        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
-    }
-
-    finalizeLoad();
-}
-
-// YÜKLEME SONRASI İŞLEMLER
-function finalizeLoad() {
-    recalcStats();
-    
-    // OFFLINE KAZANÇ HESAPLAMA
-    if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
-        const now = Date.now();
-        const secondsPassed = (now - gameState.lastLogin) / 1000;
-        if (secondsPassed > 10) {
-            const earned = secondsPassed * gameState.income;
-            gameState.balance += earned;
-            document.getElementById('offline-amount').innerText = earned.toFixed(7);
-            document.getElementById('offline-modal').style.display = 'flex';
-        }
-    }
-
-    // OTOMATİK BAŞLATMA
-    if (gameState.hashrate > 0) {
-        gameState.mining = true;
-        activateSystem();
-    } else {
-        deactivateSystem();
-    }
-    
-    renderHistory();
-    updateUI();
-}
-
-function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
 
 function recalcStats() {
     let totalHash = 0;
@@ -207,27 +194,38 @@ function recalcStats() {
 function activateSystem() {
     const ind = document.getElementById('status-indicator');
     const txt = document.getElementById('status-text');
-    ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse');
-    txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.add('pulse-active');
+    if(ind) { ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse'); }
+    if(txt) { txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold"; }
+    
+    const hashEl = document.getElementById('dash-hash');
+    if(hashEl && hashEl.parentElement && hashEl.parentElement.parentElement) {
+        hashEl.parentElement.parentElement.classList.add('pulse-active');
+    }
     startLoop();
 }
 
 function deactivateSystem() {
     const ind = document.getElementById('status-indicator');
     const txt = document.getElementById('status-text');
-    ind.classList.remove('bg-green-500', 'animate-pulse'); ind.classList.add('bg-gray-500');
-    txt.innerText = "STANDBY"; txt.className = "text-gray-500 font-bold";
-    document.getElementById('dash-hash').parentElement.parentElement.classList.remove('pulse-active');
+    if(ind) { ind.classList.remove('bg-green-500', 'animate-pulse'); ind.classList.add('bg-gray-500'); }
+    if(txt) { txt.innerText = "STANDBY"; txt.className = "text-gray-500 font-bold"; }
+    
+    const hashEl = document.getElementById('dash-hash');
+    if(hashEl && hashEl.parentElement && hashEl.parentElement.parentElement) {
+        hashEl.parentElement.parentElement.classList.remove('pulse-active');
+    }
     clearInterval(minLoop);
 }
 
 function showPage(pageId) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-    document.getElementById('page-' + pageId).classList.add('active');
+    const p = document.getElementById('page-' + pageId);
+    if(p) p.classList.add('active');
+    
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     const mob = document.getElementById('nav-' + pageId);
     if(mob) mob.classList.add('active');
+    
     const deskIds = ['side-dashboard', 'side-market', 'side-inventory', 'side-wallet'];
     deskIds.forEach(id => {
         const el = document.getElementById(id);
@@ -244,6 +242,7 @@ function showPage(pageId) {
 
 function renderMarket() {
     const list = document.getElementById('market-list');
+    if(!list) return;
     list.innerHTML = '';
     products.forEach(p => {
         if(!gameState.inventory[p.id]) gameState.inventory[p.id] = 0;
@@ -276,8 +275,9 @@ function renderMarket() {
     updateUI();
 }
 
-// --- BUY LOGIC ---
 function buyWithTON(id) {
+    if(!isDataLoaded) { showToast("Wait for connection...", "error"); return; }
+    
     const p = products.find(x => x.id === id);
     if(gameState.balance >= p.priceTON) {
         gameState.balance -= p.priceTON;
@@ -288,7 +288,7 @@ function buyWithTON(id) {
 }
 
 function buyWithStars(id) {
-    // SIMULATED FAILURE
+    // Stars integration simulation
     const btn = event.currentTarget;
     const originalContent = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
@@ -303,6 +303,10 @@ function buyWithStars(id) {
 
 function addMachine(id, source) {
     const p = products.find(x => x.id === id);
+    
+    // Inventory init check
+    if(!gameState.inventory[id]) gameState.inventory[id] = 0;
+    
     gameState.inventory[id]++;
     
     if(!gameState.mining) {
@@ -316,11 +320,12 @@ function addMachine(id, source) {
     recalcStats();
     updateUI();
     renderMarket();
-    saveGame(); // Saves to Cloud now
+    saveGame(); // Firestore Save
 }
 
 function renderInventory() {
     const list = document.getElementById('inventory-list');
+    if(!list) return;
     list.innerHTML = '';
     let empty = true;
     products.forEach(p => {
@@ -345,6 +350,7 @@ function renderInventory() {
 
 function renderHistory() {
     const list = document.getElementById('history-list');
+    if(!list) return;
     if(gameState.history.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>'; return; }
     list.innerHTML = '';
     gameState.history.forEach(tx => {
@@ -370,13 +376,21 @@ function renderHistory() {
 
 function updateUI() {
     const b = gameState.balance.toFixed(7);
-    document.getElementById('main-balance').innerText = b + " TON";
-    document.getElementById('mobile-balance').innerText = b; 
-    document.getElementById('wallet-balance-display').innerText = b;
-    document.getElementById('dash-hash').innerText = gameState.hashrate.toLocaleString();
-    document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
-    document.getElementById('dash-income').innerText = gameState.income.toFixed(7);
-    document.getElementById('dash-devices').innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
+    const mainBal = document.getElementById('main-balance');
+    const mobBal = document.getElementById('mobile-balance');
+    const wallBal = document.getElementById('wallet-balance-display');
+    const dHash = document.getElementById('dash-hash');
+    const dDaily = document.getElementById('dash-daily');
+    const dInc = document.getElementById('dash-income');
+    const dDev = document.getElementById('dash-devices');
+
+    if(mainBal) mainBal.innerText = b + " TON";
+    if(mobBal) mobBal.innerText = b;
+    if(wallBal) wallBal.innerText = b;
+    if(dHash) dHash.innerText = gameState.hashrate.toLocaleString();
+    if(dDaily) dDaily.innerText = (gameState.income * 86400).toFixed(2);
+    if(dInc) dInc.innerText = gameState.income.toFixed(7);
+    if(dDev) dDev.innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
     
     // Check TON balance for buttons
     const tonButtons = document.querySelectorAll('.btn-ton-check');
@@ -387,6 +401,8 @@ function updateUI() {
 }
 
 function processWithdraw() {
+    if(!isDataLoaded) return;
+    
     const walletInput = document.getElementById('wallet-address');
     const amountInput = document.getElementById('withdraw-amount');
     const walletAddr = walletInput.value.trim();
@@ -405,7 +421,7 @@ function processWithdraw() {
     amountInput.value = '';
     updateUI();
     renderHistory();
-    saveGame(); // Cloud Save
+    saveGame();
     showToast("Withdrawal Request Sent", 'success');
 }
 
@@ -413,16 +429,19 @@ let minLoop;
 function startLoop() {
     clearInterval(minLoop);
     minLoop = setInterval(() => {
+        // Sadece görsel güncelleme ve RAM'deki bakiyeyi artırma
         gameState.balance += (gameState.income / 10);
         updateUI();
         updateChart(gameState.hashrate);
     }, 100);
 }
 
-// --- VISUALS ---
+// --- VISUALS (UNCHANGED) ---
 let chart;
 function initChart() {
-    const ctxChart = document.getElementById('miningChart').getContext('2d');
+    const cvs = document.getElementById('miningChart');
+    if(!cvs) return;
+    const ctxChart = cvs.getContext('2d');
     let gradient = ctxChart.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)'); gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
     chart = new Chart(ctxChart, {
@@ -432,12 +451,15 @@ function initChart() {
     });
 }
 function updateChart(val) {
+    if(!chart) return;
     const f = (Math.random() - 0.5) * (val * 0.15); let v = val > 0 ? val + f : 0; if(v<0) v=0;
     chart.data.datasets[0].data.push(v); chart.data.datasets[0].data.shift(); chart.update();
 }
 
 function initBg() {
-    const cvs = document.getElementById('bg-canvas'); const ctx = cvs.getContext('2d');
+    const cvs = document.getElementById('bg-canvas'); 
+    if(!cvs) return;
+    const ctx = cvs.getContext('2d');
     let w, h; const parts = [];
     function resize() { w=window.innerWidth; h=window.innerHeight; cvs.width=w; cvs.height=h; parts.length=0; const c=Math.min(Math.floor(w/15),100); for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); }
     window.addEventListener('resize', resize); resize();
