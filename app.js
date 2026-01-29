@@ -1,235 +1,365 @@
-// app.js
-// 1. ÖNCE FIREBASE'İ İÇERİ ALIYORUZ (IMPORT)
-import { db, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from './firebase-config.js';
+<!DOCTYPE html>
 
-console.log("🚀 Oyun Başlatılıyor...");
+<html lang="en">
 
-// --- 2. KULLANICI KİMLİĞİ ---
-const ROI_DAYS = 15;
-const SECONDS_IN_DAY = 86400;
+<head>
 
-let userID = localStorage.getItem('nexus_player_id');
-if (!userID) {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-        userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
-    } else {
-        userID = "user_" + Math.floor(Math.random() * 10000000);
-    }
-    localStorage.setItem('nexus_player_id', userID);
-}
-console.log("👤 ID:", userID);
+    <meta charset="UTF-8">
 
-// --- 3. ÜRÜN LİSTESİ ---
-const products = [
-    { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
-    { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
-    { id: 3, name: "GTX Cluster",    priceTON: 60,  priceStars: 300,  hash: 600,  icon: "fa-server",    color: "text-cyan-400" },
-    { id: 4, name: "RTX Farm",       priceTON: 90,  priceStars: 450,  hash: 900,  icon: "fa-layer-group", color: "text-blue-400" },
-    { id: 5, name: "ASIC Junior",    priceTON: 120, priceStars: 600,  hash: 1200, icon: "fa-industry",  color: "text-purple-500" },
-    { id: 6, name: "ASIC Pro",       priceTON: 150, priceStars: 750,  hash: 1500, icon: "fa-warehouse", color: "text-pink-500" },
-    { id: 7, name: "Industrial Rack", priceTON: 180, priceStars: 900,  hash: 1800, icon: "fa-city",      color: "text-yellow-400" },
-    { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
-];
-products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-let gameState = {
-    balance: 10.0000000, 
-    mining: false,
-    hashrate: 0,
-    income: 0,
-    inventory: {},
-    lastLogin: Date.now()
-};
+    <title>NEXUS MINER - Pro Structure</title>
 
-// --- BAŞLATMA ---
-document.addEventListener('DOMContentLoaded', () => {
-    renderMarket();
-    showPage('dashboard');
-    initChart();
-    initBg();
-    loadGame(); 
-
-    document.getElementById('btn-withdraw')?.addEventListener('click', processWithdraw);
-    setInterval(() => { saveGame(false); }, 30000); 
-    window.addEventListener('beforeunload', () => { saveGame(true); });
-});
-
-// --- VERİTABANI İŞLEMLERİ (Direkt 'db' kullanıyoruz) ---
-async function saveGame(showIcon = true) {
-    gameState.lastLogin = Date.now();
-    const ind = document.getElementById('save-indicator');
-    if(showIcon && ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
-
-    try {
-        const userRef = doc(db, "users", userID); // ARTIK window.firebaseDoc YOK, direkt doc var
-        await setDoc(userRef, gameState, { merge: true });
-        
-        if(showIcon && ind) { 
-            ind.innerHTML = '<i class="fa-solid fa-check"></i> Saved'; 
-            setTimeout(() => { ind.style.opacity = '0'; }, 2000);
-        }
-    } catch (error) {
-        console.error("Kayıt Hatası:", error);
-    }
-}
-
-async function loadGame() {
-    try {
-        const userRef = doc(db, "users", userID);
-        const docSnap = await getDoc(userRef);
-
-        if (docSnap.exists()) {
-            gameState = { ...gameState, ...docSnap.data() };
-            console.log("✅ Veri Yüklendi");
-            showToast("Cloud Data Loaded", "success");
-        } else {
-            console.log("🆕 Yeni Kayıt");
-            saveGame(true);
-        }
-    } catch (error) {
-        console.error("Yükleme Hatası:", error);
-    }
-    finalizeLoad();
-}
-
-function finalizeLoad() {
-    recalcStats();
-    if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
-        const now = Date.now();
-        const secondsPassed = (now - gameState.lastLogin) / 1000;
-        if (secondsPassed > 10) {
-            const earned = secondsPassed * gameState.income;
-            gameState.balance += earned;
-            document.getElementById('offline-amount').innerText = earned.toFixed(7);
-            document.getElementById('offline-modal').style.display = 'flex';
-        }
-    }
-    if (gameState.hashrate > 0) { gameState.mining = true; activateSystem(); } else { deactivateSystem(); }
-    fetchAndRenderHistory();
-    updateUI();
-}
-
-async function processWithdraw() {
-    const walletInput = document.getElementById('wallet-address');
-    const amountInput = document.getElementById('withdraw-amount');
-    const walletAddr = walletInput.value.trim();
-    const val = parseFloat(amountInput.value);
     
-    if (walletAddr.length < 5 || !val || val < 50 || val > gameState.balance) { showToast("Invalid Request", 'error'); return; } 
-    
-    gameState.balance -= val;
-    saveGame(true); 
-    
-    try {
-        const withdrawRef = collection(db, "users", userID, "withdrawals");
-        await addDoc(withdrawRef, {
-            amount: val,
-            addr: walletAddr,
-            status: "Pending",
-            date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
-            timestamp: Date.now()
-        });
-        showToast("Request Sent", 'success');
-        amountInput.value = '';
-        fetchAndRenderHistory();
-    } catch (error) {
-        console.error("Hata:", error);
-        gameState.balance += val; 
-    }
-}
 
-async function fetchAndRenderHistory() {
-    const list = document.getElementById('history-list');
-    if (!list) return;
-    try {
-        const historyRef = collection(db, "users", userID, "withdrawals");
-        const q = query(historyRef, orderBy("timestamp", "desc"));
-        const querySnapshot = await getDocs(q);
-        
-        list.innerHTML = '';
-        if (querySnapshot.empty) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No history.</div>'; return; }
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        querySnapshot.forEach((doc) => {
-            const tx = doc.data();
-            let statusColor = (tx.status.toLowerCase().includes("send") || tx.status.toLowerCase().includes("sent")) ? "text-green-500" : "text-yellow-500";
-            let icon = (statusColor === "text-green-500") ? "fa-check-circle" : "fa-clock";
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body class="flex">
+
+
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
+
+    <div id="toast-container"></div>
+
+
+
+    <div id="offline-modal">
+
+        <div class="modal-content">
+
+            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500">
+
+                <i class="fa-solid fa-sack-dollar text-3xl"></i>
+
+            </div>
+
+            <h2 class="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
+
+            <p class="text-gray-400 text-sm mb-6">Your rigs continued mining while you were away.</p>
+
             
-            const item = document.createElement('div');
-            item.className = "bg-black/30 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition mb-2";
-            item.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-white/5 rounded-lg ${statusColor}"><i class="fa-solid ${icon}"></i></div>
-                    <div><div class="text-xs text-gray-400">Withdrawal</div><div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div></div>
+
+            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Offline Earnings</div>
+
+                <div class="text-3xl font-bold text-white digit-font neon-green mt-1" id="offline-amount">0.00</div>
+
+                <div class="text-xs text-green-500 font-bold">TON COIN</div>
+
+            </div>
+
+
+
+            <button onclick="window.gameApp.closeModal()" class="w-full btn-main py-3 rounded-xl font-bold uppercase">Collect & Continue</button>
+
+        </div>
+
+    </div>
+
+
+
+    <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20">
+
+        <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
+
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
+
+                <i class="fa-solid fa-cube text-xl"></i>
+
+            </div>
+
+            <div>
+
+                <h1 class="text-2xl font-black tracking-widest text-white italic">NEXUS</h1>
+
+                <span class="text-[10px] text-cyan-400 tracking-[0.3em] font-bold">PROTOCOL</span>
+
+            </div>
+
+        </div>
+
+        <nav class="flex-1 p-6 space-y-4">
+
+            <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+
+                <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Dashboard</span>
+
+            </div>
+
+            <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+
+                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Global Market</span>
+
+            </div>
+
+            <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+
+                <i class="fa-solid fa-server text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Inventory</span>
+
+            </div>
+
+            <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+
+                <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Wallet</span>
+
+            </div>
+
+        </nav>
+
+        <div class="p-6 text-xs text-gray-500 text-center">
+
+            v14.0 Production Ready<br>Client-Side Core
+
+        </div>
+
+    </aside>
+
+
+
+    <main class="flex-1 h-full overflow-y-auto relative no-scrollbar bg-gradient-to-b from-[#020205] to-[#0a0f1e]">
+
+        
+
+        <div class="sticky top-0 z-40 p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
+
+            <div class="flex items-center gap-4">
+
+                <div class="hidden md:block">
+
+                    <h2 class="text-gray-400 text-xs tracking-widest uppercase">Mined Assets</h2>
+
+                    <div class="text-3xl font-bold text-white digit-font neon-blue mt-1" id="main-balance">0.0000000</div>
+
                 </div>
-                <div class="text-right">
-                    <div class="text-xs ${statusColor} font-bold flex items-center justify-end gap-1 uppercase">${tx.status}</div>
-                    <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
-                </div>`;
-            list.appendChild(item);
-        });
-    } catch (error) { console.error(error); }
-}
 
-// --- DİĞER FONKSİYONLAR (UI, MARKET, VB.) ---
-function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
-function recalcStats() {
-    let totalHash = 0; let totalIncome = 0;
-    products.forEach(p => { if(gameState.inventory[p.id]) { totalHash += p.hash * gameState.inventory[p.id]; totalIncome += p.income * gameState.inventory[p.id]; } });
-    gameState.hashrate = totalHash; gameState.income = totalIncome;
-}
-function activateSystem() { document.getElementById('status-indicator').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse"; document.getElementById('status-text').innerText = "ONLINE"; document.getElementById('status-text').className = "text-green-400 font-bold"; startLoop(); }
-function deactivateSystem() { document.getElementById('status-indicator').className = "w-2 h-2 rounded-full bg-gray-500"; document.getElementById('status-text').innerText = "STANDBY"; document.getElementById('status-text').className = "text-gray-500 font-bold"; clearInterval(minLoop); }
+                <div class="md:hidden flex items-center gap-2">
 
-function buyWithTON(id) { const p = products.find(x => x.id === id); if(gameState.balance >= p.priceTON) { gameState.balance -= p.priceTON; addMachine(id); } else { showToast("Insufficient TON Balance", 'error'); } }
-function buyWithStars(id) { showToast("Star Payment Simulation: Success (No Charge)", 'star'); }
-function addMachine(id) { 
-    const p = products.find(x => x.id === id); 
-    if(!gameState.inventory[id]) gameState.inventory[id] = 0; 
-    gameState.inventory[id]++; 
-    if(!gameState.mining) { gameState.mining = true; activateSystem(); } 
-    showToast(`Purchased ${p.name}!`, 'success'); 
-    recalcStats(); updateUI(); renderMarket(); saveGame(true); 
-}
+                    <i class="fa-solid fa-gem text-cyan-400"></i> <span class="font-bold text-xl digit-font">NEXUS</span>
 
-function renderMarket() {
-    const list = document.getElementById('market-list'); if(!list) return; list.innerHTML = '';
-    products.forEach(p => {
-        const count = gameState.inventory[p.id] || 0;
-        const dailyInc = (p.income * 86400).toFixed(2);
-        const div = document.createElement('div');
-        div.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50";
-        div.innerHTML = `<div class="flex justify-between items-start mb-4"><div class="p-4 bg-black/40 rounded-xl ${p.color} text-2xl shadow-inner border border-white/5"><i class="fa-solid ${p.icon}"></i></div><div class="text-xs bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-700">Owned: ${count}</div></div><div class="mb-4"><h3 class="font-bold text-lg text-white">${p.name}</h3><div class="flex items-center gap-3 mt-2 text-xs"><span class="text-gray-400"><i class="fa-solid fa-bolt text-yellow-500"></i> ${p.hash} TH/s</span></div><div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div></div><div class="flex gap-2"><button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">${p.priceTON} TON</button><button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 btn-star py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1">${p.priceStars} <i class="fa-solid fa-star text-white"></i></button></div>`;
-        list.appendChild(div);
-    }); updateUI();
-}
+                </div>
 
-function updateUI() {
-    const b = gameState.balance.toFixed(7);
-    if(document.getElementById('main-balance')) document.getElementById('main-balance').innerText = b + " TON";
-    if(document.getElementById('mobile-balance')) document.getElementById('mobile-balance').innerText = b; 
-    if(document.getElementById('wallet-balance-display')) document.getElementById('wallet-balance-display').innerText = b;
-    if(document.getElementById('dash-hash')) document.getElementById('dash-hash').innerText = gameState.hashrate.toLocaleString();
-    if(document.getElementById('dash-daily')) document.getElementById('dash-daily').innerText = (gameState.income * 86400).toFixed(2);
-    if(document.getElementById('dash-income')) document.getElementById('dash-income').innerText = gameState.income.toFixed(7);
-    if(document.getElementById('dash-devices')) document.getElementById('dash-devices').innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
-    document.querySelectorAll('.btn-ton-check').forEach(btn => { const price = parseFloat(btn.getAttribute('data-price')); btn.disabled = gameState.balance < price; });
-}
+            </div>
 
-function renderInventory() {
-    const list = document.getElementById('inventory-list'); if(!list) return; list.innerHTML = ''; let empty = true;
-    products.forEach(p => {
-        const count = gameState.inventory[p.id] || 0;
-        if(count > 0) { empty = false; const div = document.createElement('div'); div.className = "glass-panel p-4 rounded-xl flex items-center gap-4 border-l-4 border-cyan-500 bg-gradient-to-r from-cyan-900/10 to-transparent"; div.innerHTML = `<div class="w-12 h-12 bg-black/40 rounded-lg flex items-center justify-center ${p.color} text-2xl"><i class="fa-solid ${p.icon}"></i></div><div class="flex-1"><h4 class="font-bold text-white">${p.name}</h4><div class="text-xs text-gray-400">Total: <span class="text-white">${(p.hash * count).toLocaleString()} TH/s</span></div></div><div class="text-xl font-bold digit-font text-white bg-white/5 px-3 py-1 rounded-lg">x${count}</div>`; list.appendChild(div); }
-    });
-    if(empty) list.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty.</div>';
-}
+            <div class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.2)]">
 
-function showPage(pageId) { document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active')); const target = document.getElementById('page-' + pageId); if(target) target.classList.add('active'); document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active')); const mob = document.getElementById('nav-' + pageId); if(mob) mob.classList.add('active'); if(pageId === 'inventory') renderInventory(); if(pageId === 'wallet') fetchAndRenderHistory(); }
-function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); if(!container) return; const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check'); toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`; container.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
-let minLoop; function startLoop() { clearInterval(minLoop); minLoop = setInterval(() => { gameState.balance += (gameState.income / 10); updateUI(); updateChart(gameState.hashrate); }, 100); }
-let chart; function initChart() { const el = document.getElementById('miningChart'); if(!el) return; const ctxChart = el.getContext('2d'); let gradient = ctxChart.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)'); gradient.addColorStop(1, 'rgba(0, 242, 255, 0)'); chart = new Chart(ctxChart, { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: '#00f2ff', backgroundColor: gradient, borderWidth: 3, tension: 0.4, pointRadius: 0, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } }, animation: { duration: 0 } } }); }
-function updateChart(val) { if(!chart) return; const f = (Math.random() - 0.5) * (val * 0.15); let v = val > 0 ? val + f : 0; if(v<0) v=0; chart.data.datasets[0].data.push(v); chart.data.datasets[0].data.shift(); chart.update(); }
-function initBg() { const cvs = document.getElementById('bg-canvas'); if(!cvs) return; const ctx = cvs.getContext('2d'); let w, h; const parts = []; function resize() { w=window.innerWidth; h=window.innerHeight; cvs.width=w; cvs.height=h; parts.length=0; const c=Math.min(Math.floor(w/15),100); for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); } window.addEventListener('resize', resize); resize(); function anim() { ctx.clearRect(0,0,w,h); for(let i=0;i<parts.length;i++) { let p=parts[i]; p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.s,0,Math.PI*2); ctx.fillStyle=`rgba(0,242,255,${0.3+Math.random()*0.2})`; ctx.fill(); for(let j=i+1;j<parts.length;j++) { let p2=parts[j]; let d=Math.hypot(p.x-p2.x,p.y-p2.y); if(d<120) { ctx.beginPath(); ctx.strokeStyle=`rgba(0,242,255,${1-d/120})`; ctx.lineWidth=0.5; ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } } requestAnimationFrame(anim); } anim(); }
+                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
 
-// Global Erişim
-window.gameApp = { buyWithTON, buyWithStars, processWithdraw, closeModal, showPage, fetchAndRenderHistory };
+                <span id="status-text">STANDBY</span>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="p-4 md:p-8 max-w-7xl mx-auto">
+
+            
+
+            <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden">
+
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
+
+                <div class="text-gray-400 text-xs font-bold tracking-widest mb-1">WALLET BALANCE</div>
+
+                <div class="text-3xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
+
+                <div class="text-cyan-500 text-xs font-bold mt-1 tracking-widest">TON NETWORK</div>
+
+            </div>
+
+
+
+            <div id="page-dashboard" class="page-section active">
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+                    <div class="glass-panel p-5 rounded-2xl relative">
+
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Hash Power</div>
+
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
+
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl relative">
+
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
+
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
+
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl relative">
+
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
+
+                        <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
+
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl relative">
+
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Active Rigs</div>
+
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
+
+                    </div>
+
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-2 border-t-cyan-500/50">
+
+                    <h3 class="text-lg font-bold text-white mb-6"><i class="fa-solid fa-chart-area text-cyan-400"></i> Network Hashrate</h3>
+
+                    <div class="w-full h-64 md:h-80"><canvas id="miningChart"></canvas></div>
+
+                </div>
+
+            </div>
+
+
+
+            <div id="page-market" class="page-section">
+
+                <div class="flex justify-between items-center mb-6">
+
+                    <div>
+
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+
+                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
+
+                        </h2>
+
+                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
+
+                    </div>
+
+                </div>
+
+                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+
+            </div>
+
+
+
+            <div id="page-inventory" class="page-section">
+
+                <h2 class="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
+
+                <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+            </div>
+
+
+
+            <div id="page-wallet" class="page-section">
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    <div class="glass-panel p-8 rounded-3xl text-center border border-gray-700 h-fit">
+
+                        <div class="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
+
+                            <i class="fa-solid fa-wallet text-3xl text-cyan-400"></i>
+
+                        </div>
+
+                        <div class="text-gray-400 text-sm tracking-widest uppercase mb-2">Withdrawable Balance</div>
+
+                        <div class="text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
+
+                        <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
+
+
+
+                        <div class="text-left space-y-4">
+
+                            <div>
+
+                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
+
+                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
+
+                            </div>
+
+                            <div>
+
+                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
+
+                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
+
+                            </div>
+
+                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4">
+
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
+
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+
+                            <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
+
+                        </h3>
+
+                        <div class="flex-1 overflow-y-auto pr-2 space-y-3 custom-scroll" id="history-list">
+
+                            <div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+
+    <nav class="bottom-nav">
+
+        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
+
+        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
+
+        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
+
+        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
+
+    </nav>
+
+
+
+    <script type="module" src="app.js"></script>
+
+</body>
+
+</html>
