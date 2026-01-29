@@ -2,58 +2,128 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS MINER</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Bağlantı Testi</title>
+    <style>
+        body { background-color: #111; color: white; font-family: monospace; padding: 20px; }
+        #log-box { 
+            background: #000; border: 1px solid #333; padding: 15px; 
+            height: 400px; overflow-y: auto; white-space: pre-wrap; font-size: 14px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; font-weight: bold; }
+        .info { color: #0ff; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin-bottom: 20px; font-size: 16px;}
+    </style>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-auth-compat.js"></script>
 </head>
-<body class="flex bg-[#020205] text-white overflow-hidden">
+<body>
 
-    <canvas id="bg-canvas"></canvas>
+    <h1>🔥 Firebase Bağlantı Testi</h1>
+    <p>Aşağıdaki butona bas ve çıkan yazıları oku (veya ekran görüntüsü at).</p>
+    <button onclick="runTest()">TESTİ BAŞLAT</button>
+    
+    <div id="log-box">Loglar bekleniyor...</div>
 
-    <div id="save-indicator" class="fixed top-4 right-4 z-[100] opacity-0 transition-opacity duration-500 bg-cyan-500/20 px-4 py-2 rounded-lg border border-cyan-500 text-xs text-cyan-400 flex items-center gap-2">
-        <i class="fa-solid fa-cloud"></i> <span>Ready</span>
-    </div>
+    <script>
+        // --- 1. AYARLAR ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
+            authDomain: "tonm-77373.firebaseapp.com",
+            projectId: "tonm-77373",
+            storageBucket: "tonm-77373.firebasestorage.app",
+            messagingSenderId: "507031118335",
+            appId: "1:507031118335:web:1d209e303dca154ec487ca",
+            measurementId: "G-5EV1T50VK8"
+        };
 
-    <main class="flex-1 h-full overflow-y-auto relative no-scrollbar p-6">
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h2 class="text-gray-400 text-[10px] tracking-widest uppercase">Total Balance</h2>
-                <div class="text-3xl font-bold text-white digit-font neon-blue" id="main-balance">0.0000000</div>
-            </div>
-            <div class="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] font-bold flex items-center gap-2">
-                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                <span id="status-text">CONNECTING...</span>
-            </div>
-        </div>
+        // --- 2. LOG FONKSİYONU ---
+        function log(msg, type = 'info') {
+            const box = document.getElementById('log-box');
+            const color = type === 'error' ? 'red' : (type === 'success' ? '#0f0' : '#0ff');
+            const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : 'ℹ️');
+            box.innerHTML += `<div style="color:${color}">${icon} ${msg}</div>`;
+            console.log(msg);
+        }
 
-        <div id="page-dashboard" class="page-section">
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="glass-panel p-4 rounded-2xl border border-gray-800">
-                    <div class="text-gray-500 text-[10px] uppercase">Hashrate</div>
-                    <div class="text-xl font-bold mt-1"><span id="dash-hash">0</span> TH/s</div>
-                </div>
-                <div class="glass-panel p-4 rounded-2xl border border-gray-800">
-                    <div class="text-gray-500 text-[10px] uppercase">Daily Income</div>
-                    <div class="text-xl font-bold mt-1 text-green-400"><span id="dash-daily">0.00</span> TON</div>
-                </div>
-            </div>
-            
-            <h3 class="font-bold mb-4 border-l-4 border-cyan-500 pl-3">Mining Market</h3>
-            <div id="market-list" class="grid grid-cols-1 gap-4 pb-20">
-                </div>
-        </div>
-    </main>
+        // --- 3. TEST FONKSİYONU ---
+        async function runTest() {
+            document.getElementById('log-box').innerHTML = ''; // Temizle
+            log("Test Başlatılıyor...", 'info');
 
-    <script src="firebase-config.js"></script>
-    <script src="app.js"></script>
+            // ADIM 1: Başlatma
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    log("Firebase Başlatıldı (InitializeApp)", 'success');
+                } else {
+                    log("Firebase zaten açık.", 'info');
+                }
+            } catch (e) {
+                log("ADIM 1 HATA: Firebase Başlatılamadı! Kodda hata var.\n" + e.message, 'error');
+                return;
+            }
+
+            const db = firebase.firestore();
+            const auth = firebase.auth();
+
+            // ADIM 2: Auth (Giriş)
+            log("Anonim Giriş deneniyor...", 'info');
+            try {
+                await auth.signInAnonymously();
+                const user = auth.currentUser;
+                if(user) {
+                    log(`Giriş Başarılı! User ID: ${user.uid}`, 'success');
+                } else {
+                    throw new Error("Kullanıcı objesi boş geldi.");
+                }
+            } catch (e) {
+                log("ADIM 2 HATA: Giriş Yapılamadı!", 'error');
+                log("SEBEP: " + e.code + " - " + e.message, 'error');
+                log("ÇÖZÜM: Firebase Panel > Authentication > Sign-in Method > Anonymous 'Enable' yapılmamış!", 'info');
+                return;
+            }
+
+            // ADIM 3: Veri Yazma
+            log("Veritabanına yazma deneniyor...", 'info');
+            try {
+                await db.collection("test_logs").doc("test_doc").set({
+                    mesaj: "Bu bir test verisidir",
+                    zaman: new Date().toISOString()
+                });
+                log("VERİ YAZMA BAŞARILI! Veritabanı çalışıyor.", 'success');
+            } catch (e) {
+                log("ADIM 3 HATA: Veri Yazılamadı!", 'error');
+                log("HATA KODU: " + e.code, 'error');
+                
+                if(e.code === 'permission-denied') {
+                    log("⚠️ SORUN BULUNDU: İZİN HATASI (Permission Denied)", 'error');
+                    log("ÇÖZÜM: Firebase Panel > Firestore Database > Rules kısmına git ve şu kodu yapıştır:", 'info');
+                    log(`allow read, write: if request.auth != null;`, 'info');
+                } else {
+                    log("Bilinmeyen bir hata: " + e.message, 'error');
+                }
+                return;
+            }
+
+            // ADIM 4: Veri Okuma
+            log("Yazılan veriyi okuma deneniyor...", 'info');
+            try {
+                const doc = await db.collection("test_logs").doc("test_doc").get();
+                if(doc.exists) {
+                    log("VERİ OKUMA BAŞARILI! Gelen Veri:", 'success');
+                    log(JSON.stringify(doc.data()), 'info');
+                    log("🎉 TEBRİKLER! SİSTEM %100 ÇALIŞIYOR.", 'success');
+                } else {
+                    log("Veri yazıldı ama okunamadı (Garip bir durum).", 'error');
+                }
+            } catch (e) {
+                log("Okuma Hatası: " + e.message, 'error');
+            }
+        }
+    </script>
 </body>
 </html>
