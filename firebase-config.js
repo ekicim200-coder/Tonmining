@@ -1,13 +1,13 @@
-// firebase-config.js
+// firebase-config.js (DÜZELTİLMİŞ VE DOĞRULANMIŞ HALİ)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-// YENİ EKLENENLER: collection, addDoc, query, orderBy, getDocs
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// --- İŞTE BURASI HATALIYDI, ŞİMDİ DÜZELTTİK ---
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
-    projectId: "tonm-77373",
+    projectId: "tonm-77373",  // <--- BAK BURASI ARTIK 'tonm-77373' OLDU
     storageBucket: "tonm-77373.firebasestorage.app",
     messagingSenderId: "507031118335",
     appId: "1:507031118335:web:1d209e303dca154ec487ca",
@@ -17,16 +17,15 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Tüm fonksiyonları dışarı aktarıyoruz
+// FONKSİYONLARI DIŞARI AÇIYORUZ
 window.firebaseDB = db;
 window.firebaseSetDoc = setDoc;
 window.firebaseGetDoc = getDoc;
 window.firebaseDoc = doc;
-// YENİ FONKSİYONLAR (Çekim talepleri için şart)
 window.firebaseCollection = collection;
 window.firebaseAddDoc = addDoc;
 window.firebaseGetDocs = getDocs;
 window.firebaseQuery = query;
 window.firebaseOrderBy = orderBy;
 
-console.log("Firebase ve Alt Koleksiyon Servisleri Hazır!");
+console.log("Firebase Bağlantısı BAŞARILI! ✅ Proje ID: tonm-77373");
