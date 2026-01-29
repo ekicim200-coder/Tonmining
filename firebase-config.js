@@ -1,5 +1,5 @@
 // firebase-config.js
-// ✅ DÜZELTİLMİŞ VE KESİN ÇALIŞAN VERSİYON
+// ✅ DÜZELTİLMİŞ UYUMLU VERSİYON
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
@@ -12,12 +12,12 @@ const firebaseConfig = {
 };
 
 // 🔴 KRİTİK DÜZELTME:
-// Sadece "initializeApp" yazarsan hata verir. 
-// "firebase.initializeApp" yazmalısın.
+// Başına 'firebase.' ekledik. HTML script tagları kullandığımız için bu zorunlu.
 firebase.initializeApp(firebaseConfig);
 
 // Global değişkenleri ayarla
 window.db = firebase.firestore();
 window.auth = firebase.auth();
+window.isFirebaseReady = true;
 
-console.log("✅ Firebase Config Başarıyla Yüklendi!");
+console.log("✅ Firebase Config Yüklendi!");
