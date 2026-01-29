@@ -1,5 +1,5 @@
 // firebase-config.js
-// IMPORT YOK! index.html'deki script taglarından geliyor.
+// DÜZELTİLMİŞ VERSİYON
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
@@ -11,12 +11,11 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Firebase'i başlat
+// DİKKAT: Burada 'firebase.' öneki şarttır!
 firebase.initializeApp(firebaseConfig);
 
-// Değişkenleri window'a ata ki app.js erişebilsin
+// Veritabanı ve Auth araçlarını pencereye (window) sabitle
 window.db = firebase.firestore();
 window.auth = firebase.auth();
-window.isFirebaseReady = true; // Bayrak
 
-console.log("🔥 Firebase Config Yüklendi ve Hazır!");
+console.log("✅ Firebase (Compat Modu) Başlatıldı!");
