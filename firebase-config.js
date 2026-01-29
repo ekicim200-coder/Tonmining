@@ -9,13 +9,13 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// Klasik yöntemle başlatma
+// initializeApp hatasını bitiren satır:
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// Global değişkenler (app.js bunları kullanacak)
+// Bunları window'a atıyoruz ki app.js "Görmedim, duymadım" demesin.
 window.db = firebase.firestore();
 window.auth = firebase.auth();
 
-console.log("🔥 Firebase Bağlantısı Başarılı!");
+console.log("🔥 Firebase Config OK.");
