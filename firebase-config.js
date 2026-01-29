@@ -1,6 +1,6 @@
 // firebase-config.js
 
-// 1. Firebase Ayarları
+// 1. SENİN PROJE BİLGİLERİN
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
     authDomain: "tonm-77373.firebaseapp.com",
@@ -11,16 +11,22 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// 2. Başlatma (Hata korumalı)
+// 2. BAĞLANTIYI BAŞLAT (Eski Usül - Garanti Yöntem)
+let db;
+
 try {
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Firebase zaten yüklü mü kontrol et
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     
-    // Veritabanını diğer dosyaların görmesi için PENCEREYE (Window) sabitliyoruz
-    window.db = db; 
+    // Veritabanını başlat ve herkesin kullanımına aç
+    db = firebase.firestore();
+    window.db = db; // Global yapıyoruz ki diğer dosyalar görsün
+
+    console.log("🔥 Veritabanı Bağlantısı KURULDU.");
     
-    console.log("✅ Firebase Bağlantısı Başarılı!");
 } catch (error) {
-    console.error("Firebase Hatası:", error);
-    alert("Bağlantı Hatası: " + error.message);
+    console.error("Firebase Başlatma Hatası:", error);
+    alert("Veritabanına bağlanılamadı! İnternetini kontrol et.");
 }
