@@ -1,23 +1,40 @@
-// --- 1. KULLANICI KİMLİĞİ VE AYARLAR ---
+// --- 1. FIREBASE BAĞLANTISI (ARTIK EN BAŞTA) ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Senin Proje Bilgilerin (DOĞRULANDI)
+const firebaseConfig = {
+    apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
+    authDomain: "tonm-77373.firebaseapp.com",
+    projectId: "tonm-77373",
+    storageBucket: "tonm-77373.firebasestorage.app",
+    messagingSenderId: "507031118335",
+    appId: "1:507031118335:web:1d209e303dca154ec487ca",
+    measurementId: "G-5EV1T50VK8"
+};
+
+// Firebase'i Başlat
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+console.log("🔥 Firebase Veritabanı Bağlandı!");
+
+// --- 2. KULLANICI KİMLİĞİ VE AYARLAR ---
 const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
 
-// En önemli kısım: Tarayıcı hafızasından ID okuma
 let userID = localStorage.getItem('nexus_player_id');
 
-// Eğer hafızada yoksa (ve Telegram değilse) yeni oluştur ve kaydet
 if (!userID) {
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
         userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
     } else {
         userID = "user_" + Math.floor(Math.random() * 10000000);
     }
-    localStorage.setItem('nexus_player_id', userID); // ID'yi hafızaya kilitle
+    localStorage.setItem('nexus_player_id', userID);
 }
+console.log("👤 Aktif Kullanıcı ID:", userID);
 
-console.log("AKTİF KULLANICI ID:", userID); // Konsolda bunu kontrol et, hep aynı kalmalı
-
-// --- 2. ÜRÜN LİSTESİ ---
+// --- 3. ÜRÜN LİSTESİ ---
 const products = [
     { id: 1, name: "Nano Node",      priceTON: 10,  priceStars: 50,   hash: 100,  icon: "fa-microchip", color: "text-gray-400" },
     { id: 2, name: "Micro Rig",      priceTON: 30,  priceStars: 150,  hash: 300,  icon: "fa-memory",    color: "text-green-400" },
@@ -31,58 +48,47 @@ const products = [
 
 products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
 
-// --- 3. OYUN DURUMU (DEFAULT) ---
+// --- 4. OYUN DURUMU (DEFAULT) ---
 let gameState = {
     balance: 10.0000000, 
     mining: false,
     hashrate: 0,
     income: 0,
     inventory: {},
-    history: [],
     lastLogin: Date.now()
 };
 
-// --- 4. BAŞLATMA ---
+// --- 5. BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Oyun Başlatılıyor...");
-    
-    if(window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.expand();
-    }
-
-    // Önce arayüzü çiz
+    // Arayüzü çiz
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
-    // SONRA VERİYİ YÜKLE
+    // Veriyi yükle
     loadGame(); 
 
-    // Kayıt Tetikleyiciler
+    // Olay Dinleyicileri
     document.getElementById('btn-withdraw')?.addEventListener('click', processWithdraw);
-    setInterval(() => { saveGame(false); }, 30000); // 30 saniyede bir otomatik kaydet (Sessiz)
+    setInterval(() => { saveGame(false); }, 30000); 
     window.addEventListener('beforeunload', () => { saveGame(true); });
 });
 
-// --- 5. FIREBASE KAYIT SİSTEMİ ---
+// --- 6. VERİTABANI İŞLEMLERİ (ARTIK DİREKT DEĞİŞKENLERLE) ---
+
 async function saveGame(showIcon = true) {
     gameState.lastLogin = Date.now();
-    
     const ind = document.getElementById('save-indicator');
     if(showIcon && ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
 
     try {
-        if (window.firebaseDB) {
-            const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-            // MERGE TRUE: Var olan verinin üzerine yaz
-            await window.firebaseSetDoc(userRef, gameState, { merge: true });
-            console.log("Veri Buluta Kaydedildi ✅");
-            
-            if(showIcon && ind) { 
-                ind.innerHTML = '<i class="fa-solid fa-check"></i> Saved'; 
-                setTimeout(() => { ind.style.opacity = '0'; }, 2000);
-            }
+        const userRef = doc(db, "users", userID);
+        await setDoc(userRef, gameState, { merge: true });
+        
+        if(showIcon && ind) { 
+            ind.innerHTML = '<i class="fa-solid fa-check"></i> Saved'; 
+            setTimeout(() => { ind.style.opacity = '0'; }, 2000);
         }
     } catch (error) {
         console.error("KAYIT HATASI:", error);
@@ -90,34 +96,30 @@ async function saveGame(showIcon = true) {
 }
 
 async function loadGame() {
-    console.log("Veri Çekiliyor... ID:", userID);
+    console.log("Veri Çekiliyor...");
     try {
-        if (window.firebaseDB) {
-            const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
-            const docSnap = await window.firebaseGetDoc(userRef);
+        const userRef = doc(db, "users", userID);
+        const docSnap = await getDoc(userRef);
 
-            if (docSnap.exists()) {
-                const parsed = docSnap.data();
-                // Gelen veriyi mevcut state ile birleştir
-                gameState = { ...gameState, ...parsed };
-                console.log("Veri Yüklendi:", gameState);
-                showToast("Data Loaded from Cloud", "success");
-            } else {
-                console.log("Kayıtlı veri yok, yeni kullanıcı başlatılıyor.");
-                saveGame(true); // İlk kaydı oluştur
-            }
+        if (docSnap.exists()) {
+            const parsed = docSnap.data();
+            gameState = { ...gameState, ...parsed };
+            console.log("✅ Veri Yüklendi:", gameState);
+            showToast("Cloud Data Loaded", "success");
+        } else {
+            console.log("🆕 Yeni kullanıcı, kayıt açılıyor...");
+            saveGame(true);
         }
     } catch (error) {
         console.error("YÜKLEME HATASI:", error);
     }
-
     finalizeLoad();
 }
 
 function finalizeLoad() {
     recalcStats();
     
-    // Offline Kazanç Hesapla
+    // Offline Kazanç
     if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
         const now = Date.now();
         const secondsPassed = (now - gameState.lastLogin) / 1000;
@@ -129,7 +131,6 @@ function finalizeLoad() {
         }
     }
 
-    // Sistem Başlatma
     if (gameState.hashrate > 0) {
         gameState.mining = true;
         activateSystem();
@@ -137,11 +138,97 @@ function finalizeLoad() {
         deactivateSystem();
     }
     
-    renderHistory();
+    fetchAndRenderHistory();
     updateUI();
 }
 
-// --- 6. OYUN FONKSİYONLARI ---
+// --- 7. ÇEKİM VE GEÇMİŞ İŞLEMLERİ ---
+
+async function processWithdraw() {
+    const walletInput = document.getElementById('wallet-address');
+    const amountInput = document.getElementById('withdraw-amount');
+    const walletAddr = walletInput.value.trim();
+    const val = parseFloat(amountInput.value);
+    
+    if (walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
+    if (!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
+    if (val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
+    if (val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
+    
+    gameState.balance -= val;
+    saveGame(true); 
+    
+    try {
+        const withdrawRef = collection(db, "users", userID, "withdrawals");
+        await addDoc(withdrawRef, {
+            amount: val,
+            addr: walletAddr,
+            status: "Pending",
+            date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
+            timestamp: Date.now()
+        });
+        
+        showToast("Request Sent", 'success');
+        amountInput.value = '';
+        fetchAndRenderHistory();
+    } catch (error) {
+        console.error("Çekim Hatası:", error);
+        showToast("Connection Error", 'error');
+        gameState.balance += val; 
+    }
+}
+
+async function fetchAndRenderHistory() {
+    const list = document.getElementById('history-list');
+    if (!list) return;
+    list.innerHTML = '<div class="text-center text-gray-500 text-xs py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>';
+
+    try {
+        const historyRef = collection(db, "users", userID, "withdrawals");
+        const q = query(historyRef, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        list.innerHTML = '';
+        if (querySnapshot.empty) {
+            list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No history.</div>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const tx = doc.data();
+            let statusColor = "text-yellow-500";
+            let icon = "fa-clock";
+            let statusText = tx.status;
+            
+            if (statusText.toLowerCase().includes("send") || statusText.toLowerCase().includes("sent")) {
+                statusColor = "text-green-500";
+                icon = "fa-check-circle";
+            }
+
+            const item = document.createElement('div');
+            item.className = "bg-black/30 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition mb-2";
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/5 rounded-lg ${statusColor}"><i class="fa-solid ${icon}"></i></div>
+                    <div>
+                        <div class="text-xs text-gray-400">Withdrawal</div>
+                        <div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs ${statusColor} font-bold flex items-center justify-end gap-1 uppercase">${statusText}</div>
+                    <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    } catch (error) {
+        console.error("Geçmiş Hatası:", error);
+        list.innerHTML = '<div class="text-center text-red-500 text-xs">Error.</div>';
+    }
+}
+
+// --- 8. DİĞER FONKSİYONLAR ---
 
 function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
 
@@ -174,25 +261,21 @@ function deactivateSystem() {
     clearInterval(minLoop);
 }
 
-// --- SATIN ALMA ---
-
 function buyWithTON(id) {
     const p = products.find(x => x.id === id);
     if(gameState.balance >= p.priceTON) {
         gameState.balance -= p.priceTON;
-        addMachine(id, "Bought with TON");
+        addMachine(id);
     } else {
         showToast("Insufficient TON Balance", 'error');
     }
 }
 
 function buyWithStars(id) {
-    // SİMÜLASYON: Para gitmez ama makine de gelmez (İsteğin buydu)
-    // Eğer makine de gelsin istiyorsan: addMachine(id) eklemelisin.
     showToast("Star Payment Simulation: Success (No Charge)", 'star');
 }
 
-function addMachine(id, source) {
+function addMachine(id) {
     const p = products.find(x => x.id === id);
     if(!gameState.inventory[id]) gameState.inventory[id] = 0;
     gameState.inventory[id]++;
@@ -201,18 +284,12 @@ function addMachine(id, source) {
         gameState.mining = true;
         activateSystem();
     }
-
     showToast(`Purchased ${p.name}!`, 'success');
-
     recalcStats();
     updateUI();
     renderMarket();
-    
-    // KRİTİK: İşlem biter bitmez kaydet!
     saveGame(true);
 }
-
-// --- ARAYÜZ ---
 
 function renderMarket() {
     const list = document.getElementById('market-list');
@@ -221,7 +298,6 @@ function renderMarket() {
     products.forEach(p => {
         const count = gameState.inventory[p.id] || 0;
         const dailyInc = (p.income * 86400).toFixed(2);
-        
         const div = document.createElement('div');
         div.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50";
         div.innerHTML = `
@@ -235,12 +311,8 @@ function renderMarket() {
                 <div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div>
             </div>
             <div class="flex gap-2">
-                <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">
-                    ${p.priceTON} TON
-                </button>
-                <button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 btn-star py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1">
-                    ${p.priceStars} <i class="fa-solid fa-star text-white"></i>
-                </button>
+                <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">${p.priceTON} TON</button>
+                <button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 btn-star py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1">${p.priceStars} <i class="fa-solid fa-star text-white"></i></button>
             </div>
         `;
         list.appendChild(div);
@@ -250,7 +322,6 @@ function renderMarket() {
 
 function updateUI() {
     const b = gameState.balance.toFixed(7);
-    
     const elMain = document.getElementById('main-balance');
     const elMob = document.getElementById('mobile-balance');
     const elWal = document.getElementById('wallet-balance-display');
@@ -295,31 +366,6 @@ function renderInventory() {
     if(empty) list.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty.</div>';
 }
 
-function renderHistory() {
-    const list = document.getElementById('history-list');
-    if(!list) return;
-    if(gameState.history.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>'; return; }
-    list.innerHTML = '';
-    gameState.history.forEach(tx => {
-        const item = document.createElement('div');
-        item.className = "bg-black/30 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition";
-        item.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-500"><i class="fa-solid fa-clock"></i></div>
-                <div>
-                    <div class="text-xs text-gray-400">Withdrawal</div>
-                    <div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div>
-                </div>
-            </div>
-            <div class="text-right">
-                <div class="text-xs text-pending font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> ${tx.status}</div>
-                <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
-            </div>
-        `;
-        list.appendChild(item);
-    });
-}
-
 function showPage(pageId) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
     const target = document.getElementById('page-' + pageId);
@@ -330,28 +376,7 @@ function showPage(pageId) {
     if(mob) mob.classList.add('active');
     
     if(pageId === 'inventory') renderInventory();
-}
-
-function processWithdraw() {
-    const walletInput = document.getElementById('wallet-address');
-    const amountInput = document.getElementById('withdraw-amount');
-    const walletAddr = walletInput.value.trim();
-    const val = parseFloat(amountInput.value);
-    
-    if(walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
-    if(!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
-    if(val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
-    if(val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
-    
-    gameState.balance -= val;
-    const newTx = { id: Date.now(), amount: val, status: "Pending", date: new Date().toLocaleTimeString(), addr: walletAddr };
-    gameState.history.unshift(newTx);
-    amountInput.value = '';
-    
-    updateUI();
-    renderHistory();
-    saveGame(true); // İşlem sonrası hemen kaydet
-    showToast("Withdrawal Request Sent", 'success');
+    if(pageId === 'wallet') fetchAndRenderHistory();
 }
 
 function showToast(message, type = 'info') {
@@ -365,7 +390,6 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-// --- LOOP & CHART ---
 let minLoop;
 function startLoop() {
     clearInterval(minLoop);
@@ -406,5 +430,5 @@ function initBg() {
     anim();
 }
 
-// GLOBAL ERİŞİM
-window.gameApp = { buyWithTON, buyWithStars, processWithdraw, closeModal, showPage };
+// Global Erişim
+window.gameApp = { buyWithTON, buyWithStars, processWithdraw, closeModal, showPage, fetchAndRenderHistory };
