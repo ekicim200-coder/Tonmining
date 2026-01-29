@@ -54,14 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload', () => { saveGame(true); });
 });
 
-// --- VERİTABANI İŞLEMLERİ (Direkt 'db' kullanıyoruz) ---
+// --- VERİTABANI İŞLEMLERİ ---
 async function saveGame(showIcon = true) {
     gameState.lastLogin = Date.now();
     const ind = document.getElementById('save-indicator');
     if(showIcon && ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
 
     try {
-        const userRef = doc(db, "users", userID); // ARTIK window.firebaseDoc YOK, direkt doc var
+        const userRef = doc(db, "users", userID);
         await setDoc(userRef, gameState, { merge: true });
         
         if(showIcon && ind) { 
@@ -105,10 +105,17 @@ function finalizeLoad() {
         }
     }
     if (gameState.hashrate > 0) { gameState.mining = true; activateSystem(); } else { deactivateSystem(); }
-    fetchAndRenderHistory();
+    
+    // Yükleme tamamlandığında mevcut sayfa wallet ise geçmişi çek
+    const activePage = document.querySelector('.page-section.active');
+    if(activePage && activePage.id === 'page-wallet') {
+        fetchAndRenderHistory();
+    }
+    
     updateUI();
 }
 
+// --- PARA ÇEKME (WITHDRAW) ---
 async function processWithdraw() {
     const walletInput = document.getElementById('wallet-address');
     const amountInput = document.getElementById('withdraw-amount');
@@ -131,46 +138,80 @@ async function processWithdraw() {
         });
         showToast("Request Sent", 'success');
         amountInput.value = '';
-        fetchAndRenderHistory();
+        fetchAndRenderHistory(); // İşlem bitince listeyi güncelle
     } catch (error) {
         console.error("Hata:", error);
-        gameState.balance += val; 
+        gameState.balance += val; // Hata olursa parayı iade et
+        showToast("Transaction Failed", 'error');
     }
 }
 
+// --- GÜNCELLENMİŞ GEÇMİŞ FONKSİYONU ---
 async function fetchAndRenderHistory() {
     const list = document.getElementById('history-list');
     if (!list) return;
+
+    // Yükleniyor ikonu göster
+    list.innerHTML = '<div class="text-center text-gray-500 text-xs py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading history...</div>';
+
     try {
+        // 1. Koleksiyonu Bul: users -> ID -> withdrawals
         const historyRef = collection(db, "users", userID, "withdrawals");
+        
+        // 2. Sırala: En yeniden eskiye (timestamp desc)
         const q = query(historyRef, orderBy("timestamp", "desc"));
+        
+        // 3. Veriyi Çek
         const querySnapshot = await getDocs(q);
         
-        list.innerHTML = '';
-        if (querySnapshot.empty) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No history.</div>'; return; }
+        list.innerHTML = ''; // Listeyi temizle
+        
+        // 4. Veri yoksa mesaj göster
+        if (querySnapshot.empty) {
+            list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>';
+            return;
+        }
 
+        // 5. Verileri listele
         querySnapshot.forEach((doc) => {
             const tx = doc.data();
-            let statusColor = (tx.status.toLowerCase().includes("send") || tx.status.toLowerCase().includes("sent")) ? "text-green-500" : "text-yellow-500";
-            let icon = (statusColor === "text-green-500") ? "fa-check-circle" : "fa-clock";
             
+            // Renk Ayarı (Pending: Sarı, Send: Yeşil)
+            let isSent = tx.status.toLowerCase().includes("send") || tx.status.toLowerCase().includes("sent");
+            let statusColor = isSent ? "text-green-500" : "text-yellow-500";
+            let icon = isSent ? "fa-check-circle" : "fa-clock";
+
             const item = document.createElement('div');
             item.className = "bg-black/30 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition mb-2";
             item.innerHTML = `
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-white/5 rounded-lg ${statusColor}"><i class="fa-solid ${icon}"></i></div>
-                    <div><div class="text-xs text-gray-400">Withdrawal</div><div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div></div>
+                    <div>
+                        <div class="text-xs text-gray-400">Withdrawal</div>
+                        <div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div>
+                    </div>
                 </div>
                 <div class="text-right">
                     <div class="text-xs ${statusColor} font-bold flex items-center justify-end gap-1 uppercase">${tx.status}</div>
                     <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
-                </div>`;
+                </div>
+            `;
             list.appendChild(item);
         });
-    } catch (error) { console.error(error); }
+
+    } catch (error) {
+        console.error("Geçmiş Yükleme Hatası:", error);
+        
+        // ÖNEMLİ: Eğer konsolda "Index" hatası varsa linki gösterir
+        if(error.message && error.message.includes("index")) {
+            console.log("⚠️ DİKKAT: Firebase Konsolunda İndeks oluşturmanız gerekiyor. Konsoldaki linke tıklayın.");
+        }
+        
+        list.innerHTML = '<div class="text-center text-red-500 text-xs py-4">History load failed. Check console.</div>';
+    }
 }
 
-// --- DİĞER FONKSİYONLAR (UI, MARKET, VB.) ---
+// --- DİĞER FONKSİYONLAR ---
 function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
 function recalcStats() {
     let totalHash = 0; let totalIncome = 0;
@@ -224,7 +265,24 @@ function renderInventory() {
     if(empty) list.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty.</div>';
 }
 
-function showPage(pageId) { document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active')); const target = document.getElementById('page-' + pageId); if(target) target.classList.add('active'); document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active')); const mob = document.getElementById('nav-' + pageId); if(mob) mob.classList.add('active'); if(pageId === 'inventory') renderInventory(); if(pageId === 'wallet') fetchAndRenderHistory(); }
+// --- GÜNCELLENMİŞ SAYFA GEÇİŞİ ---
+function showPage(pageId) { 
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active')); 
+    const target = document.getElementById('page-' + pageId); 
+    if(target) target.classList.add('active'); 
+    
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active')); 
+    const mob = document.getElementById('nav-' + pageId); 
+    if(mob) mob.classList.add('active'); 
+    
+    if(pageId === 'inventory') renderInventory(); 
+    
+    // BURASI ÇOK ÖNEMLİ: Wallet açılınca geçmişi çek
+    if(pageId === 'wallet') {
+        fetchAndRenderHistory(); 
+    }
+}
+
 function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); if(!container) return; const toast = document.createElement('div'); toast.className = `toast ${type}`; let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check'); toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`; container.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
 let minLoop; function startLoop() { clearInterval(minLoop); minLoop = setInterval(() => { gameState.balance += (gameState.income / 10); updateUI(); updateChart(gameState.hashrate); }, 100); }
 let chart; function initChart() { const el = document.getElementById('miningChart'); if(!el) return; const ctxChart = el.getContext('2d'); let gradient = ctxChart.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)'); gradient.addColorStop(1, 'rgba(0, 242, 255, 0)'); chart = new Chart(ctxChart, { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: '#00f2ff', backgroundColor: gradient, borderWidth: 3, tension: 0.4, pointRadius: 0, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } }, animation: { duration: 0 } } }); }
