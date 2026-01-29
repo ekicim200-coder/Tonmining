@@ -264,62 +264,43 @@
     </nav>
 
     <script type="module">
-        // Firebase Modüllerini CDN üzerinden çekiyoruz
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Sizin Config Bilgileriniz
+        // BURADAKİ BİLGİLERİNİZİN DOĞRU OLDUĞUNDAN EMİN OLUN
         const firebaseConfig = {
             apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
             authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373",
+            projectId: "tonm-77373", // <-- Burası "SENIN_PROJECT_ID" OLMAMALI
             storageBucket: "tonm-77373.firebasestorage.app",
             messagingSenderId: "507031118335",
-            appId: "1:507031118335:web:1d209e303dca154ec487ca",
-            measurementId: "G-5EV1T50VK8"
+            appId: "1:507031118335:web:1d209e303dca154ec487ca"
         };
 
-        // Firebase'i Başlat
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
-        console.log("Nexus Miner: Firebase Bağlantısı Hazır (index.html)");
+        console.log("Firebase Başlatıldı (Project ID: " + firebaseConfig.projectId + ")");
 
-        // Bu fonksiyonları 'app.js' kullanabilsin diye window'a bağlıyoruz
         window.nexusFirebase = {
-            // Veri Kaydetme
             saveUserData: async (userId, data) => {
                 try {
-                    const userRef = doc(db, "users", userId);
-                    await setDoc(userRef, data, { merge: true }); // Eski veriyi silme, üzerine yaz
-                    console.log("Firebase Kayıt Başarılı:", data);
+                    await setDoc(doc(db, "users", userId), data, { merge: true });
+                    console.log("Kayıt Başarılı");
                 } catch (e) {
-                    console.error("Firebase Kayıt Hatası:", e);
+                    console.error("Kayıt Hatası:", e);
                 }
             },
-
-            // Veri Yükleme
             loadUserData: async (userId) => {
                 try {
-                    const docRef = doc(db, "users", userId);
-                    const docSnap = await getDoc(docRef);
-                    
-                    if (docSnap.exists()) {
-                        console.log("Firebase Veri Bulundu:", docSnap.data());
-                        return docSnap.data();
-                    } else {
-                        console.log("Yeni kullanıcı, Firebase kaydı yok.");
-                        return null;
-                    }
+                    const docSnap = await getDoc(doc(db, "users", userId));
+                    return docSnap.exists() ? docSnap.data() : null;
                 } catch (e) {
-                    console.error("Firebase Yükleme Hatası:", e);
+                    console.error("Yükleme Hatası:", e);
                     return null;
                 }
             }
         };
     </script>
-
     <script src="app.js"></script>
 
 </body>
