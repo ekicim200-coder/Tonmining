@@ -8,8 +8,13 @@ var firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
+// Hata önleyici kontrol: Eğer daha önce başladıysa tekrar başlatma
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
-    console.log("🔥 Firebase Bağlantısı Kuruldu.");
 }
+
+// Veritabanı ve Kimlik Sistemini Global Yap (app.js görsün diye)
 window.db = firebase.firestore();
+window.auth = firebase.auth();
+
+console.log("🔥 Firebase Ayarları Yüklendi.");
