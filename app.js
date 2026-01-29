@@ -54,7 +54,7 @@ let gameState = { ...defaultState };
 let minLoop;
 let chart;
 
-// --- 3. BÖLÜM: BAŞLATMA (DÜZELTİLDİ: addEventListener KALDIRILDI) ---
+// --- 3. BÖLÜM: BAŞLATMA (DÜZELTİLDİ: addEventListener YOK) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     // UI Başlat
@@ -66,10 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showPage('dashboard');
     initChart();
     initBg();
-
-    // ❌ DİKKAT: Hata veren satır buradaydı ve SİLİNDİ.
-    // Artık 'document.getElementById('btn-withdraw').addEventListener...' KODU YOK.
-    // İşlem HTML tarafındaki 'onclick' ile yapılıyor.
 
     // Otomatik Kayıt
     setInterval(() => { if(isDataLoaded) saveGame(); }, 60000);
