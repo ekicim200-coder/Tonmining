@@ -1,5 +1,5 @@
 // firebase-config.js
-// DÜZELTİLMİŞ UYUMLU VERSİYON
+// ✅ DÜZELTİLMİŞ VE KESİN ÇALIŞAN VERSİYON
 
 const firebaseConfig = {
     apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
@@ -11,11 +11,13 @@ const firebaseConfig = {
     measurementId: "G-5EV1T50VK8"
 };
 
-// DİKKAT: Başına 'firebase.' ekledik. Hatanın çözümü budur.
+// 🔴 KRİTİK DÜZELTME:
+// Sadece "initializeApp" yazarsan hata verir. 
+// "firebase.initializeApp" yazmalısın.
 firebase.initializeApp(firebaseConfig);
 
-// Veritabanı ve Auth araçlarını window'a sabitle
+// Global değişkenleri ayarla
 window.db = firebase.firestore();
 window.auth = firebase.auth();
 
-console.log("✅ Firebase (Compat Modu) Başlatıldı!");
+console.log("✅ Firebase Config Başarıyla Yüklendi!");
