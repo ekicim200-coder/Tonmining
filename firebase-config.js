@@ -1,7 +1,7 @@
 // firebase-config.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-// YENİ EKLEMELER: collection, addDoc, query, orderBy, getDocs
+// YENİ EKLENENLER: collection, addDoc, query, orderBy, getDocs
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -22,7 +22,7 @@ window.firebaseDB = db;
 window.firebaseSetDoc = setDoc;
 window.firebaseGetDoc = getDoc;
 window.firebaseDoc = doc;
-// Yeni fonksiyonları da ekledik
+// YENİ FONKSİYONLAR (Çekim talepleri için şart)
 window.firebaseCollection = collection;
 window.firebaseAddDoc = addDoc;
 window.firebaseGetDocs = getDocs;
