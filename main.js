@@ -1,8 +1,8 @@
-// main.js - FULL ENTEGRE SÜRÜM (FİNAL)
+// main.js - SIFIR HATA SÜRÜMÜ
 
 // --- 1. BÖLÜM: FIREBASE AYARLARI ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -38,10 +38,8 @@ const products = [
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
-// Gelir hesapla
 products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
 
-// Varsayılan Veri
 const defaultState = {
     balance: 10.0000000,
     mining: false,
@@ -56,7 +54,7 @@ let gameState = { ...defaultState };
 let minLoop;
 let chart;
 
-// --- 3. BÖLÜM: BAŞLATMA VE AUTH (DÜZELTİLMİŞ) ---
+// --- 3. BÖLÜM: BAŞLATMA (DÜZELTİLDİ: addEventListener KALDIRILDI) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     // UI Başlat
@@ -69,8 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     initBg();
 
-    // DİKKAT: Burada 'btn-withdraw' için addEventListener YOK. 
-    // İşlem HTML tarafındaki onclick="window.gameApp.processWithdraw()" ile yapılıyor.
+    // ❌ DİKKAT: Hata veren satır buradaydı ve SİLİNDİ.
+    // Artık 'document.getElementById('btn-withdraw').addEventListener...' KODU YOK.
+    // İşlem HTML tarafındaki 'onclick' ile yapılıyor.
 
     // Otomatik Kayıt
     setInterval(() => { if(isDataLoaded) saveGame(); }, 60000);
@@ -98,7 +97,7 @@ function initAuth() {
     });
 }
 
-// --- 4. BÖLÜM: VERİ YÖNETİMİ (FIRESTORE) ---
+// --- 4. BÖLÜM: VERİ YÖNETİMİ ---
 
 async function loadGameData() {
     if (!currentUserUID) return;
@@ -111,12 +110,10 @@ async function loadGameData() {
             console.log("📥 Veri Yüklendi");
             const cloudData = docSnap.data();
             gameState = { ...defaultState, ...cloudData };
-            
-            // Offline Kazanç Hesapla
             checkOfflineEarnings();
         } else {
             console.log("🆕 Yeni Kullanıcı");
-            saveGame(); // İlk veriyi oluştur
+            saveGame(); 
         }
 
         isDataLoaded = true;
@@ -140,10 +137,7 @@ async function loadGameData() {
 
 async function saveGame() {
     if (!isDataLoaded || !currentUserUID) return;
-
     gameState.lastLogin = Date.now();
-    
-    // Görsel efekt
     const ind = document.getElementById('save-indicator');
     if(ind) { ind.style.opacity = '1'; setTimeout(() => { ind.style.opacity = '0'; }, 2000); }
 
@@ -167,7 +161,6 @@ function checkOfflineEarnings() {
             
             const modal = document.getElementById('offline-modal');
             const amountTxt = document.getElementById('offline-amount');
-            
             if(modal && amountTxt) {
                 amountTxt.innerText = earned.toFixed(7);
                 modal.style.display = 'flex';
@@ -176,7 +169,7 @@ function checkOfflineEarnings() {
     }
 }
 
-// --- 5. BÖLÜM: OYUN MANTIĞI ---
+// --- 5. BÖLÜM: OYUN MANTIĞI VE UI ---
 
 function recalcStats() {
     let totalHash = 0;
@@ -196,44 +189,35 @@ function activateSystem() {
     const txt = document.getElementById('status-text');
     if(ind) { ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse'); }
     if(txt) { txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold"; }
-    
     startLoop();
 }
 
 function startLoop() {
     clearInterval(minLoop);
     minLoop = setInterval(() => {
-        // RAM üzerindeki bakiyeyi artır
         gameState.balance += (gameState.income / 10);
         updateUI();
         updateChart(gameState.hashrate);
     }, 100);
 }
 
-// Global'e Açılan Fonksiyonlar (HTML'den erişim için şart)
+// Global Fonksiyonlar
 window.gameApp = {
     buyWithTON: function(id) {
         if(!isDataLoaded) { showToast("Wait for sync...", "error"); return; }
-        
         const p = products.find(x => x.id === id);
         if(gameState.balance >= p.priceTON) {
             gameState.balance -= p.priceTON;
-            
-            // Envanter güncelle
             if(!gameState.inventory[id]) gameState.inventory[id] = 0;
             gameState.inventory[id]++;
-            
-            if(!gameState.mining) {
-                gameState.mining = true;
-                activateSystem();
-            }
+            if(!gameState.mining) { gameState.mining = true; activateSystem(); }
             
             showToast(`Bought ${p.name}`, "success");
             recalcStats();
             updateUI();
             renderMarket();
             renderInventory();
-            saveGame(); // Hemen kaydet
+            saveGame();
         } else {
             showToast("Insufficient Balance", "error");
         }
@@ -245,7 +229,6 @@ window.gameApp = {
 
     processWithdraw: function() {
         if(!isDataLoaded) return;
-        
         const walletInput = document.getElementById('wallet-address');
         const amountInput = document.getElementById('withdraw-amount');
         const val = parseFloat(amountInput.value);
@@ -271,13 +254,11 @@ window.gameApp = {
         showToast("Request Sent", "success");
     },
 
-    showPage: showPage, // Aşağıda tanımlı
+    showPage: showPage,
     closeModal: function() {
         document.getElementById('offline-modal').style.display = 'none';
     }
 };
-
-// --- UI HELPERS ---
 
 function showPage(pageId) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
@@ -288,7 +269,6 @@ function showPage(pageId) {
     const nav = document.getElementById('nav-' + pageId);
     if(nav) nav.classList.add('active');
 
-    // Desktop Sidebar güncelleme
     document.querySelectorAll('.desktop-sidebar .nav-item').forEach(el => {
         el.classList.remove('bg-white/10');
         const icon = el.querySelector('i');
@@ -325,7 +305,6 @@ function updateUI() {
     if(els.inc) els.inc.innerText = gameState.income.toFixed(7);
     if(els.dev) els.dev.innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
 
-    // Buton Kontrolü
     document.querySelectorAll('.btn-ton-check').forEach(btn => {
         const price = parseFloat(btn.getAttribute('data-price'));
         btn.disabled = gameState.balance < price;
@@ -336,11 +315,9 @@ function renderMarket() {
     const list = document.getElementById('market-list');
     if(!list) return;
     list.innerHTML = '';
-    
     products.forEach(p => {
         const count = gameState.inventory[p.id] || 0;
         const dailyInc = (p.income * 86400).toFixed(2);
-        
         const html = `
         <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50">
             <div class="flex justify-between items-start mb-4">
@@ -370,7 +347,6 @@ function renderInventory() {
     const list = document.getElementById('inventory-list');
     if(!list) return;
     list.innerHTML = '';
-    
     let hasItem = false;
     products.forEach(p => {
         const count = gameState.inventory[p.id] || 0;
@@ -388,19 +364,16 @@ function renderInventory() {
             list.insertAdjacentHTML('beforeend', html);
         }
     });
-    
     if(!hasItem) list.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty.</div>';
 }
 
 function renderHistory() {
     const list = document.getElementById('history-list');
     if(!list) return;
-    
     if(gameState.history.length === 0) {
         list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>';
         return;
     }
-    
     list.innerHTML = '';
     gameState.history.forEach(tx => {
         const html = `
@@ -431,7 +404,6 @@ function showToast(msg, type) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Görsel efektler (Chart & BG)
 function initChart() {
     const ctx = document.getElementById('miningChart');
     if(!ctx) return;
@@ -450,7 +422,6 @@ function updateChart(val) {
     chart.update();
 }
 function initBg() {
-    // Basit arka plan animasyonu
     const cvs = document.getElementById('bg-canvas');
     if(cvs) {
         cvs.width = window.innerWidth; cvs.height = window.innerHeight;
