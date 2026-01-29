@@ -1,96 +1,104 @@
 // app.js
-import { db, doc, setDoc, getDoc } from './firebase-config.js';
 
-console.log("🚀 Oyun Başlatılıyor...");
+// KİMLİK SABİTLEME (Veriler asla silinmez)
+const USER_ID = "PATRON_KULLANICI_FINAL"; 
 
-// --- 1. SABİT KİMLİK (ASLA DEĞİŞMEZ) ---
-const USER_ID = "PATRON_KULLANICI_01"; 
-
-// --- 2. OYUN VERİSİ ---
 let gameState = {
     balance: 0,
     items: 0
 };
 
-// --- 3. BAŞLATMA ---
+// Sayfa yüklendiğinde çalışır
 document.addEventListener('DOMContentLoaded', () => {
-    updateStatus("Sunucuya bağlanılıyor...", "yellow");
-    loadGame(); // Verileri çek
+    // Veritabanı hazır mı kontrol et
+    if (!window.db) {
+        alert("Veritabanı bulunamadı! Lütfen internet bağlantını kontrol et.");
+        return;
+    }
+    
+    // Oyunu Başlat
+    loadGame();
 });
 
-// --- VERİ YÜKLEME ---
-async function loadGame() {
-    try {
-        const docRef = doc(db, "users", USER_ID);
-        const docSnap = await getDoc(docRef);
+// --- 1. VERİ YÜKLEME (READ) ---
+function loadGame() {
+    updateStatus("Sunucudan veri çekiliyor...", "yellow");
 
-        if (docSnap.exists()) {
-            gameState = docSnap.data();
-            console.log("✅ Veri Bulundu:", gameState);
-            updateStatus("✅ Çevrimiçi (Veri Yüklendi)", "green");
+    window.db.collection("users").doc(USER_ID).get()
+    .then((doc) => {
+        if (doc.exists) {
+            // Kayıt varsa yükle
+            gameState = doc.data();
+            console.log("Mevcut veri yüklendi:", gameState);
+            updateStatus("✅ Çevrimiçi (Veriler Geldi)", "green");
         } else {
-            console.log("🆕 Yeni Kayıt Oluşturuluyor...");
-            gameState.balance = 100; // Başlangıç Hediyesi
-            await saveGame(true); // İlk kaydı zorla yap
+            // Kayıt yoksa oluştur
+            console.log("Yeni kayıt oluşturuluyor...");
+            gameState.balance = 100; // Başlangıç hediyesi
+            saveGame();
         }
         updateUI();
-    } catch (error) {
-        console.error("YÜKLEME HATASI:", error);
-        showError(error.message);
-    }
+    })
+    .catch((error) => {
+        console.error("Yükleme Hatası:", error);
+        updateStatus("❌ Bağlantı Hatası", "red");
+    });
 }
 
-// --- VERİ KAYDETME ---
-async function saveGame(force = false) {
+// --- 2. VERİ KAYDETME (WRITE) ---
+function saveGame() {
     updateStatus("Kaydediliyor...", "yellow");
-    
-    try {
-        const docRef = doc(db, "users", USER_ID);
-        await setDoc(docRef, gameState, { merge: true });
-        
-        console.log("💾 Kaydedildi.");
+
+    window.db.collection("users").doc(USER_ID).set(gameState, { merge: true })
+    .then(() => {
+        console.log("Veri sunucuya işlendi.");
         updateStatus("✅ Kaydedildi", "green");
         
         // 2 saniye sonra normale dön
         setTimeout(() => updateStatus("✅ Çevrimiçi", "green"), 2000);
+    })
+    .catch((error) => {
+        console.error("Kayıt Hatası:", error);
+        updateStatus("❌ KAYIT BAŞARISIZ!", "red");
         
-    } catch (error) {
-        console.error("KAYIT HATASI:", error);
-        showError("KAYDEDİLEMEDİ! " + error.message);
-    }
+        if(error.message.includes("permission-denied")) {
+            alert("HATA: Firebase 'Kurallar' (Rules) kapalı. Lütfen konsoldan açın.");
+        }
+    });
 }
 
 // --- İŞLEMLER ---
+
+// Para Ekleme Fonksiyonu
+window.addMoney = function() {
+    gameState.balance += 50;
+    updateUI();
+    saveGame(); // Değişikliği anında kaydet
+};
+
+// Ürün Alma Fonksiyonu
 window.buyItem = function() {
-    if (gameState.balance >= 10) {
+    if(gameState.balance >= 10) {
         gameState.balance -= 10;
         gameState.items += 1;
         updateUI();
-        saveGame(); // Her işlemde kaydet
+        saveGame(); // Değişikliği anında kaydet
     } else {
         alert("Yetersiz Bakiye!");
     }
 };
 
-window.addMoney = function() {
-    gameState.balance += 50;
-    updateUI();
-    saveGame();
-};
-
-// --- ARAYÜZ ---
+// Arayüz Güncelleme
 function updateUI() {
     document.getElementById('balance-display').innerText = gameState.balance.toFixed(2);
     document.getElementById('item-display').innerText = gameState.items;
 }
 
+// Durum Bildirimi
 function updateStatus(msg, color) {
-    const el = document.getElementById('status-box');
-    el.innerText = msg;
-    el.style.color = color === "green" ? "#00ff00" : (color === "yellow" ? "#ffff00" : "red");
-}
-
-function showError(msg) {
-    updateStatus("❌ HATA: " + msg, "red");
-    alert("HATA OLUŞTU:\n" + msg + "\n\nLütfen Firebase Kurallarını (Rules) kontrol et.");
+    const el = document.getElementById('status-text');
+    if(el) {
+        el.innerText = msg;
+        el.style.color = color === "green" ? "#00ff00" : (color === "yellow" ? "#ffff00" : "red");
+    }
 }
