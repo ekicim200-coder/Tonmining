@@ -26,18 +26,30 @@ let gameState = {
     lastLogin: Date.now()
 };
 
+// --- USER ID SETUP ---
+// Kullanıcı Kimliğini Belirle (Telegram ID yoksa Rastgele ID)
+let userID = "sim_user_" + Math.floor(Math.random() * 1000000);
+// Eğer Telegram içindeysek gerçek ID'yi al
+if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+    userID = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+}
+console.log("Aktif Kullanıcı ID:", userID);
+
+
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     const tg = window.Telegram.WebApp;
     tg.expand(); 
 
-    loadGame();
+    loadGame(); // Artık Firebase'den çekecek
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
     document.getElementById('btn-withdraw').addEventListener('click', processWithdraw);
+    
+    // Otomatik Kayıt (Her 60 saniyede bir)
     setInterval(() => { saveGame(); }, 60000);
     window.addEventListener('beforeunload', () => { saveGame(); });
 });
@@ -53,43 +65,95 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-// --- CORE FUNCTIONS ---
-function saveGame() {
+// --- FIREBASE SAVE & LOAD SYSTEM ---
+
+async function saveGame() {
+    // Son giriş zamanını güncelle
     gameState.lastLogin = Date.now();
-    localStorage.setItem('nexusMinerV14', JSON.stringify(gameState));
+    
+    // Görsel bildirim (Saving...)
     const ind = document.getElementById('save-indicator');
-    ind.style.opacity = '1'; setTimeout(() => { ind.style.opacity = '0'; }, 2000);
-}
+    if(ind) { ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Saving...'; ind.style.opacity = '1'; }
 
-function loadGame() {
-    const saved = localStorage.getItem('nexusMinerV14');
-    if(saved) {
-        const parsed = JSON.parse(saved);
-        gameState = { ...gameState, ...parsed };
-        recalcStats();
-        
-        // OFFLINE EARNINGS
-        if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
-            const now = Date.now();
-            const secondsPassed = (now - gameState.lastLogin) / 1000;
-            if (secondsPassed > 10) {
-                const earned = secondsPassed * gameState.income;
-                gameState.balance += earned;
-                document.getElementById('offline-amount').innerText = earned.toFixed(7);
-                document.getElementById('offline-modal').style.display = 'flex';
+    try {
+        // window üzerinden firebase fonksiyonlarına erişiyoruz (firebase-config.js'den gelenler)
+        if (window.firebaseDB) {
+            const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
+            
+            // Veriyi Firebase'e yaz
+            await window.firebaseSetDoc(userRef, gameState, { merge: true });
+            
+            if(ind) { 
+                ind.innerHTML = '<i class="fa-solid fa-check"></i> Cloud Saved'; 
+                setTimeout(() => { ind.style.opacity = '0'; }, 2000);
             }
-        }
-
-        if (gameState.hashrate > 0) {
-            gameState.mining = true;
-            activateSystem();
         } else {
-            deactivateSystem();
+            console.warn("Firebase DB not found via window object");
         }
-        renderHistory();
-        updateUI();
+    } catch (error) {
+        console.error("Firebase Hatası:", error);
+        if(ind) { ind.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Save Failed'; }
     }
 }
+
+async function loadGame() {
+    // Önce yükleniyor ekranı veya durumu gösterebilirsin
+    console.log("Veri Buluttan Çekiliyor...");
+
+    try {
+        if (window.firebaseDB) {
+            const userRef = window.firebaseDoc(window.firebaseDB, "users", userID);
+            const docSnap = await window.firebaseGetDoc(userRef);
+
+            if (docSnap.exists()) {
+                // Veri varsa oyuna yükle
+                const parsed = docSnap.data();
+                gameState = { ...gameState, ...parsed };
+                console.log("Veri başarıyla yüklendi:", parsed);
+            } else {
+                console.log("Yeni kullanıcı, varsayılan veri ile başlanıyor.");
+                saveGame(); // İlk defa oluştur
+            }
+        }
+    } catch (error) {
+        console.error("Veri çekme hatası:", error);
+        // Hata olursa LocalStorage dene (Yedek plan)
+        const localData = localStorage.getItem('nexusMinerV14');
+        if(localData) gameState = { ...gameState, ...JSON.parse(localData) };
+    }
+
+    // İŞLEMLER BİTTİKTEN SONRA OYUNU BAŞLAT
+    finalizeLoad();
+}
+
+function finalizeLoad() {
+    recalcStats();
+    
+    // OFFLINE KAZANÇ HESAPLAMA
+    if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
+        const now = Date.now();
+        const secondsPassed = (now - gameState.lastLogin) / 1000;
+        if (secondsPassed > 10) {
+            const earned = secondsPassed * gameState.income;
+            gameState.balance += earned;
+            document.getElementById('offline-amount').innerText = earned.toFixed(7);
+            document.getElementById('offline-modal').style.display = 'flex';
+        }
+    }
+
+    // OTOMATİK BAŞLATMA
+    if (gameState.hashrate > 0) {
+        gameState.mining = true;
+        activateSystem();
+    } else {
+        deactivateSystem();
+    }
+    
+    renderHistory();
+    updateUI();
+}
+
+// --- CORE LOGIC ---
 
 function closeModal() { document.getElementById('offline-modal').style.display = 'none'; }
 
