@@ -2,68 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS MINER - Server Save Edition</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>NEXUS - KESİN ÇÖZÜM</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        body { background-color: #050505; color: white; font-family: 'Courier New', Courier, monospace; }
-        .panel { background: rgba(20, 20, 20, 0.9); border: 1px solid #333; padding: 20px; margin-bottom: 15px; border-radius: 12px; }
-        .btn { width: 100%; padding: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-buy { background: #007bff; color: white; }
-        .btn-save { background: #28a745; color: white; }
-        .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
-        .saving { background-color: #ffff00; animation: pulse 1s infinite; }
-        .error { background-color: #ff0000; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        body { background-color: #111; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { border: 2px solid #333; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 10px; background: #222; }
+        .btn { background: #00f2ff; color: black; font-weight: bold; padding: 15px; width: 100%; border: none; cursor: pointer; border-radius: 5px; margin-top: 10px; }
+        .btn:hover { background: #00c8ff; }
+        #status { font-weight: bold; margin-bottom: 10px; }
+        .success { color: #0f0; }
+        .error { color: #f00; }
     </style>
 </head>
-<body class="p-4">
+<body>
 
-    <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-        <h1 class="text-xl font-bold text-cyan-400">NEXUS SERVER</h1>
-        <div class="flex items-center text-xs">
-            <span id="status-dot" class="status-dot"></span>
-            <span id="status-text" class="text-gray-400">Bağlanıyor...</span>
-        </div>
+    <h1>🔥 FİNAL VERSİYON 🔥</h1>
+    <p>Modül sistemi iptal edildi. Klasik sistem devrede.</p>
+
+    <div class="box">
+        <div id="status">Veritabanına Bağlanıyor...</div>
+        <hr style="border-color: #444; margin: 15px 0;">
+        
+        <div style="font-size: 12px; color: #888;">SUNUCUDAKİ BAKİYE:</div>
+        <div id="balance" style="font-size: 40px; font-weight: bold;">---</div>
+        
+        <button onclick="addMoney()" class="btn">💰 50 TON EKLE VE KAYDET</button>
+        <button onclick="location.reload()" class="btn" style="background: #444; color: white;">🔄 SAYFAYI YENİLE (TEST)</button>
     </div>
 
-    <div class="panel text-center">
-        <div class="text-xs text-gray-500 uppercase">SERVER BAKİYESİ</div>
-        <div id="balance-display" class="text-4xl font-bold text-white my-2">0.00</div>
-        <div class="text-xs text-cyan-500">TON COIN</div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4">
-        <div class="panel text-center">
-            <div class="font-bold text-lg mb-1">Nano Rig</div>
-            <div class="text-xs text-gray-400 mb-2">Fiyat: 10 TON</div>
-            <button onclick="window.game.buyItem(10)" class="btn btn-buy">SATIN AL</button>
-        </div>
-        <div class="panel text-center">
-            <div class="font-bold text-lg mb-1">Mega Rig</div>
-            <div class="text-xs text-gray-400 mb-2">Fiyat: 50 TON</div>
-            <button onclick="window.game.buyItem(50)" class="btn btn-buy">SATIN AL</button>
-        </div>
-    </div>
-
-    <button onclick="window.game.forceSave()" class="btn btn-save mt-6">
-        <i class="fa-solid fa-cloud-arrow-up"></i> ZORLA KAYDET (TEST)
-    </button>
-
-    <div id="console-log" class="mt-6 text-[10px] text-gray-600 font-mono h-32 overflow-y-auto border-t border-gray-800 pt-2">
-        > Sistem başlatılıyor...<br>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // 1. AYARLAR
+    <script>
+        // 1. AYARLAR (Senin Bilgilerin)
         const firebaseConfig = {
             apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
             authDomain: "tonm-77373.firebaseapp.com",
@@ -74,114 +46,76 @@
             measurementId: "G-5EV1T50VK8"
         };
 
-        // 2. KİMLİK (ASLA DEĞİŞMEZ)
-        const userID = "PATRON_USER_FINAL";
+        // 2. BAŞLATMA (Eski Usül - Hata vermez)
+        try {
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            console.log("Firebase Başladı.");
 
-        // 3. DEĞİŞKENLER
-        let db;
-        let gameState = {
-            balance: 100, // Test için başlangıç bakiyesi 100 verdim
-            lastLogin: Date.now()
-        };
+            // SABİT KİMLİK (Asla değişmez)
+            const USER_ID = "PATRON_FINAL_FIX";
+            let currentBalance = 0;
 
-        // --- YARDIMCI: Ekrana Log Yaz ---
-        function log(msg, type="info") {
-            const date = new Date().toLocaleTimeString();
-            const color = type === "error" ? "text-red-500" : (type === "success" ? "text-green-500" : "text-gray-500");
-            const div = document.getElementById('console-log');
-            div.innerHTML = `<div class="${color}">[${date}] ${msg}</div>` + div.innerHTML;
-        }
+            const statusEl = document.getElementById('status');
+            const balanceEl = document.getElementById('balance');
 
-        // --- YARDIMCI: Durum Güncelle ---
-        function setStatus(state, msg) {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            dot.className = "status-dot " + state;
-            text.innerText = msg;
-        }
-
-        // --- ANA FONKSİYONLAR ---
-
-        async function initGame() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                log("Firebase bağlantısı başarılı.", "success");
+            // --- VERİ OKUMA ---
+            function loadData() {
+                statusEl.innerText = "⏳ Veri Çekiliyor...";
                 
-                await loadGame();
+                db.collection("users").doc(USER_ID).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        currentBalance = doc.data().balance;
+                        balanceEl.innerText = currentBalance + " TON";
+                        statusEl.innerHTML = "<span class='success'>✅ BAŞARILI: Veri Geldi!</span>";
+                    } else {
+                        statusEl.innerText = "🆕 Kayıt Yok. Yeni oluşturuluyor...";
+                        saveData(10); // İlk açılışta 10 ver
+                    }
+                })
+                .catch((error) => {
+                    console.error("Okuma Hatası:", error);
+                    statusEl.innerHTML = "<span class='error'>❌ OKUMA HATASI: " + error.message + "</span>";
+                });
+            }
+
+            // --- VERİ YAZMA ---
+            function saveData(newBal) {
+                statusEl.innerText = "💾 Kaydediliyor...";
                 
-                // Otomatik Kayıt (Her 10 saniyede bir)
-                setInterval(() => saveGame(false), 10000);
+                if(newBal !== undefined) currentBalance = newBal;
 
-            } catch (error) {
-                log("BAŞLATMA HATASI: " + error.message, "error");
-                setStatus("error", "Bağlantı Hatası");
+                db.collection("users").doc(USER_ID).set({
+                    balance: currentBalance,
+                    lastUpdate: new Date().toISOString()
+                }, { merge: true })
+                .then(() => {
+                    balanceEl.innerText = currentBalance + " TON";
+                    statusEl.innerHTML = "<span class='success'>✅ KAYDEDİLDİ! (Şimdi yenile)</span>";
+                })
+                .catch((error) => {
+                    console.error("Yazma Hatası:", error);
+                    statusEl.innerHTML = "<span class='error'>❌ YAZMA HATASI: " + error.message + "</span>";
+                    
+                    if(error.message.includes("permission-denied")) {
+                        alert("HATA: Firebase 'Kurallar' (Rules) kısmı hala kilitli! Lütfen 'Publish' butonuna bastığından emin ol.");
+                    }
+                });
             }
-        }
 
-        async function loadGame() {
-            setStatus("saving", "Veri Yükleniyor...");
-            try {
-                const docRef = doc(db, "users", userID);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    gameState = { ...gameState, ...docSnap.data() };
-                    log("Sunucudan veri çekildi. Bakiye: " + gameState.balance, "success");
-                } else {
-                    log("Kayıt bulunamadı. Yeni oyun başlatılıyor.", "info");
-                    saveGame(true); // İlk kaydı oluştur
-                }
-                updateUI();
-                setStatus("online", "Çevrimiçi");
-            } catch (error) {
-                log("YÜKLEME HATASI: " + error.message, "error");
-                setStatus("error", "Veri Okunamadı");
+            // Buton Fonksiyonu
+            window.addMoney = function() {
+                currentBalance += 50;
+                saveData();
             }
+
+            // Oyunu Başlat
+            loadData();
+
+        } catch (e) {
+            alert("KRİTİK HATA: " + e.message);
         }
-
-        async function saveGame(manual = false) {
-            if(manual) setStatus("saving", "Kaydediliyor...");
-            
-            try {
-                gameState.lastLogin = Date.now();
-                await setDoc(doc(db, "users", userID), gameState, { merge: true });
-                
-                if(manual) {
-                    log("✅ Manuel Kayıt Başarılı!", "success");
-                    setStatus("online", "Kaydedildi");
-                    setTimeout(() => setStatus("online", "Çevrimiçi"), 2000);
-                }
-            } catch (error) {
-                log("❌ KAYIT BAŞARISIZ: " + error.message, "error");
-                setStatus("error", "Kaydedilemedi!");
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('balance-display').innerText = gameState.balance.toFixed(2);
-        }
-
-        // --- GLOBAL KULLANIM İÇİN ---
-        window.game = {
-            buyItem: (cost) => {
-                if(gameState.balance >= cost) {
-                    gameState.balance -= cost;
-                    updateUI();
-                    log(`Satın alma yapıldı. -${cost} TON`, "info");
-                    saveGame(true); // İşlem sonrası hemen kaydet
-                } else {
-                    alert("Yetersiz Bakiye!");
-                }
-            },
-            forceSave: () => {
-                saveGame(true);
-            }
-        };
-
-        // BAŞLAT
-        initGame();
-
     </script>
 </body>
 </html>
