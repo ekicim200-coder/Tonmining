@@ -4,7 +4,9 @@ import { saveUserToFire, getUserFromFire, initAuth } from './firebase-config.js'
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
-const ADMIN_WALLET = "UQA_......................................."; // SENİN CÜZDANIN
+// ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
+// Örnek: "UQCBTQE2Y0Bj73KSgLANRgsZ3sZiZmV23LUH7TuzJKjPQ1XX"
+const ADMIN_WALLET = "UQCBTQE2Y0Bj73KSgLANRgsZ3sZiZmV23LUH7TuzJKjPQ1XX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
 
 let tonConnectUI;
 let currentUserUid = null; // Firebase User ID'sini burada tutacağız
