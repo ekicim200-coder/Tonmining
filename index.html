@@ -14,7 +14,7 @@
             <span class="bal-lbl">TOTAL BALANCE</span>
             <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
         </div>
-        <button class="wallet-btn" id="connectBtn" onclick="toggleWallet()">
+        <button class="wallet-btn" id="connectBtn">
             <i class="fas fa-wallet"></i> Connect
         </button>
     </div>
@@ -55,7 +55,7 @@
                     <p>+300 GH/s (30 Minutes)</p>
                 </div>
                 <div id="adBtnArea">
-                    <button class="ad-btn" onclick="watchAd()">WATCH & CLAIM</button>
+                    <button class="ad-btn">WATCH & CLAIM</button>
                 </div>
                 <div id="timerArea" style="display:none;">
                     <div class="timer-badge" id="freeTimer">30:00</div>
@@ -83,15 +83,15 @@
             <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
             <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
             
-            <button class="w-btn" onclick="withdraw()">WITHDRAW</button>
+            <button class="w-btn">WITHDRAW</button>
         </div>
     </div>
 
     <div class="nav">
-        <div class="nav-item active" onclick="go('dash', this)"><i class="fas fa-chart-pie"></i></div>
-        <div class="nav-item" onclick="go('market', this)"><i class="fas fa-shopping-bag"></i></div>
-        <div class="nav-item" onclick="go('inv', this)"><i class="fas fa-server"></i></div>
-        <div class="nav-item" onclick="go('wallet', this)"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item active"><i class="fas fa-chart-pie"></i></div>
+        <div class="nav-item"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-item"><i class="fas fa-server"></i></div>
+        <div class="nav-item"><i class="fas fa-wallet"></i></div>
     </div>
 
     <div id="toast">Message</div>
@@ -100,5 +100,4 @@
 
     <script type="module" src="script.js"></script>
 </body>
-
 </html>
