@@ -1,12 +1,12 @@
 // --- IMPORT ---
 // initAuth fonksiyonunu da import ettik
-import { saveUserToFire, getUserFromFire, initAuth } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from './firebase-config.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
 // ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
-// Örnek: "UQCBTQE2Y0Bj73KSgLANRgsZ3sZiZmV23LUH7TuzJKjPQ1XX"
-const ADMIN_WALLET = "UQCBTQE2Y0Bj73KSgLANRgsZ3sZiZmV23LUH7TuzJKjPQ1XX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
+// Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
+const ADMIN_WALLET = "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
 
 let tonConnectUI;
 let currentUserUid = null; // Firebase User ID'sini burada tutacağız
@@ -234,7 +234,14 @@ async function buy(id) {
         grantMachine(id);
     } catch (e) {
         console.error(e);
-        showToast("Transaction Cancelled ❌", true);
+        // Kullanıcı iptal etti mi kontrol et
+        if (e.message && e.message.includes('Transaction was not sent')) {
+            showToast("Transaction Cancelled", true);
+        } else if (e.message && e.message.includes('User rejects')) {
+            showToast("Transaction Rejected", true);
+        } else {
+            showToast("Transaction Failed ❌", true);
+        }
     }
 }
 
@@ -247,16 +254,26 @@ function grantMachine(id) {
     syncToServer();
 }
 
-function withdraw() {
+async function withdraw() {
     if(!state.wallet) return showToast("Connect Wallet!", true);
     let val = parseFloat(document.getElementById('w-amt').value);
+    if(isNaN(val) || val <= 0) return showToast("Enter valid amount", true);
     if(val < 100) return showToast("Min: 100 TON", true);
     if(val > state.balance) return showToast("Insufficient Balance", true);
     
-    state.balance -= val;
-    updateUI();
-    showToast("Withdrawal Sent!");
-    syncToServer();
+    // Firebase'e çekim talebi kaydet
+    showToast("Processing withdrawal...", false);
+    const success = await saveWithdrawalRequest(state.wallet, val);
+    
+    if (success) {
+        state.balance -= val;
+        updateUI();
+        syncToServer();
+        showToast("Withdrawal Request Sent! ✅");
+        document.getElementById('w-amt').value = '';
+    } else {
+        showToast("Withdrawal Failed ❌", true);
+    }
 }
 
 function watchAd() {
