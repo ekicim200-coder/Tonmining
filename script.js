@@ -75,7 +75,12 @@ function autoSave() {
 }
 
 async function syncToServer() {
-    if (!state.wallet) return; 
+    if (!state.wallet) return;
+    if (!currentUserUid) {
+        console.log("⏳ Auth not ready yet, skipping sync...");
+        return;
+    }
+    
     // Giriş yapmamışsa sunucuya gönderme (Zaten saveUserToFire kontrol ediyor)
     const dataToSave = {
         balance: state.balance,
@@ -88,6 +93,19 @@ async function syncToServer() {
 
 async function loadServerData(walletAddress) {
     showToast("Syncing data...", false);
+    
+    // Auth hazır olana kadar bekle
+    let attempts = 0;
+    while (!currentUserUid && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (!currentUserUid) {
+        showToast("Auth not ready, please retry", true);
+        return;
+    }
+    
     const serverData = await getUserFromFire(walletAddress);
 
     if (serverData) {
