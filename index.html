@@ -18,7 +18,6 @@
         body { font-family: 'Segoe UI', sans-serif; background-color: #020205; color: white; overflow: hidden; }
         .digit-font { font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
         
-        /* Glassmorphism */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
@@ -27,13 +26,11 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
-        /* Animations */
         @keyframes pulse-glow { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); } }
         .pulse-active { animation: pulse-glow 2s infinite; border-color: var(--neon-blue); }
         .neon-blue { text-shadow: 0 0 10px rgba(0, 242, 255, 0.7); color: var(--neon-blue); }
         .neon-green { text-shadow: 0 0 10px rgba(10, 255, 96, 0.7); color: var(--neon-green); }
 
-        /* Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
@@ -42,7 +39,6 @@
 
         #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
 
-        /* Save Indicator */
         #save-indicator {
             position: fixed; top: 20px; right: 20px;
             background: rgba(0, 0, 0, 0.8); border: 1px solid var(--neon-green);
@@ -52,7 +48,6 @@
             opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
         }
 
-        /* Toast Notifications */
         #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 300px; }
         .toast {
             background: rgba(10, 10, 15, 0.95); backdrop-filter: blur(5px);
@@ -65,7 +60,6 @@
         .toast.error { border-color: #ff3333; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Offline Modal */
         #offline-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000;
@@ -79,7 +73,6 @@
         }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* Navigation */
         .page-section { display: none; opacity: 0; transition: opacity 0.3s; }
         .page-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -267,11 +260,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // DOĞRU PROJE BİLGİLERİ
+        // BURASI DÜZELTİLDİ: SENIN_PROJECT_ID SİLİNDİ, DOĞRUSU YAZILDI
         const firebaseConfig = {
             apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
             authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373", // BURASI ARTIK DOĞRU
+            projectId: "tonm-77373", // <--- DOĞRU ID
             storageBucket: "tonm-77373.firebasestorage.app",
             messagingSenderId: "507031118335",
             appId: "1:507031118335:web:1d209e303dca154ec487ca"
@@ -286,13 +279,23 @@
             saveUserData: async (userId, data) => {
                 try {
                     await setDoc(doc(db, "users", userId), data, { merge: true });
-                } catch (e) { console.error("Kayıt Hatası:", e); }
+                    console.log("Kayıt Başarılı (Cloud)");
+                } catch (e) {
+                    console.error("Kayıt Hatası:", e);
+                }
             },
             loadUserData: async (userId) => {
                 try {
                     const docSnap = await getDoc(doc(db, "users", userId));
-                    return docSnap.exists() ? docSnap.data() : null;
-                } catch (e) { return null; }
+                    if (docSnap.exists()) {
+                        return docSnap.data();
+                    } else {
+                        return null;
+                    }
+                } catch (e) {
+                    console.error("Yükleme Hatası:", e);
+                    return null;
+                }
             }
         };
     </script>
