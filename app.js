@@ -1,8 +1,7 @@
 // app.js
 
-// 1. Firebase yapılandırmasını ve gerekli Firestore fonksiyonlarını çekiyoruz
-import { db, analytics } from './firebase-config.js';
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+// 1. Her şeyi tek dosyadan çekiyoruz (Karışıklık olmaması için)
+import { db, doc, getDoc, setDoc } from './firebase-config.js';
 
 // --- CONFIGURATION ---
 const ROI_DAYS = 15;
@@ -35,14 +34,14 @@ let currentUserId = "test_user_01";
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Telegram WebApp Başlatma
-    const tg = window.Telegram?.WebApp; // Hata almamak için ? koydum
+    const tg = window.Telegram?.WebApp;
     if (tg) {
         tg.ready();
-        tg.expand();
         try {
+            tg.expand();
+            tg.enableClosingConfirmation();
             tg.setHeaderColor('#020205');
             tg.setBackgroundColor('#020205');
-            tg.enableClosingConfirmation();
         } catch(e) {}
 
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -60,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initChart();
     initBg();
 
-    // Otomatik Kayıt (Her 60 saniyede bir buluta kaydeder)
+    // Otomatik Kayıt
     setInterval(() => { saveGame(); }, 60000);
     window.addEventListener('beforeunload', () => { saveGame(); });
 });
@@ -87,7 +86,6 @@ async function saveGame() {
     
     // 2. Firebase Firestore (Bulut Kaydı)
     try {
-        // "users" koleksiyonunda, kullanıcının ID'si ile bir döküman oluştur/güncelle
         await setDoc(doc(db, "users", currentUserId), gameState);
         
         const ind = document.getElementById('save-indicator');
@@ -129,10 +127,8 @@ async function loadGame() {
 
     // 3. Veriyi State'e İşle
     if (loadedData) {
-        // Mevcut state ile birleştir
         gameState = { ...gameState, ...loadedData };
         
-        // Eksik obje kontrolü
         if(!gameState.inventory) gameState.inventory = {};
         if(!gameState.history) gameState.history = [];
 
@@ -143,7 +139,6 @@ async function loadGame() {
             const now = Date.now();
             const secondsPassed = (now - gameState.lastLogin) / 1000;
             
-            // Eğer 10 saniyeden fazla kapalı kaldıysa
             if (secondsPassed > 10) {
                 const earned = secondsPassed * gameState.income;
                 gameState.balance += earned;
@@ -155,7 +150,7 @@ async function loadGame() {
                     offlineModal.classList.remove('hidden');
                     offlineModal.style.display = 'flex';
                 }
-                saveGame(); // Yeni bakiyeyi hemen kaydet
+                saveGame();
             }
         }
 
@@ -273,7 +268,6 @@ function buyWithTON(id) {
 }
 
 function buyWithStars(id) {
-    // Simüle edilmiş Star satın alma
     showToast("Processing Star Payment...", 'star');
     setTimeout(() => {
         addMachine(id, "Stars");
@@ -293,7 +287,6 @@ function addMachine(id, source) {
         showToast(`Purchased ${p.name}!`, 'success');
     }
     
-    // UI Güncellemeleri
     const ownedLabel = document.getElementById(`owned-${id}`);
     if(ownedLabel) ownedLabel.innerText = gameState.inventory[id];
 
@@ -509,7 +502,7 @@ function initBg() {
     anim();
 }
 
-// Global kullanıma aç (HTML onclick'ler için)
+// Global kullanıma aç
 window.gameApp = {
     buyWithTON,
     buyWithStars,
