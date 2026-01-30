@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TON Pro Miner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header">
+        <div class="bal-box">
+            <span class="bal-lbl">TOTAL BALANCE</span>
+            <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
+        </div>
+        <button class="wallet-btn" id="connectBtn">
+            <i class="fas fa-wallet"></i> Connect
+        </button>
+    </div>
+
+    <div id="v-dash" class="view active">
+        <div class="dashboard">
+            <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 100 100"><circle class="c-bg" cx="50" cy="50" r="40"></circle><g id="chartSegments"></g></svg>
+                <div class="chart-info"><div class="chart-val" id="d-hash">0</div><div class="chart-lbl">GH/s</div></div>
+            </div>
+
+            <div class="live-graph">
+                <div class="lg-header"><span>Network Status</span><span style="color:var(--success)">Stable ●</span></div>
+                <svg class="lg-svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline class="lg-line" id="liveLine" points="0,10 100,10"></polyline></svg>
+            </div>
+
+            <div class="terminal">
+                <div class="term-content" id="termLogs">
+                    <div class="log-line">> System initialized...</div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <span class="ib-val" id="d-count">0</span>
+                    <span class="ib-lbl">Active Devices</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="d-daily">0.00</span>
+                    <span class="ib-lbl">Daily TON</span>
+                </div>
+            </div>
+
+            <div class="free-card" id="freeCard">
+                <div style="font-size:1.8rem; color:var(--danger); margin-right:15px;"><i class="fas fa-server"></i></div>
+                <div class="fc-info" style="flex:1">
+                    <h4>FREE ASIC</h4>
+                    <p>+300 GH/s (30 Minutes)</p>
+                </div>
+                <div id="adBtnArea">
+                    <button class="ad-btn">WATCH & CLAIM</button>
+                </div>
+                <div id="timerArea" style="display:none;">
+                    <div class="timer-badge" id="freeTimer">30:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-market" class="view">
+        <h3 style="padding:20px 20px 0;">Hardware Store</h3>
+        <div class="list-grid" id="marketList"></div>
+    </div>
+
+    <div id="v-inv" class="view">
+        <h3 style="padding:20px 20px 0;">My Devices</h3>
+        <div class="list-grid" id="invList"></div>
+    </div>
+
+    <div id="v-wallet" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-wallet fa-4x" style="color:var(--primary); margin-bottom:20px;"></i>
+            <h3>Wallet Management</h3>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Minimum withdrawal is 100 TON.</p>
+            
+            <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
+            <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
+            
+            <button class="w-btn">WITHDRAW</button>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active"><i class="fas fa-chart-pie"></i></div>
+        <div class="nav-item"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-item"><i class="fas fa-server"></i></div>
+        <div class="nav-item"><i class="fas fa-wallet"></i></div>
+    </div>
+
+    <div id="toast">Message</div>
+
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
