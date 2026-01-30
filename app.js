@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         tg.setHeaderColor('#020205');
         tg.setBackgroundColor('#020205');
+        tg.enableClosingConfirmation();
     } catch(e) {}
 
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -63,9 +64,9 @@ function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if(!container) return;
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    let icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'star' ? 'fa-star' : 'fa-circle-check');
-    toast.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+    toast.className = `toast ${type} bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-700 flex items-center gap-3 mb-3 animate-bounce-in`;
+    let icon = type === 'error' ? 'fa-triangle-exclamation text-red-500' : (type === 'star' ? 'fa-star text-yellow-400' : 'fa-circle-check text-green-400');
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     container.appendChild(toast);
     setTimeout(() => { toast.remove(); }, 3000);
 }
@@ -80,8 +81,8 @@ function saveGame() {
 
     const ind = document.getElementById('save-indicator');
     if(ind) {
-        ind.style.opacity = '1'; 
-        setTimeout(() => { ind.style.opacity = '0'; }, 2000);
+        ind.classList.remove('hidden');
+        setTimeout(() => { ind.classList.add('hidden'); }, 2000);
     }
 }
 
@@ -106,7 +107,13 @@ async function loadGame() {
     }
 
     if (loadedData) {
+        // Mevcut state ile merge et (yeni özellikler eklenirse bozulmasın diye)
         gameState = { ...gameState, ...loadedData };
+        
+        // Inventory null gelirse düzelt
+        if(!gameState.inventory) gameState.inventory = {};
+        if(!gameState.history) gameState.history = [];
+
         recalcStats();
         
         // Çevrimdışı kazanç
@@ -121,6 +128,7 @@ async function loadGame() {
                 const offlineModal = document.getElementById('offline-modal');
                 if(offlineEl && offlineModal) {
                     offlineEl.innerText = earned.toFixed(7);
+                    offlineModal.classList.remove('hidden');
                     offlineModal.style.display = 'flex';
                 }
                 saveGame();
@@ -138,7 +146,10 @@ async function loadGame() {
 
 function closeModal() { 
     const m = document.getElementById('offline-modal');
-    if(m) m.style.display = 'none'; 
+    if(m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+    }
 }
 
 function recalcStats() {
@@ -159,8 +170,6 @@ function activateSystem() {
     const txt = document.getElementById('status-text');
     if(ind) { ind.classList.remove('bg-gray-500'); ind.classList.add('bg-green-500', 'animate-pulse'); }
     if(txt) { txt.innerText = "ONLINE"; txt.className = "text-green-400 font-bold"; }
-    const hashEl = document.getElementById('dash-hash');
-    if(hashEl?.parentElement?.parentElement) hashEl.parentElement.parentElement.classList.add('pulse-active');
     startLoop();
 }
 
@@ -173,18 +182,25 @@ function showPage(pageId) {
     const mob = document.getElementById('nav-' + pageId);
     if(mob) mob.classList.add('active');
     
+    // Desktop Sidebar Active State
     const deskIds = ['side-dashboard', 'side-market', 'side-inventory', 'side-wallet'];
     deskIds.forEach(id => {
         const el = document.getElementById(id);
-        if(el) { el.classList.remove('bg-white/10'); el.querySelector('i').classList.remove('text-cyan-400'); el.querySelector('i').classList.remove('text-yellow-400'); }
+        if(el) { 
+            el.classList.remove('bg-white/10', 'text-cyan-400'); 
+            const icon = el.querySelector('i');
+            if(icon) icon.className = icon.className.replace('text-cyan-400', 'text-gray-400');
+        }
     });
     
     const activeDesk = document.getElementById('side-' + pageId);
     if(activeDesk) {
-        activeDesk.classList.add('bg-white/10');
-        if(pageId === 'market') activeDesk.querySelector('i').classList.add('text-yellow-400');
-        else activeDesk.querySelector('i').classList.add('text-cyan-400');
+        activeDesk.classList.add('bg-white/10', 'text-cyan-400');
+        const icon = activeDesk.querySelector('i');
+        if(icon) icon.classList.remove('text-gray-400');
+        if(icon) icon.classList.add('text-cyan-400');
     }
+    
     if(pageId === 'inventory') renderInventory();
 }
 
@@ -201,19 +217,19 @@ function renderMarket() {
         div.innerHTML = `
             <div class="flex justify-between items-start mb-4">
                 <div class="p-4 bg-black/40 rounded-xl ${p.color} text-2xl shadow-inner border border-white/5"><i class="fa-solid ${p.icon}"></i></div>
-                <div class="text-xs bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-700">Owned: ${gameState.inventory[p.id]}</div>
+                <div class="text-xs bg-gray-900 px-3 py-1 rounded-full text-gray-400 border border-gray-700">Owned: <span id="owned-${p.id}">${gameState.inventory[p.id]}</span></div>
             </div>
             <div class="mb-4">
                 <h3 class="font-bold text-lg text-white">${p.name}</h3>
                 <div class="flex items-center gap-3 mt-2 text-xs"><span class="text-gray-400"><i class="fa-solid fa-bolt text-yellow-500"></i> ${p.hash} TH/s</span></div>
                 <div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 btn-ton py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1" data-price="${p.priceTON}">
+            <div class="flex gap-2 mt-auto">
+                <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition disabled:opacity-50 disabled:cursor-not-allowed" data-price="${p.priceTON}">
                     ${p.priceTON} TON
                 </button>
-                <button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 btn-star py-3 rounded-xl font-bold text-xs flex justify-center items-center gap-1">
-                    ${p.priceStars} <i class="fa-solid fa-star text-white"></i>
+                <button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 bg-yellow-600 hover:bg-yellow-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition">
+                    ${p.priceStars} <i class="fa-solid fa-star text-[10px]"></i>
                 </button>
             </div>
         `;
@@ -226,26 +242,23 @@ function buyWithTON(id) {
     const p = products.find(x => x.id === id);
     if(gameState.balance >= p.priceTON) {
         gameState.balance -= p.priceTON;
-        addMachine(id, "Bought with TON");
+        addMachine(id, "TON");
     } else {
         showToast("Insufficient TON Balance", 'error');
     }
 }
 
 function buyWithStars(id) {
-    const btn = event.currentTarget;
-    const originalContent = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
-    btn.disabled = true;
+    // Simüle edilmiş Star satın alma
+    showToast("Processing Star Payment...", 'star');
     setTimeout(() => {
-        showToast("⚠️ Star Purchase Disabled in Simulation", 'error');
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
+        addMachine(id, "Stars");
     }, 1000); 
 }
 
 function addMachine(id, source) {
     const p = products.find(x => x.id === id);
+    if (!gameState.inventory[id]) gameState.inventory[id] = 0;
     gameState.inventory[id]++;
     
     if(!gameState.mining) {
@@ -253,11 +266,15 @@ function addMachine(id, source) {
         activateSystem();
         showToast("System Auto-Started!", 'success');
     } else {
-        if(source.includes("TON")) showToast(`Purchased ${p.name}!`, 'success');
+        showToast(`Purchased ${p.name}!`, 'success');
     }
+    
+    // UI Güncellemeleri
+    const ownedLabel = document.getElementById(`owned-${id}`);
+    if(ownedLabel) ownedLabel.innerText = gameState.inventory[id];
+
     recalcStats();
     updateUI();
-    renderMarket();
     saveGame();
 }
 
@@ -283,28 +300,35 @@ function renderInventory() {
             list.appendChild(div);
         }
     });
-    if(empty) list.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty.</div>';
+    if(empty) list.innerHTML = '<div class="col-span-1 md:col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty. Go to Market.</div>';
 }
 
 function renderHistory() {
     const list = document.getElementById('history-list');
     if(!list) return;
-    if(gameState.history.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>'; return; }
+    if(gameState.history.length === 0) { 
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-40 text-gray-600 text-sm italic">
+                <i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i>
+                No transaction history.
+            </div>`; 
+        return; 
+    }
     list.innerHTML = '';
     gameState.history.forEach(tx => {
         const item = document.createElement('div');
-        item.className = "bg-black/30 p-4 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition";
+        item.className = "bg-black/30 p-3 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition mb-2";
         item.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-500"><i class="fa-solid fa-clock"></i></div>
                 <div>
-                    <div class="text-xs text-gray-400">Withdrawal</div>
-                    <div class="text-white font-bold digit-font">${tx.amount.toFixed(2)} TON</div>
+                    <div class="text-[10px] text-gray-400">Withdrawal</div>
+                    <div class="text-white font-bold digit-font text-sm">${tx.amount.toFixed(2)} TON</div>
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-xs text-pending font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> ${tx.status}</div>
-                <div class="text-[10px] text-gray-500 font-mono mt-1">${tx.date}</div>
+                <div class="text-[10px] text-yellow-500 font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-circle-notch fa-spin text-[8px]"></i> ${tx.status}</div>
+                <div class="text-[8px] text-gray-500 font-mono mt-1">${tx.date}</div>
             </div>
         `;
         list.appendChild(item);
@@ -313,18 +337,27 @@ function renderHistory() {
 
 function updateUI() {
     const b = gameState.balance.toFixed(7);
-    const mainBal = document.getElementById('main-balance'); if(mainBal) mainBal.innerText = b + " TON";
+    const mainBal = document.getElementById('main-balance'); if(mainBal) mainBal.innerText = b;
     const mobBal = document.getElementById('mobile-balance'); if(mobBal) mobBal.innerText = b;
     const walBal = document.getElementById('wallet-balance-display'); if(walBal) walBal.innerText = b;
+    
     const dHash = document.getElementById('dash-hash'); if(dHash) dHash.innerText = gameState.hashrate.toLocaleString();
     const dDaily = document.getElementById('dash-daily'); if(dDaily) dDaily.innerText = (gameState.income * 86400).toFixed(2);
     const dInc = document.getElementById('dash-income'); if(dInc) dInc.innerText = gameState.income.toFixed(7);
-    const dDev = document.getElementById('dash-devices'); if(dDev) dDev.innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
+    
+    const totalDevices = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
+    const dDev = document.getElementById('dash-devices'); if(dDev) dDev.innerText = totalDevices;
     
     const tonButtons = document.querySelectorAll('.btn-ton-check');
     tonButtons.forEach(btn => {
         const price = parseFloat(btn.getAttribute('data-price'));
-        if(gameState.balance >= price) btn.disabled = false; else btn.disabled = true;
+        if(gameState.balance >= price) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
     });
 }
 
@@ -339,7 +372,7 @@ function processWithdraw() {
     
     if(walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
     if(!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
-    if(val < 50) { showToast("Min withdraw: 50 TON", 'error'); return; } 
+    if(val < 0.5) { showToast("Min withdraw: 0.5 TON", 'error'); return; } 
     if(val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
     
     gameState.balance -= val;
@@ -358,9 +391,11 @@ let minLoop;
 function startLoop() {
     clearInterval(minLoop);
     minLoop = setInterval(() => {
-        gameState.balance += (gameState.income / 10);
-        updateUI();
-        updateChart(gameState.hashrate);
+        if(gameState.hashrate > 0) {
+            gameState.balance += (gameState.income / 10);
+            updateUI();
+            updateChart(gameState.hashrate);
+        }
     }, 100);
 }
 
@@ -369,20 +404,52 @@ let chart;
 function initChart() {
     const cvs = document.getElementById('miningChart');
     if(!cvs) return;
+    
+    // Varsa eskiyi temizle
+    if(window.myMiningChart) {
+        window.myMiningChart.destroy();
+    }
+
     const ctxChart = cvs.getContext('2d');
     let gradient = ctxChart.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)'); gradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
+    gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)'); 
+    gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
+    
     chart = new Chart(ctxChart, {
         type: 'line',
-        data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: '#00f2ff', backgroundColor: gradient, borderWidth: 3, tension: 0.4, pointRadius: 0, fill: true }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } }, animation: { duration: 0 } }
+        data: { 
+            labels: Array(20).fill(''), 
+            datasets: [{ 
+                data: Array(20).fill(0), 
+                borderColor: '#22d3ee', 
+                backgroundColor: gradient, 
+                borderWidth: 2, 
+                tension: 0.4, 
+                pointRadius: 0, 
+                fill: true 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: false }, 
+            scales: { x: { display: false }, y: { display: false } }, 
+            animation: { duration: 0 },
+            interaction: { intersect: false }
+        }
     });
+    window.myMiningChart = chart;
 }
 
 function updateChart(val) {
     if(!chart) return;
-    const f = (Math.random() - 0.5) * (val * 0.15); let v = val > 0 ? val + f : 0; if(v<0) v=0;
-    chart.data.datasets[0].data.push(v); chart.data.datasets[0].data.shift(); chart.update();
+    const f = (Math.random() - 0.5) * (val * 0.05); 
+    let v = val > 0 ? val + f : 0; 
+    if(v<0) v=0;
+    
+    chart.data.datasets[0].data.push(v); 
+    chart.data.datasets[0].data.shift(); 
+    chart.update();
 }
 
 function initBg() {
@@ -390,13 +457,36 @@ function initBg() {
     if(!cvs) return;
     const ctx = cvs.getContext('2d');
     let w, h; const parts = [];
-    function resize() { w=window.innerWidth; h=window.innerHeight; cvs.width=w; cvs.height=h; parts.length=0; const c=Math.min(Math.floor(w/15),100); for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); }
-    window.addEventListener('resize', resize); resize();
-    function anim() { ctx.clearRect(0,0,w,h); for(let i=0;i<parts.length;i++) { let p=parts[i]; p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,p.s,0,Math.PI*2); ctx.fillStyle=`rgba(0,242,255,${0.3+Math.random()*0.2})`; ctx.fill(); for(let j=i+1;j<parts.length;j++) { let p2=parts[j]; let d=Math.hypot(p.x-p2.x,p.y-p2.y); if(d<120) { ctx.beginPath(); ctx.strokeStyle=`rgba(0,242,255,${1-d/120})`; ctx.lineWidth=0.5; ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } } requestAnimationFrame(anim); }
+    
+    function resize() { 
+        w=window.innerWidth; h=window.innerHeight; 
+        cvs.width=w; cvs.height=h; 
+        parts.length=0; 
+        const c=Math.min(Math.floor(w/15), 50); 
+        for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); 
+    }
+    window.addEventListener('resize', resize); 
+    resize();
+    
+    function anim() { 
+        ctx.clearRect(0,0,w,h); 
+        for(let i=0;i<parts.length;i++) { 
+            let p=parts[i]; 
+            p.x+=p.vx; p.y+=p.vy; 
+            if(p.x<0||p.x>w)p.vx*=-1; 
+            if(p.y<0||p.y>h)p.vy*=-1; 
+            
+            ctx.beginPath(); 
+            ctx.arc(p.x,p.y,p.s,0,Math.PI*2); 
+            ctx.fillStyle=`rgba(34,211,238,${0.3+Math.random()*0.2})`; 
+            ctx.fill(); 
+        } 
+        requestAnimationFrame(anim); 
+    }
     anim();
 }
 
-// Window'a dışa aktarma
+// Window'a dışa aktarma (HTML'den erişim için)
 window.gameApp = {
     buyWithTON,
     buyWithStars,
