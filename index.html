@@ -3,301 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#020205">
-    <title>NEXUS MINER</title>
+    <title>NEXUS MINER - Pro Structure</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'nexus-dark': '#020205',
-                        'nexus-gray': '#0f1218',
-                        'neon-blue': '#00f2ff',
-                        'neon-green': '#0aff60',
-                    }
-                }
-            }
-        }
-    </script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="style.css">
+
     <style>
-        /* --- APP GÖRÜNÜM AYARLARI --- */
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden; /* Sayfanın kendisinin kaymasını engeller */
+        /* Telegram'da sayfa kaymasını ve seçimi engelleyen stil */
+        body {
+            overflow: hidden; /* Ana sayfa kaymasını engeller */
+            user-select: none; /* Metin seçimini engeller */
+            -webkit-tap-highlight-color: transparent;
+            /* Arka plan rengi, style.css'teki gradyanı tamamlar */
             background-color: #020205;
-            font-family: 'Segoe UI', sans-serif;
-            color: white;
-            -webkit-tap-highlight-color: transparent; /* Dokunma efektini kaldırır */
-            user-select: none; /* Metin seçimini engeller (App hissi için) */
         }
         
-        .digit-font { font-family: 'Share Tech Mono', monospace; }
-        
-        /* Glassmorphism */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* İçerik Kaydırma Alanı (Sadece burası kayar) */
-        .scroll-content {
-            overflow-y: auto;
-            height: 100%;
-            padding-bottom: 100px; /* Bottom Nav için boşluk */
-            -webkit-overflow-scrolling: touch; /* iOS akıcı kaydırma */
-        }
-
         /* Scrollbar Gizleme */
-        .scroll-content::-webkit-scrollbar { display: none; }
-        .scroll-content { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Neon Efektler */
-        .neon-blue-text { text-shadow: 0 0 10px rgba(0, 242, 255, 0.6); color: #00f2ff; }
-        .neon-green-text { text-shadow: 0 0 10px rgba(10, 255, 96, 0.6); color: #0aff60; }
-
-        /* Animasyonlar */
-        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); } }
-        .pulse-active { animation: pulse-ring 2s infinite; border-color: #00f2ff; }
-
-        /* --- MODAL & TOAST --- */
-        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-        
-        #save-indicator {
-            position: fixed; top: 15px; right: 15px; z-index: 50;
-            background: rgba(0,0,0,0.8); border: 1px solid #0aff60; color: #0aff60;
-            padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold;
-            opacity: 0; transition: opacity 0.3s; pointer-events: none; display: flex; align-items: center; gap: 5px;
+        /* Arka Plan Canvas Ayarı (Tıklamayı engellememesi için) */
+        #bg-canvas {
+            pointer-events: none; /* Butonların çalışması için kritiktir */
+            z-index: -1;
         }
 
-        #toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 100; width: 90%; max-width: 350px; pointer-events: none; }
-        .toast {
-            background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(255,255,255,0.1);
-            padding: 12px; border-radius: 12px; margin-top: 8px; font-size: 13px;
-            display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* Sayfa Geçişleri için Animasyon */
+        .page-section { display: none; }
+        .page-section.active {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
         }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        /* Bottom Nav (App Bar) */
+        /* Mobil Alt Menü (Masaüstünde gizlenir) */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: rgba(2, 2, 5, 0.9); backdrop-filter: blur(15px);
-            display: flex; justify-content: space-around; align-items: flex-start;
-            padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); z-index: 40;
-            padding-bottom: env(safe-area-inset-bottom); /* iPhone X+ uyumu */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            /* Orijinal tasarıma uygun arka plan rengi ve efekti */
+            background: rgba(10, 15, 30, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 0;
+            z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom); /* iPhone X+ için alt boşluk */
         }
+        
         .nav-btn {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            color: #666; font-size: 10px; font-weight: 600; transition: 0.2s; width: 25%;
+            color: #6b7280; /* Gri */
+            font-size: 1.5rem;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
         }
-        .nav-btn i { font-size: 20px; margin-bottom: 2px; transition: 0.2s; }
-        .nav-btn.active { color: #00f2ff; }
-        .nav-btn.active i { text-shadow: 0 0 15px rgba(0,242,255,0.8); transform: translateY(-3px); }
-        .nav-btn:active { transform: scale(0.9); }
+        
+        .nav-btn.active {
+            color: #22d3ee; /* Cyan */
+            transform: translateY(-3px);
+        }
 
-        /* Sayfa Geçişleri */
-        .page-section { display: none; opacity: 0; }
-        .page-section.active { display: block; animation: fadeIn 0.3s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Offline Modal */
-        #offline-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        /* Orijinal tasarımın aktif menü göstergesi (alttaki nokta) */
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background: #22d3ee;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22d3ee;
+        }
     </style>
 </head>
-<body>
+<body class="flex h-screen w-full">
 
     <canvas id="bg-canvas"></canvas>
-    <div id="save-indicator"><i class="fa-solid fa-check"></i> SAVED</div>
+    <div id="save-indicator" class="hidden fixed top-4 right-4 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500 z-50"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
     <div id="toast-container"></div>
 
-    <div id="offline-modal" class="p-6">
-        <div class="glass-panel p-6 rounded-3xl w-full max-w-sm text-center border border-gray-800 shadow-2xl transform scale-100">
-            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30 text-green-400">
-                <i class="fa-solid fa-coins text-2xl"></i>
+    <div id="offline-modal" class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="modal-content glass-panel p-6 rounded-2xl w-full max-w-sm text-center relative overflow-hidden border border-gray-700">
+            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                <i class="fa-solid fa-sack-dollar text-3xl"></i>
             </div>
-            <h2 class="text-xl font-bold text-white mb-2">Welcome Back</h2>
-            <p class="text-gray-400 text-sm mb-6">Mining continued while offline.</p>
-            <div class="bg-black/40 p-4 rounded-xl mb-6 border border-white/5">
-                <div class="text-[10px] text-gray-500 uppercase tracking-widest">EARNED</div>
-                <div class="text-3xl font-bold neon-green-text digit-font mt-1" id="offline-amount">0.00</div>
-                <div class="text-[10px] text-green-500 font-bold mt-1">TON COIN</div>
+            <h2 class="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
+            <p class="text-gray-400 text-sm mb-6">Your rigs continued mining while you were away.</p>
+            
+            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Offline Earnings</div>
+                <div class="text-3xl font-bold text-white digit-font neon-green mt-1" id="offline-amount">0.00</div>
+                <div class="text-xs text-green-500 font-bold">TON COIN</div>
             </div>
-            <button onclick="window.gameApp.closeModal()" class="w-full py-3 bg-green-600 rounded-xl font-bold text-sm hover:bg-green-500 transition active:scale-95">COLLECT</button>
+
+            <button onclick="window.gameApp.closeModal()" class="w-full btn-main py-3 rounded-xl font-bold uppercase transition active:scale-95 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg">Collect & Continue</button>
         </div>
     </div>
 
-    <div class="flex h-full w-full overflow-hidden">
+    <aside class="desktop-sidebar hidden lg:flex w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex-col z-20 bg-[#020205]/60">
+        <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-cube text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-widest text-white italic">NEXUS</h1>
+                <span class="text-[10px] text-cyan-400 tracking-[0.3em] font-bold">PROTOCOL</span>
+            </div>
+        </div>
+        <nav class="flex-1 p-6 space-y-4">
+            <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-cyan-400">
+                <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Dashboard</span>
+            </div>
+            <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Global Market</span>
+            </div>
+            <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fa-solid fa-server text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Inventory</span>
+            </div>
+            <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Wallet</span>
+            </div>
+        </nav>
+        <div class="p-6 text-xs text-gray-500 text-center">
+            v14.0 Production Ready<br>Client-Side Core
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto relative no-scrollbar bg-gradient-to-b from-[#020205] to-[#0a0f1e]">
         
-        <aside class="hidden md:flex w-72 glass-panel border-r-0 border-r border-gray-800 flex-col z-20">
-            <div class="p-8 flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-cyan-500 flex items-center justify-center text-black font-bold text-lg"><i class="fa-solid fa-cube"></i></div>
-                <h1 class="font-bold tracking-widest text-lg italic">NEXUS</h1>
+        <div class="sticky top-0 z-40 p-4 md:p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
+            <div class="flex items-center gap-4">
+                <div class="hidden md:block">
+                    <h2 class="text-gray-400 text-xs tracking-widest uppercase">Mined Assets</h2>
+                    <div class="text-3xl font-bold text-white digit-font neon-blue mt-1" id="main-balance">0.0000000</div>
+                </div>
+                <div class="md:hidden flex items-center gap-2">
+                    <i class="fa-solid fa-gem text-cyan-400 text-xl"></i> <span class="font-bold text-xl digit-font tracking-wide">NEXUS</span>
+                </div>
             </div>
-            <nav class="flex-1 px-4 space-y-2">
-                <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="cursor-pointer p-4 rounded-xl hover:bg-white/5 flex items-center gap-3 transition text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-chart-pie w-6"></i> Dashboard
-                </div>
-                <div onclick="window.gameApp.showPage('market')" id="side-market" class="cursor-pointer p-4 rounded-xl hover:bg-white/5 flex items-center gap-3 transition text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-cart-shopping w-6"></i> Market
-                </div>
-                <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="cursor-pointer p-4 rounded-xl hover:bg-white/5 flex items-center gap-3 transition text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-server w-6"></i> Inventory
-                </div>
-                <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="cursor-pointer p-4 rounded-xl hover:bg-white/5 flex items-center gap-3 transition text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-wallet w-6"></i> Wallet
-                </div>
-            </nav>
-        </aside>
+            <div class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.2)]">
+                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
+                <span id="status-text">STANDBY</span>
+            </div>
+        </div>
 
-        <main class="flex-1 h-full relative flex flex-col w-full">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto pb-24">
             
-            <div class="flex-none h-16 glass-panel border-b border-white/5 flex justify-between items-center px-5 z-30">
-                <div class="flex items-center gap-3">
-                    <div class="md:hidden w-8 h-8 rounded bg-gradient-to-br from-cyan-600 to-blue-800 flex items-center justify-center shadow-lg">
-                        <i class="fa-solid fa-cube text-sm text-white"></i>
+            <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden border border-gray-700">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
+                <div class="text-gray-400 text-xs font-bold tracking-widest mb-1">WALLET BALANCE</div>
+                <div class="text-3xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
+                <div class="text-cyan-500 text-xs font-bold mt-1 tracking-widest">TON NETWORK</div>
+            </div>
+
+            <div id="page-dashboard" class="page-section active">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Hash Power</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
                     </div>
-                    <div>
-                        <div class="text-[10px] text-gray-400 font-bold tracking-widest">BALANCE</div>
-                        <div class="text-lg font-bold neon-blue-text digit-font leading-none" id="main-balance">0.0000000</div>
+                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
+                        <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Active Rigs</div>
+                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
-                    <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                    <span id="status-text" class="text-[10px] font-bold text-gray-400">OFFLINE</span>
+                
+                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-2 border-t-cyan-500/50 border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-6"><i class="fa-solid fa-chart-area text-cyan-400"></i> Network Hashrate</h3>
+                    <div class="relative w-full h-64 md:h-80">
+                        <canvas id="miningChart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex-1 scroll-content px-4 py-6 md:p-8">
-                
-                <div id="page-dashboard" class="page-section active max-w-5xl mx-auto">
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <div class="glass-panel p-4 rounded-2xl">
-                            <div class="text-[10px] text-gray-500 font-bold mb-1">HASHRATE</div>
-                            <div class="text-xl font-bold text-white digit-font"><span id="dash-hash">0</span> <span class="text-xs text-cyan-500">TH/s</span></div>
-                        </div>
-                        <div class="glass-panel p-4 rounded-2xl">
-                            <div class="text-[10px] text-gray-500 font-bold mb-1">DAILY (EST)</div>
-                            <div class="text-xl font-bold neon-green-text digit-font"><span id="dash-daily">0.00</span> <span class="text-xs text-green-500">TON</span></div>
-                        </div>
+            <div id="page-market" class="page-section">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
+                        </h2>
+                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
                     </div>
+                </div>
+                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            </div>
 
-                    <div class="glass-panel p-5 rounded-3xl mb-6 border-t border-cyan-500/20 relative overflow-hidden">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-area text-cyan-500"></i> Network Activity</h3>
-                            <span class="text-[10px] text-cyan-500 animate-pulse">LIVE</span>
+            <div id="page-inventory" class="page-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
+                <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <div id="page-wallet" class="page-section">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="glass-panel p-8 rounded-3xl text-center border border-gray-700 h-fit">
+                        <div class="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
+                            <i class="fa-solid fa-wallet text-3xl text-cyan-400"></i>
                         </div>
-                        <div class="h-48 w-full"><canvas id="miningChart"></canvas></div>
-                    </div>
+                        <div class="text-gray-400 text-sm tracking-widest uppercase mb-2">Withdrawable Balance</div>
+                        <div class="text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
+                        <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
 
-                    <button onclick="window.gameApp.showPage('market')" class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-700 text-white font-bold shadow-lg shadow-cyan-900/20 active:scale-95 transition">
-                        UPGRADE RIGS
-                    </button>
-                </div>
-
-                <div id="page-market" class="page-section max-w-6xl mx-auto">
-                    <h2 class="text-xl font-bold text-white mb-4 pl-1">Marketplace</h2>
-                    <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    <div class="h-10"></div>
-                </div>
-
-                <div id="page-inventory" class="page-section max-w-4xl mx-auto">
-                    <h2 class="text-xl font-bold text-white mb-4 pl-1">My Fleet</h2>
-                    <div id="inventory-list" class="space-y-3"></div>
-                </div>
-
-                <div id="page-wallet" class="page-section max-w-lg mx-auto">
-                    <div class="glass-panel p-6 rounded-3xl text-center mb-6 mt-4">
-                        <div class="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30 shadow-[0_0_20px_rgba(0,242,255,0.1)]">
-                            <i class="fa-solid fa-wallet text-2xl text-cyan-400"></i>
-                        </div>
-                        <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Balance</div>
-                        <div class="text-3xl font-bold text-white digit-font neon-blue-text mb-6" id="wallet-balance-display">0.0000000</div>
-                        
-                        <div class="text-left space-y-3">
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                                <label class="text-[10px] text-gray-500 ml-1 block mb-1">TON ADDRESS</label>
-                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-transparent text-white text-sm outline-none font-mono placeholder-gray-700">
+                        <div class="text-left space-y-4">
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
+                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
                             </div>
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                                <label class="text-[10px] text-gray-500 ml-1 block mb-1">AMOUNT</label>
-                                <input type="number" id="withdraw-amount" placeholder="Min 50 TON" class="w-full bg-transparent text-white text-lg font-bold outline-none placeholder-gray-700">
+                            <div>
+                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
+                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
                             </div>
-                            <button onclick="window.gameApp.processWithdraw()" class="w-full bg-white text-black py-3.5 rounded-xl font-bold text-sm mt-2 active:scale-95 transition">
-                                WITHDRAW FUNDS
+                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg transition active:scale-95">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
                             </button>
                         </div>
                     </div>
-
-                    <h3 class="text-sm font-bold text-gray-400 mb-3 ml-2">Recent Transactions</h3>
-                    <div id="history-list" class="space-y-2 pb-10"></div>
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
+                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
+                        </h3>
+                        <div class="flex-1 overflow-y-auto pr-2 custom-scroll" id="history-list">
+                            <div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>
+                        </div>
+                    </div>
                 </div>
-
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
-    <nav class="bottom-nav md:hidden">
-        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>Home</span>
-        </div>
-        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn">
-            <i class="fa-solid fa-microchip"></i>
-            <span>Shop</span>
-        </div>
-        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn">
-            <i class="fa-solid fa-server"></i>
-            <span>Rigs</span>
-        </div>
-        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn">
-            <i class="fa-solid fa-wallet"></i>
-            <span>Wallet</span>
-        </div>
+    <nav class="bottom-nav lg:hidden">
+        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
+        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
+        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
+        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
     </nav>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
-            authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373", 
-            storageBucket: "tonm-77373.firebasestorage.app",
-            messagingSenderId: "507031118335",
-            appId: "1:507031118335:web:1d209e303dca154ec487ca"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        window.nexusFirebase = {
-            saveUserData: async (userId, data) => {
-                try {
-                    await setDoc(doc(db, "users", userId), data, { merge: true });
-                } catch (e) { console.error("Save Error", e); }
-            },
-            loadUserData: async (userId) => {
-                try {
-                    const docSnap = await getDoc(doc(db, "users", userId));
-                    return docSnap.exists() ? docSnap.data() : null;
-                } catch (e) { return null; }
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Telegram WebApp Genişletme
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                // Header ve arka plan rengini, style.css ile uyumlu hale getiriyoruz
+                tg.setHeaderColor('#020205');
+                tg.setBackgroundColor('#020205');
             }
-        };
+            
+            // Eğer app.js grafiği başlatmazsa, boş bir grafik şablonu oluştur (Görsellik için)
+            const ctx = document.getElementById('miningChart');
+            if (ctx && typeof Chart !== 'undefined') {
+                setTimeout(() => {
+                    if (!window.myMiningChart) {
+                        window.myMiningChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                                datasets: [{
+                                    label: 'Hashrate',
+                                    data: [0, 0, 0, 0, 0, 0], // Veri app.js'ten gelecek
+                                    borderColor: '#22d3ee',
+                                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.4,
+                                    fill: true,
+                                    pointRadius: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { x: { display: false }, y: { display: false } }
+                            }
+                        });
+                    }
+                }, 1000); // app.js'in yüklenmesi için biraz zaman tanı
+            }
+        });
     </script>
 
     <script src="app.js"></script>
