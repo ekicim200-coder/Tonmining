@@ -1,10 +1,9 @@
-// firebase-config.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-// Auth modüllerini ekledik
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+// Firebase SDK'yı import et
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// BURAYI KENDİ BİLGİLERİNLE DOLDUR
+// Firebase Config - SİZİN BİLGİLERİNİZİ BURAYA GİRİN
 const firebaseConfig = {
   apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
   authDomain: "tonm-77373.firebaseapp.com",
@@ -15,64 +14,80 @@ const firebaseConfig = {
   measurementId: "G-5EV1T50VK8"
 };
 
+// Firebase'i başlat
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
-const auth = getAuth(app); // Auth servisini başlat
 
-// --- AUTH FONKSİYONLARI ---
+let currentUser = null;
 
-// Site açılınca bu fonksiyonu çağıracağız
-export function initAuth(onLoginSuccess) {
-    // Kullanıcı durumunu dinle
+// Anonim giriş fonksiyonu
+export function initAuth(callback) {
+    console.log("Firebase Auth başlatılıyor...");
+    
+    signInAnonymously(auth)
+        .then(() => {
+            console.log("Anonim giriş başarılı!");
+        })
+        .catch((error) => {
+            console.error("Anonim giriş hatası:", error.code, error.message);
+        });
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Zaten giriş yapmış
-            console.log("🔥 Anonim ID:", user.uid);
-            if(onLoginSuccess) onLoginSuccess(user.uid);
+            currentUser = user;
+            console.log("User authenticated:", user.uid);
+            if (callback) callback(user.uid);
         } else {
-            // Giriş yapmamışsa Anonim giriş yap
-            signInAnonymously(auth)
-                .then(() => {
-                    console.log("🔥 Yeni Anonim Giriş Yapıldı.");
-                })
-                .catch((error) => {
-                    console.error("🔥 Giriş Hatası:", error);
-                });
+            console.log("User signed out");
+            currentUser = null;
         }
     });
 }
 
-// --- VERİTABANI FONKSİYONLARI ---
-
+// Firestore'a veri kaydet
 export async function saveUserToFire(walletAddress, data) {
-    if (!walletAddress || !auth.currentUser) return; // Giriş yapmamışsa kaydetme
-    
+    if (!currentUser) {
+        console.error("Kullanıcı giriş yapmamış!");
+        return;
+    }
+
     try {
-        const userRef = doc(db, "users", walletAddress);
-        await setDoc(userRef, {
+        const userDocRef = doc(db, "users", walletAddress);
+        await setDoc(userDocRef, {
             ...data,
             lastSave: Date.now(),
-            uid: auth.currentUser.uid // Hangi anonim user yazdı, onu da ekleyelim (Opsiyonel)
+            userId: currentUser.uid
         }, { merge: true });
-        console.log("🔥 Kayıt Başarılı.");
-    } catch (e) {
-        console.error("🔥 Kayıt Hatası:", e);
+        
+        console.log("✅ Firebase'e kaydedildi:", walletAddress);
+        return true;
+    } catch (error) {
+        console.error("❌ Firebase kaydetme hatası:", error.code, error.message);
+        return false;
     }
 }
 
+// Firestore'dan veri oku
 export async function getUserFromFire(walletAddress) {
-    if (!walletAddress) return null;
+    if (!currentUser) {
+        console.error("Kullanıcı giriş yapmamış!");
+        return null;
+    }
+
     try {
-        const userRef = doc(db, "users", walletAddress);
-        const docSnap = await getDoc(userRef);
+        const userDocRef = doc(db, "users", walletAddress);
+        const docSnap = await getDoc(userDocRef);
 
         if (docSnap.exists()) {
+            console.log("✅ Firebase'den veri okundu:", walletAddress);
             return docSnap.data();
         } else {
+            console.log("⚠️ Veri bulunamadı:", walletAddress);
             return null;
         }
-    } catch (e) {
-        console.error("🔥 Okuma Hatası:", e);
+    } catch (error) {
+        console.error("❌ Firebase okuma hatası:", error.code, error.message);
         return null;
     }
 }
