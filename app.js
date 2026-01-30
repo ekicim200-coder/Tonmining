@@ -1,8 +1,5 @@
 // app.js
 
-// 1. Her şeyi tek dosyadan çekiyoruz (Karışıklık olmaması için)
-import { db, doc, getDoc, setDoc } from './firebase-config.js';
-
 // --- CONFIGURATION ---
 const ROI_DAYS = 15;
 const SECONDS_IN_DAY = 86400;
@@ -18,6 +15,7 @@ const products = [
     { id: 8, name: "Quantum Core",   priceTON: 200, priceStars: 1000, hash: 2000, icon: "fa-atom",      color: "text-red-500" }
 ];
 
+// Gelirleri hesapla
 products.forEach(p => { p.income = p.priceTON / (ROI_DAYS * SECONDS_IN_DAY); });
 
 let gameState = {
@@ -32,156 +30,148 @@ let gameState = {
 
 let currentUserId = "test_user_01"; 
 
+// --- BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Telegram WebApp Başlatma
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
+    // 1. Telegram Başlatma
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
         tg.ready();
-        try {
-            tg.expand();
-            tg.enableClosingConfirmation();
-            tg.setHeaderColor('#020205');
-            tg.setBackgroundColor('#020205');
-        } catch(e) {}
-
+        try { tg.expand(); } catch(e){}
+        
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             currentUserId = tg.initDataUnsafe.user.id.toString();
-            console.log("Telegram User ID:", currentUserId);
+            console.log("Telegram User:", currentUserId);
         }
     }
 
-    // Oyunu Yükle
+    // 2. Oyunu Yükle
     await loadGame();
     
-    // UI Başlatma
+    // 3. Arayüzü Çiz
     renderMarket();
     showPage('dashboard');
     initChart();
     initBg();
 
-    // Otomatik Kayıt
-    setInterval(() => { saveGame(); }, 60000);
-    window.addEventListener('beforeunload', () => { saveGame(); });
+    // 4. Döngüleri Başlat
+    setInterval(() => saveGame(), 60000); // 60sn'de bir kaydet
+    
+    // window nesnesine fonksiyonları tanıttıktan sonra loop başlat
+    if(gameState.hashrate > 0) {
+        gameState.mining = true;
+        activateSystem();
+    }
 });
 
-// --- CORE FUNCTIONS (FIREBASE ENTEGRASYONLU) ---
+// --- CORE FUNCTIONS ---
 
-function showToast(message, type = 'info') {
+// Toast Mesajı Göster
+window.showToast = function(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if(!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type} bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg border border-gray-700 flex items-center gap-3 mb-3 animate-bounce-in`;
-    let icon = type === 'error' ? 'fa-triangle-exclamation text-red-500' : (type === 'star' ? 'fa-star text-yellow-400' : 'fa-circle-check text-green-400');
+    const icon = type === 'error' ? 'fa-triangle-exclamation text-red-500' : (type === 'star' ? 'fa-star text-yellow-400' : 'fa-circle-check text-green-400');
     toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.remove(); }, 3000);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-// OYUNU KAYDET (Hem Local Hem Firebase)
-async function saveGame() {
+// KAYDETME FONKSİYONU
+window.saveGame = async function() {
     gameState.lastLogin = Date.now();
-    
-    // 1. LocalStorage (Hızlı yedek)
     localStorage.setItem('nexusMinerV14', JSON.stringify(gameState));
-    
-    // 2. Firebase Firestore (Bulut Kaydı)
-    try {
-        await setDoc(doc(db, "users", currentUserId), gameState);
-        
-        const ind = document.getElementById('save-indicator');
-        if(ind) {
-            ind.classList.remove('hidden');
-            setTimeout(() => { ind.classList.add('hidden'); }, 2000);
+
+    // Firebase'e Kayıt (Varsa)
+    if (window.NexusFirebase) {
+        try {
+            const { db, setDoc, doc } = window.NexusFirebase;
+            await setDoc(doc(db, "users", currentUserId), gameState);
+            
+            // Kaydedildi ikonu
+            const ind = document.getElementById('save-indicator');
+            if(ind) {
+                ind.classList.remove('hidden');
+                setTimeout(() => ind.classList.add('hidden'), 2000);
+            }
+        } catch (error) {
+            console.error("Firebase Kayıt Hatası:", error);
         }
-    } catch (error) {
-        console.error("Buluta kayıt hatası:", error);
     }
 }
 
-// OYUNU YÜKLE (Önce Firebase, Yoksa Local)
-async function loadGame() {
+// YÜKLEME FONKSİYONU
+window.loadGame = async function() {
     let loadedData = null;
 
-    // 1. Önce Buluttan Çekmeyi Dene
-    try {
-        const docRef = doc(db, "users", currentUserId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            loadedData = docSnap.data();
-            console.log("Veri Firebase'den yüklendi!");
-        } else {
-            console.log("Kullanıcı Firebase'de bulunamadı, yerel veriye bakılıyor.");
+    // 1. Firebase'den Çekmeyi Dene
+    if (window.NexusFirebase) {
+        try {
+            const { db, getDoc, doc } = window.NexusFirebase;
+            const docSnap = await getDoc(doc(db, "users", currentUserId));
+            if (docSnap.exists()) {
+                loadedData = docSnap.data();
+                console.log("Veri Buluttan Geldi!");
+            }
+        } catch (e) {
+            console.warn("Bulut bağlantısı yok, yerel veri aranıyor...");
         }
-    } catch (e) {
-        console.log("İnternet yok veya Firebase hatası, LocalStorage kullanılıyor.", e);
     }
 
-    // 2. Bulutta yoksa LocalStorage'a bak
+    // 2. Yerelden Çek
     if (!loadedData) {
-        const localSaved = localStorage.getItem('nexusMinerV14');
-        if (localSaved) {
-            try { loadedData = JSON.parse(localSaved); } catch(e) {}
-        }
+        const local = localStorage.getItem('nexusMinerV14');
+        if(local) try { loadedData = JSON.parse(local); } catch(e){}
     }
 
-    // 3. Veriyi State'e İşle
+    // 3. Veriyi İşle
     if (loadedData) {
         gameState = { ...gameState, ...loadedData };
-        
         if(!gameState.inventory) gameState.inventory = {};
         if(!gameState.history) gameState.history = [];
 
         recalcStats();
-        
-        // Çevrimdışı Kazanç Hesaplama
-        if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
-            const now = Date.now();
-            const secondsPassed = (now - gameState.lastLogin) / 1000;
-            
-            if (secondsPassed > 10) {
-                const earned = secondsPassed * gameState.income;
-                gameState.balance += earned;
-                
-                const offlineEl = document.getElementById('offline-amount');
-                const offlineModal = document.getElementById('offline-modal');
-                if(offlineEl && offlineModal) {
-                    offlineEl.innerText = earned.toFixed(7);
-                    offlineModal.classList.remove('hidden');
-                    offlineModal.style.display = 'flex';
-                }
-                saveGame();
-            }
-        }
-
-        if (gameState.hashrate > 0) {
-            gameState.mining = true;
-            activateSystem();
-        }
+        checkOfflineEarnings();
         renderHistory();
         updateUI();
     }
 }
 
-function closeModal() { 
-    const m = document.getElementById('offline-modal');
-    if(m) {
-        m.style.display = 'none';
-        m.classList.add('hidden');
+// Çevrimdışı Kazanç Kontrolü
+function checkOfflineEarnings() {
+    if (gameState.hashrate > 0 && gameState.lastLogin && gameState.income > 0) {
+        const now = Date.now();
+        const seconds = (now - gameState.lastLogin) / 1000;
+        if (seconds > 10) {
+            const earned = seconds * gameState.income;
+            gameState.balance += earned;
+            
+            const m = document.getElementById('offline-modal');
+            const a = document.getElementById('offline-amount');
+            if(m && a) {
+                a.innerText = earned.toFixed(7);
+                m.classList.remove('hidden');
+                m.style.display = 'flex';
+            }
+            saveGame();
+        }
     }
 }
 
+window.closeModal = function() {
+    const m = document.getElementById('offline-modal');
+    if(m) { m.style.display = 'none'; m.classList.add('hidden'); }
+}
+
 function recalcStats() {
-    let totalHash = 0;
-    let totalIncome = 0;
+    let th = 0, inc = 0;
     products.forEach(p => {
-        if(gameState.inventory[p.id]) {
-            totalHash += p.hash * gameState.inventory[p.id];
-            totalIncome += p.income * gameState.inventory[p.id];
-        }
+        const count = gameState.inventory[p.id] || 0;
+        th += p.hash * count;
+        inc += p.income * count;
     });
-    gameState.hashrate = totalHash;
-    gameState.income = totalIncome;
+    gameState.hashrate = th;
+    gameState.income = inc;
 }
 
 function activateSystem() {
@@ -192,35 +182,34 @@ function activateSystem() {
     startLoop();
 }
 
-function showPage(pageId) {
+window.showPage = function(id) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-    const target = document.getElementById('page-' + pageId);
+    const target = document.getElementById('page-' + id);
     if(target) target.classList.add('active');
 
+    // Navigasyon Güncelle
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    const mob = document.getElementById('nav-' + pageId);
+    const mob = document.getElementById('nav-' + id);
     if(mob) mob.classList.add('active');
-    
-    // Desktop Sidebar Active State
+
+    // Desktop Nav
     const deskIds = ['side-dashboard', 'side-market', 'side-inventory', 'side-wallet'];
-    deskIds.forEach(id => {
-        const el = document.getElementById(id);
+    deskIds.forEach(did => {
+        const el = document.getElementById(did);
         if(el) { 
-            el.classList.remove('bg-white/10', 'text-cyan-400'); 
-            const icon = el.querySelector('i');
-            if(icon) icon.className = icon.className.replace('text-cyan-400', 'text-gray-400');
+            el.classList.remove('bg-white/10', 'text-cyan-400');
+            const i = el.querySelector('i');
+            if(i) i.className = i.className.replace('text-cyan-400', 'text-gray-400');
         }
     });
-    
-    const activeDesk = document.getElementById('side-' + pageId);
+    const activeDesk = document.getElementById('side-' + id);
     if(activeDesk) {
         activeDesk.classList.add('bg-white/10', 'text-cyan-400');
-        const icon = activeDesk.querySelector('i');
-        if(icon) icon.classList.remove('text-gray-400');
-        if(icon) icon.classList.add('text-cyan-400');
+        const i = activeDesk.querySelector('i');
+        if(i) { i.classList.remove('text-gray-400'); i.classList.add('text-cyan-400'); }
     }
-    
-    if(pageId === 'inventory') renderInventory();
+
+    if(id === 'inventory') renderInventory();
 }
 
 function renderMarket() {
@@ -229,7 +218,7 @@ function renderMarket() {
     list.innerHTML = '';
     products.forEach(p => {
         if(!gameState.inventory[p.id]) gameState.inventory[p.id] = 0;
-        const dailyInc = (p.income * 86400).toFixed(2);
+        const daily = (p.income * 86400).toFixed(2);
         
         const div = document.createElement('div');
         div.className = "glass-panel p-5 rounded-2xl flex flex-col justify-between transition border border-gray-800 hover:border-cyan-500/50";
@@ -241,13 +230,13 @@ function renderMarket() {
             <div class="mb-4">
                 <h3 class="font-bold text-lg text-white">${p.name}</h3>
                 <div class="flex items-center gap-3 mt-2 text-xs"><span class="text-gray-400"><i class="fa-solid fa-bolt text-yellow-500"></i> ${p.hash} TH/s</span></div>
-                <div class="text-xs text-green-400 mt-1 font-bold">+${dailyInc} TON / Day</div>
+                <div class="text-xs text-green-400 mt-1 font-bold">+${daily} TON / Day</div>
             </div>
             <div class="flex gap-2 mt-auto">
-                <button onclick="window.gameApp.buyWithTON(${p.id})" class="btn-ton-check w-1/2 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition disabled:opacity-50 disabled:cursor-not-allowed" data-price="${p.priceTON}">
+                <button onclick="window.buyWithTON(${p.id})" class="btn-ton-check w-1/2 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition">
                     ${p.priceTON} TON
                 </button>
-                <button onclick="window.gameApp.buyWithStars(${p.id})" class="w-1/2 bg-yellow-600 hover:bg-yellow-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition">
+                <button onclick="window.buyWithStars(${p.id})" class="w-1/2 bg-yellow-600 hover:bg-yellow-500 text-white py-3 rounded-xl font-bold text-[10px] md:text-xs flex justify-center items-center gap-1 transition">
                     ${p.priceStars} <i class="fa-solid fa-star text-[10px]"></i>
                 </button>
             </div>
@@ -257,42 +246,37 @@ function renderMarket() {
     updateUI();
 }
 
-function buyWithTON(id) {
+window.buyWithTON = function(id) {
     const p = products.find(x => x.id === id);
     if(gameState.balance >= p.priceTON) {
         gameState.balance -= p.priceTON;
-        addMachine(id, "TON");
+        addMachine(id);
     } else {
-        showToast("Insufficient TON Balance", 'error');
+        showToast("Yetersiz Bakiye!", 'error');
     }
 }
 
-function buyWithStars(id) {
-    showToast("Processing Star Payment...", 'star');
-    setTimeout(() => {
-        addMachine(id, "Stars");
-    }, 1000); 
+window.buyWithStars = function(id) {
+    showToast("Stars ödemesi yapılıyor...", 'star');
+    setTimeout(() => addMachine(id), 1000);
 }
 
-function addMachine(id, source) {
-    const p = products.find(x => x.id === id);
-    if (!gameState.inventory[id]) gameState.inventory[id] = 0;
+function addMachine(id) {
+    if(!gameState.inventory[id]) gameState.inventory[id] = 0;
     gameState.inventory[id]++;
     
     if(!gameState.mining) {
         gameState.mining = true;
         activateSystem();
-        showToast("System Auto-Started!", 'success');
-    } else {
-        showToast(`Purchased ${p.name}!`, 'success');
     }
     
-    const ownedLabel = document.getElementById(`owned-${id}`);
-    if(ownedLabel) ownedLabel.innerText = gameState.inventory[id];
-
+    const lbl = document.getElementById(`owned-${id}`);
+    if(lbl) lbl.innerText = gameState.inventory[id];
+    
     recalcStats();
     updateUI();
     saveGame();
+    showToast("Cihaz Eklendi!", 'success');
 }
 
 function renderInventory() {
@@ -310,42 +294,40 @@ function renderInventory() {
                 <div class="w-12 h-12 bg-black/40 rounded-lg flex items-center justify-center ${p.color} text-2xl"><i class="fa-solid ${p.icon}"></i></div>
                 <div class="flex-1">
                     <h4 class="font-bold text-white">${p.name}</h4>
-                    <div class="text-xs text-gray-400">Total: <span class="text-white">${(p.hash * count).toLocaleString()} TH/s</span></div>
+                    <div class="text-xs text-gray-400">Toplam: <span class="text-white">${(p.hash * count).toLocaleString()} TH/s</span></div>
                 </div>
                 <div class="text-xl font-bold digit-font text-white bg-white/5 px-3 py-1 rounded-lg">x${count}</div>
             `;
             list.appendChild(div);
         }
     });
-    if(empty) list.innerHTML = '<div class="col-span-1 md:col-span-2 text-center text-gray-500 py-10 italic">Warehouse empty. Go to Market.</div>';
+    if(empty) list.innerHTML = '<div class="col-span-1 md:col-span-2 text-center text-gray-500 py-10 italic">Depo boş. Markete git.</div>';
 }
 
 function renderHistory() {
     const list = document.getElementById('history-list');
     if(!list) return;
-    if(gameState.history.length === 0) { 
-        list.innerHTML = `
-            <div class="flex flex-col items-center justify-center h-40 text-gray-600 text-sm italic">
-                <i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i>
-                No transaction history.
-            </div>`; 
-        return; 
-    }
     list.innerHTML = '';
+    
+    if(!gameState.history || gameState.history.length === 0) {
+        list.innerHTML = `<div class="flex flex-col items-center justify-center h-40 text-gray-600 text-sm italic"><i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i> İşlem yok.</div>`;
+        return;
+    }
+
     gameState.history.forEach(tx => {
         const item = document.createElement('div');
-        item.className = "bg-black/30 p-3 rounded-xl flex justify-between items-center border border-gray-700 hover:border-gray-500 transition mb-2";
+        item.className = "bg-black/30 p-3 rounded-xl flex justify-between items-center border border-gray-700 mb-2";
         item.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-500"><i class="fa-solid fa-clock"></i></div>
                 <div>
-                    <div class="text-[10px] text-gray-400">Withdrawal</div>
-                    <div class="text-white font-bold digit-font text-sm">${tx.amount.toFixed(2)} TON</div>
+                    <div class="text-[10px] text-gray-400">Çekim</div>
+                    <div class="text-white font-bold digit-font text-sm">${tx.amount} TON</div>
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-[10px] text-yellow-500 font-bold flex items-center justify-end gap-1"><i class="fa-solid fa-circle-notch fa-spin text-[8px]"></i> ${tx.status}</div>
-                <div class="text-[8px] text-gray-500 font-mono mt-1">${tx.date}</div>
+                <div class="text-[10px] text-yellow-500 font-bold">${tx.status}</div>
+                <div class="text-[8px] text-gray-500 font-mono">${tx.date}</div>
             </div>
         `;
         list.appendChild(item);
@@ -354,60 +336,43 @@ function renderHistory() {
 
 function updateUI() {
     const b = gameState.balance.toFixed(7);
-    const mainBal = document.getElementById('main-balance'); if(mainBal) mainBal.innerText = b;
-    const mobBal = document.getElementById('mobile-balance'); if(mobBal) mobBal.innerText = b;
-    const walBal = document.getElementById('wallet-balance-display'); if(walBal) walBal.innerText = b;
-    
+    const els = ['main-balance', 'mobile-balance', 'wallet-balance-display'];
+    els.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerText = b;
+    });
+
     const dHash = document.getElementById('dash-hash'); if(dHash) dHash.innerText = gameState.hashrate.toLocaleString();
     const dDaily = document.getElementById('dash-daily'); if(dDaily) dDaily.innerText = (gameState.income * 86400).toFixed(2);
     const dInc = document.getElementById('dash-income'); if(dInc) dInc.innerText = gameState.income.toFixed(7);
-    
-    const totalDevices = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
-    const dDev = document.getElementById('dash-devices'); if(dDev) dDev.innerText = totalDevices;
-    
-    const tonButtons = document.querySelectorAll('.btn-ton-check');
-    tonButtons.forEach(btn => {
-        const price = parseFloat(btn.getAttribute('data-price'));
-        if(gameState.balance >= price) {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-    });
+    const dDev = document.getElementById('dash-devices'); if(dDev) dDev.innerText = Object.values(gameState.inventory).reduce((a,b)=>a+b,0);
 }
 
-function processWithdraw() {
-    const walletInput = document.getElementById('wallet-address');
-    const amountInput = document.getElementById('withdraw-amount');
+window.processWithdraw = function() {
+    const wAddr = document.getElementById('wallet-address').value;
+    const wAmt = parseFloat(document.getElementById('withdraw-amount').value);
     
-    if(!walletInput || !amountInput) return;
-
-    const walletAddr = walletInput.value.trim();
-    const val = parseFloat(amountInput.value);
+    if(wAddr.length < 5) return showToast("Geçersiz Cüzdan Adresi", 'error');
+    if(!wAmt || wAmt <= 0) return showToast("Geçersiz Miktar", 'error');
+    if(wAmt > gameState.balance) return showToast("Yetersiz Bakiye", 'error');
     
-    if(walletAddr.length < 5) { showToast("Invalid Wallet Address", 'error'); return; }
-    if(!val || val <= 0) { showToast("Invalid Amount", 'error'); return; } 
-    if(val < 0.5) { showToast("Min withdraw: 0.5 TON", 'error'); return; } 
-    if(val > gameState.balance) { showToast("Insufficient Balance", 'error'); return; } 
+    gameState.balance -= wAmt;
+    gameState.history.unshift({
+        id: Date.now(), amount: wAmt, status: "Pending", date: new Date().toLocaleTimeString()
+    });
     
-    gameState.balance -= val;
-    const newTx = { 
-        id: Date.now(), amount: val, status: "Pending", date: new Date().toLocaleTimeString(), addr: walletAddr
-    };
-    gameState.history.unshift(newTx);
-    amountInput.value = '';
+    document.getElementById('withdraw-amount').value = '';
     updateUI();
     renderHistory();
     saveGame();
-    showToast("Withdrawal Request Sent", 'success');
+    showToast("Çekim talebi alındı", 'success');
 }
 
-let minLoop;
+// OYUN DÖNGÜSÜ
+let loop;
 function startLoop() {
-    clearInterval(minLoop);
-    minLoop = setInterval(() => {
+    clearInterval(loop);
+    loop = setInterval(() => {
         if(gameState.hashrate > 0) {
             gameState.balance += (gameState.income / 10);
             updateUI();
@@ -416,72 +381,59 @@ function startLoop() {
     }, 100);
 }
 
-// Chart.js
+// Chart ve Arkaplan
 let chart;
 function initChart() {
-    const cvs = document.getElementById('miningChart');
-    if(!cvs) return;
+    const ctx = document.getElementById('miningChart')?.getContext('2d');
+    if(!ctx) return;
+    if(chart) chart.destroy();
     
-    if(window.myMiningChart) {
-        window.myMiningChart.destroy();
-    }
-
-    const ctxChart = cvs.getContext('2d');
-    let gradient = ctxChart.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)'); 
-    gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
-    
-    chart = new Chart(ctxChart, {
+    chart = new Chart(ctx, {
         type: 'line',
-        data: { 
-            labels: Array(20).fill(''), 
-            datasets: [{ 
-                data: Array(20).fill(0), 
-                borderColor: '#22d3ee', 
-                backgroundColor: gradient, 
-                borderWidth: 2, 
-                tension: 0.4, 
-                pointRadius: 0, 
-                fill: true 
-            }] 
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [{
+                data: Array(20).fill(0),
+                borderColor: '#22d3ee',
+                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 0,
+                fill: true
+            }]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            plugins: { legend: false }, 
-            scales: { x: { display: false }, y: { display: false } }, 
-            animation: { duration: 0 },
-            interaction: { intersect: false }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: false },
+            scales: { x: { display: false }, y: { display: false } },
+            animation: { duration: 0 }
         }
     });
-    window.myMiningChart = chart;
 }
 
 function updateChart(val) {
     if(!chart) return;
-    const f = (Math.random() - 0.5) * (val * 0.05); 
-    let v = val > 0 ? val + f : 0; 
-    if(v<0) v=0;
-    
-    chart.data.datasets[0].data.push(v); 
-    chart.data.datasets[0].data.shift(); 
+    const v = val + (Math.random()-0.5)*(val*0.05);
+    chart.data.datasets[0].data.push(v > 0 ? v : 0);
+    chart.data.datasets[0].data.shift();
     chart.update();
 }
 
 function initBg() {
-    const cvs = document.getElementById('bg-canvas'); 
+    const cvs = document.getElementById('bg-canvas');
     if(!cvs) return;
     const ctx = cvs.getContext('2d');
-    let w, h; const parts = [];
+    let w, h, parts = [];
     
     function resize() { 
         w=window.innerWidth; h=window.innerHeight; 
         cvs.width=w; cvs.height=h; 
-        parts.length=0; 
-        const c=Math.min(Math.floor(w/15), 50); 
-        for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5}); 
+        parts = [];
+        const c = Math.min(Math.floor(w/20), 40);
+        for(let i=0;i<c;i++) parts.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.5, vy:(Math.random()-.5)*.5, s:Math.random()*2+.5});
     }
-    window.addEventListener('resize', resize); 
+    window.addEventListener('resize', resize);
     resize();
     
     function anim() { 
@@ -491,7 +443,6 @@ function initBg() {
             p.x+=p.vx; p.y+=p.vy; 
             if(p.x<0||p.x>w)p.vx*=-1; 
             if(p.y<0||p.y>h)p.vy*=-1; 
-            
             ctx.beginPath(); 
             ctx.arc(p.x,p.y,p.s,0,Math.PI*2); 
             ctx.fillStyle=`rgba(34,211,238,${0.3+Math.random()*0.2})`; 
@@ -502,11 +453,11 @@ function initBg() {
     anim();
 }
 
-// Global kullanıma aç
+// "window.gameApp" yapısına ihtiyaç duyan HTML varsa diye
 window.gameApp = {
-    buyWithTON,
-    buyWithStars,
-    processWithdraw,
-    closeModal,
-    showPage
+    buyWithTON: window.buyWithTON,
+    buyWithStars: window.buyWithStars,
+    processWithdraw: window.processWithdraw,
+    closeModal: window.closeModal,
+    showPage: window.showPage
 };
