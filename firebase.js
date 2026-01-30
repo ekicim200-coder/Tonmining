@@ -1,11 +1,10 @@
 // firebase-config.js
 
-// 1. Kütüphaneleri CDN'den çekiyoruz
+// Firebase SDK'larını global pencereye yüklüyoruz
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-analytics.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-// 2. Senin Ayarların
 const firebaseConfig = {
   apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
   authDomain: "tonm-77373.firebaseapp.com",
@@ -16,10 +15,19 @@ const firebaseConfig = {
   measurementId: "G-5EV1T50VK8"
 };
 
-// 3. Başlatma
+// Uygulamayı başlat
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
 
-// 4. Hepsini dışarı aktar (app.js bunları kullanacak)
-export { db, analytics, doc, getDoc, setDoc };
+// Global pencereye (window) "NexusFirebase" adında bir araç kutusu ekliyoruz.
+// Bu sayede app.js dosyası buraya erişebilecek.
+window.NexusFirebase = {
+    db: db,
+    doc: doc,
+    getDoc: getDoc,
+    setDoc: setDoc,
+    analytics: analytics
+};
+
+console.log("🔥 Firebase Bağlantısı Hazır!");
