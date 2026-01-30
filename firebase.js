@@ -1,8 +1,9 @@
-// firebase.js
+// firebase-config.js
 
-// DİKKAT: Sunucuda çalışması için tam https adreslerini kullanıyoruz
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+// Firebase modüllerini CDN üzerinden çekiyoruz
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-analytics.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
 // Senin yapılandırma bilgilerin
 const firebaseConfig = {
@@ -15,9 +16,10 @@ const firebaseConfig = {
   measurementId: "G-5EV1T50VK8"
 };
 
-// Firebase'i başlat
+// Başlatma işlemleri
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const db = getFirestore(app); // Veritabanını başlat
 
-// Uygulamayı ve analytics'i dışarı aktar (diğer dosyalarda kullanmak için)
-export { app, analytics };
+// Dışa aktar
+export { app, analytics, db };
