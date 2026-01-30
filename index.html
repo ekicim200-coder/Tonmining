@@ -16,34 +16,25 @@
         /* TEMEL AYARLAR */
         body {
             font-family: 'Rajdhani', sans-serif;
-            background-color: #020205; /* Orijinal Koyu Arka Plan */
+            background-color: #020205;
             color: white;
-            overflow: hidden; /* Sayfanın kendisi kaymaz, sadece içi kayar */
+            overflow: hidden; 
             -webkit-tap-highlight-color: transparent;
             user-select: none;
         }
 
-        /* CUSTOM FONTLAR */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
         .digit-font { font-family: 'Orbitron', sans-serif; }
 
-        /* SCROLLBAR GİZLEME */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* ARKA PLAN CANVASI (Tıklamayı engellememesi için fixlendi) */
+        /* Arka planın tıklamayı engellememesi için fix */
         #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.3;
-            pointer-events: none; /* ÖNEMLİ: Tıklamaları engellemez */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.3; pointer-events: none;
         }
 
-        /* GLASS PANEL (Orijinal Tasarım) */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
@@ -52,59 +43,49 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
-        /* SAYFA GEÇİŞLERİ */
         .page-section { display: none; }
         .page-section.active { display: block; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* MOBİL ALT MENÜ - DÜZELTİLDİ */
-        /* Kayma yapmaması için 'fixed' ve ortalanmış yapıda */
+        /* MOBİL ALT MENÜ (FLOATING STYLE) */
         .bottom-nav {
             position: fixed;
-            bottom: 20px; /* Alttan biraz yukarıda (iPhone çubuğu için) */
+            bottom: 25px; /* iOS barı için yukarıda */
             left: 50%;
-            transform: translateX(-50%); /* Tam ortalar */
-            width: 90%; /* Genişlik */
-            max-width: 400px;
-            height: 70px;
-            background: rgba(10, 15, 30, 0.95); /* Çok koyu lacivert/siyah */
-            backdrop-filter: blur(15px);
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 380px;
+            height: 65px;
+            background: rgba(10, 15, 30, 0.90);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 25px; /* Yuvarlak köşeler */
+            border-radius: 20px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-evenly;
             align-items: center;
-            z-index: 9999; /* En üstte */
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7); /* Derin gölge */
-            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
 
         .nav-btn {
             color: #6b7280;
-            font-size: 1.4rem;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.3rem;
+            width: 45px;
+            height: 45px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px;
+            transition: all 0.3s ease;
             position: relative;
         }
 
         .nav-btn.active {
             color: #ffffff;
             background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(59, 130, 246, 0.2));
-            box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
-            transform: translateY(-5px);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.25);
+            transform: translateY(-3px);
         }
-
-        .nav-btn.active i {
-            color: #22d3ee; /* Cyan ikon rengi */
-            text-shadow: 0 0 10px #22d3ee;
-        }
-
-        /* NEON EFEKTLERİ */
+        
+        .nav-btn.active i { color: #22d3ee; text-shadow: 0 0 8px #22d3ee; }
         .neon-blue { text-shadow: 0 0 10px rgba(34, 211, 238, 0.8); }
         .neon-green { text-shadow: 0 0 10px rgba(74, 222, 128, 0.8); }
     </style>
@@ -112,29 +93,23 @@
 <body class="flex h-screen w-full">
 
     <canvas id="bg-canvas"></canvas>
-    
     <div id="save-indicator" class="hidden fixed top-4 right-4 bg-green-900/40 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/50 backdrop-blur-md z-50"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
     <div id="toast-container"></div>
 
     <div id="offline-modal" class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="glass-panel p-6 rounded-3xl w-full max-w-sm text-center border border-gray-700 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70"></div>
-            
             <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
                 <i class="fa-solid fa-sack-dollar text-3xl"></i>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2 tracking-wide">SYSTEM ONLINE</h2>
             <p class="text-gray-400 text-sm mb-6">Mining operations continued in background.</p>
-            
             <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6 relative">
                 <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Generated Revenue</div>
                 <div class="text-3xl font-bold text-white digit-font neon-green" id="offline-amount">0.00</div>
                 <div class="text-xs text-green-500 font-bold absolute top-4 right-4">TON</div>
             </div>
-
-            <button onclick="window.gameApp.closeModal()" class="w-full bg-gradient-to-r from-green-600 to-green-800 hover:from-green-500 hover:to-green-700 text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg transition transform active:scale-95">
-                Collect Resources
-            </button>
+            <button onclick="window.gameApp.closeModal()" class="w-full bg-gradient-to-r from-green-600 to-green-800 hover:from-green-500 hover:to-green-700 text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg transition transform active:scale-95">Collect Resources</button>
         </div>
     </div>
 
@@ -162,13 +137,10 @@
                 <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400 transition"></i> <span class="font-semibold tracking-wide">Wallet</span>
             </div>
         </nav>
-        <div class="p-6 text-xs text-gray-500 text-center font-mono opacity-50">
-            v14.0 Production Ready<br>Client-Side Core
-        </div>
+        <div class="p-6 text-xs text-gray-500 text-center font-mono opacity-50">v14.0 Production Ready</div>
     </aside>
 
     <main class="flex-1 h-full overflow-y-auto relative no-scrollbar bg-gradient-to-b from-[#020205] to-[#0a0f1e]">
-        
         <div class="sticky top-0 z-40 p-4 md:p-6 flex justify-between items-center bg-[#020205]/80 backdrop-blur-md border-b border-white/5">
             <div class="flex items-center gap-4">
                 <div class="hidden md:block">
@@ -179,9 +151,7 @@
                     <div class="w-8 h-8 rounded bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
                         <i class="fa-solid fa-cube text-xs"></i>
                     </div>
-                    <div>
-                        <div class="font-bold text-lg digit-font tracking-wide text-white">NEXUS</div>
-                    </div>
+                    <div><div class="font-bold text-lg digit-font tracking-wide text-white">NEXUS</div></div>
                 </div>
             </div>
             <div class="px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] md:text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.1)]">
@@ -191,7 +161,6 @@
         </div>
 
         <div class="p-4 md:p-8 max-w-7xl mx-auto pb-32">
-            
             <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden shadow-lg">
                 <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-70"></div>
                 <div class="text-gray-500 text-[10px] font-bold tracking-[0.2em] mb-2">TOTAL BALANCE</div>
@@ -228,9 +197,7 @@
                 
                 <div class="glass-panel p-4 md:p-6 rounded-2xl relative overflow-hidden border-t border-t-cyan-500/30">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm md:text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-chart-area text-cyan-400"></i> Mining Performance
-                        </h3>
+                        <h3 class="text-sm md:text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-area text-cyan-400"></i> Mining Performance</h3>
                         <span class="text-[10px] text-gray-500 bg-white/5 px-2 py-1 rounded">LIVE</span>
                     </div>
                     <div class="w-full h-56 md:h-80 relative">
@@ -242,9 +209,7 @@
             <div id="page-market" class="page-section">
                 <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-microchip text-cyan-400"></i> Hardware Market
-                        </h2>
+                        <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-microchip text-cyan-400"></i> Hardware Market</h2>
                         <p class="text-gray-500 text-xs mt-1">Acquire high-performance ASIC & GPU clusters.</p>
                     </div>
                 </div>
@@ -287,8 +252,7 @@
                         </h3>
                         <div class="flex-1 overflow-y-auto pr-2 custom-scroll" id="history-list">
                             <div class="flex flex-col items-center justify-center h-40 text-gray-600 text-sm italic">
-                                <i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i>
-                                No transaction history.
+                                <i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i> No transaction history.
                             </div>
                         </div>
                     </div>
@@ -298,68 +262,19 @@
     </main>
 
     <nav class="bottom-nav md:hidden">
-        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active">
-            <i class="fa-solid fa-chart-line"></i>
-        </div>
-        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn">
-            <i class="fa-solid fa-store"></i>
-        </div>
-        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn">
-            <i class="fa-solid fa-server"></i>
-        </div>
-        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn">
-            <i class="fa-solid fa-wallet"></i>
-        </div>
+        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
+        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
+        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
+        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
     </nav>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Telegram Setup
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
                 tg.expand();
                 tg.setHeaderColor('#020205');
                 tg.setBackgroundColor('#020205');
-                tg.enableClosingConfirmation();
-            }
-
-            // Grafik Setup (app.js'e destek için)
-            const ctx = document.getElementById('miningChart');
-            if (ctx && typeof Chart !== 'undefined' && !window.myMiningChart) {
-                setTimeout(() => {
-                    if (!window.myMiningChart) {
-                        window.myMiningChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-                                datasets: [{
-                                    label: 'Hashrate (TH/s)',
-                                    data: [0,0,0,0,0,0],
-                                    borderColor: '#22d3ee',
-                                    backgroundColor: (context) => {
-                                        const ctx = context.chart.ctx;
-                                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                                        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
-                                        gradient.addColorStop(1, 'rgba(34, 211, 238, 0.0)');
-                                        return gradient;
-                                    },
-                                    borderWidth: 2,
-                                    tension: 0.4,
-                                    fill: true,
-                                    pointRadius: 0,
-                                    pointHitRadius: 20
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: { x: { display: false }, y: { display: false } },
-                                interaction: { intersect: false, mode: 'index' }
-                            }
-                        });
-                    }
-                }, 800);
             }
         });
     </script>
