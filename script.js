@@ -426,6 +426,41 @@ window.buy = buy;
 window.withdraw = withdraw;
 window.go = go;
 
+// DEBUG: Firebase test fonksiyonu
+window.testFirebaseManual = async function() {
+    console.log("🔍 Firebase Manuel Test Başlıyor...");
+    
+    if (!currentUserUid) {
+        console.error("❌ Kullanıcı henüz giriş yapmamış, bekleyin...");
+        return;
+    }
+    
+    const testWallet = "TEST_WALLET_" + Date.now();
+    const testData = {
+        balance: 999.99,
+        hashrate: 500,
+        inv: [{mid: 1, uid: Date.now()}],
+        freeEnd: 0
+    };
+    
+    console.log("📤 Test verisi gönderiliyor:", testWallet);
+    const result = await saveUserToFire(testWallet, testData);
+    
+    if (result) {
+        console.log("✅ BAŞARILI! Firebase Console'da kontrol edin.");
+        console.log("🔗 https://console.firebase.google.com/project/tonm-77373/firestore/data");
+    } else {
+        console.log("❌ BAŞARISIZ! Yukarıdaki hatalara bakın.");
+    }
+}
+
+// DEBUG: State göster
+window.showState = function() {
+    console.log("Current State:", state);
+    console.log("User UID:", currentUserUid);
+    console.log("Wallet:", state.wallet);
+}
+
 // --- DOM HAZIR OLUNCA EVENT LISTENER'LARI EKLE ---
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Ready - Attaching event listeners...');
