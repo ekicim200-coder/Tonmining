@@ -127,6 +127,32 @@ function calculateOfflineProgress() {
 function setupTonConnect() {
     tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
+        buttonRootId: 'connectBtn',
+        uiPreferences: {
+            theme: TON_CONNECT_UI.THEME.DARK
+        },
+        walletsListConfiguration: {
+            includeWallets: [
+                {
+                    appName: "tonkeeper",
+                    name: "Tonkeeper",
+                    imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
+                    aboutUrl: "https://tonkeeper.com",
+                    universalLink: "https://app.tonkeeper.com/ton-connect",
+                    bridgeUrl: "https://bridge.tonapi.io/bridge",
+                    platforms: ["ios", "android", "chrome", "firefox"]
+                },
+                {
+                    appName: "tonhub",
+                    name: "Tonhub",
+                    imageUrl: "https://tonhub.com/tonconnect_logo.png",
+                    aboutUrl: "https://tonhub.com",
+                    universalLink: "https://tonhub.com/ton-connect",
+                    bridgeUrl: "https://connect.tonhubapi.com/tonconnect",
+                    platforms: ["ios", "android"]
+                }
+            ]
+        }
     });
 
     tonConnectUI.onStatusChange((wallet) => {
