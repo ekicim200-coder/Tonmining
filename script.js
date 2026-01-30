@@ -1,6 +1,7 @@
 // --- IMPORT ---
 // initAuth fonksiyonunu da import ettik
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from './firebase-config.js';
+import { isTelegramAvailable, createTelegramInvoice, applyTelegramTheme, getTelegramUserId } from './telegram-integration.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
@@ -32,6 +33,12 @@ const machines = [
 let graphData = new Array(20).fill(10);
 
 function init() {
+    // Telegram Mini App teması uygula
+    if (isTelegramAvailable()) {
+        console.log("🚀 Telegram Mini App algılandı!");
+        applyTelegramTheme();
+    }
+    
     // 1. Önce Anonim Girişi Başlat
     initAuth((uid) => {
         currentUserUid = uid;
@@ -211,8 +218,6 @@ async function toggleWallet() {
 
 // --- ACTIONS ---
 async function buy(id) {
-    if (!tonConnectUI || !tonConnectUI.connected) return showToast("Connect Wallet First!", true);
-
     const m = machines.find(x => x.id === id);
     if (!m) return;
 
@@ -221,26 +226,66 @@ async function buy(id) {
         return;
     }
 
-    const amountInNanotons = (m.price * 1000000000).toString();
-    const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 600,
-        messages: [{ address: ADMIN_WALLET, amount: amountInNanotons }]
-    };
+    // Telegram Mini App içinde mi kontrol et
+    const useTelegram = isTelegramAvailable();
+    
+    if (useTelegram) {
+        // TELEGRAM STARS İLE ÖDEME
+        showToast("Opening Telegram Payment...", false);
+        
+        try {
+            const success = await createTelegramInvoice(id, m.name, m.price);
+            
+            if (success) {
+                showToast("Payment Successful! ✅");
+                grantMachine(id);
+                
+                // Firebase'e Telegram user ID ile kaydet
+                const telegramUserId = getTelegramUserId();
+                if (telegramUserId) {
+                    await saveUserToFire(`TG_${telegramUserId}`, {
+                        balance: state.balance,
+                        hashrate: state.hashrate,
+                        inv: state.inv,
+                        freeEnd: state.freeEnd,
+                        telegramUserId: telegramUserId
+                    });
+                }
+            } else {
+                showToast("Payment Cancelled", true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Payment Failed ❌", true);
+        }
+        
+    } else {
+        // TON CONNECT İLE ÖDEME (Normal Web)
+        if (!tonConnectUI || !tonConnectUI.connected) {
+            return showToast("Connect Wallet First!", true);
+        }
 
-    try {
-        showToast("Waiting for approval...", false);
-        await tonConnectUI.sendTransaction(transaction);
-        showToast("Payment Successful! ✅");
-        grantMachine(id);
-    } catch (e) {
-        console.error(e);
-        // Kullanıcı iptal etti mi kontrol et
-        if (e.message && e.message.includes('Transaction was not sent')) {
-            showToast("Transaction Cancelled", true);
-        } else if (e.message && e.message.includes('User rejects')) {
-            showToast("Transaction Rejected", true);
-        } else {
-            showToast("Transaction Failed ❌", true);
+        const amountInNanotons = (m.price * 1000000000).toString();
+        const transaction = {
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [{ address: ADMIN_WALLET, amount: amountInNanotons }]
+        };
+
+        try {
+            showToast("Waiting for approval...", false);
+            await tonConnectUI.sendTransaction(transaction);
+            showToast("Payment Successful! ✅");
+            grantMachine(id);
+        } catch (e) {
+            console.error(e);
+            // Kullanıcı iptal etti mi kontrol et
+            if (e.message && e.message.includes('Transaction was not sent')) {
+                showToast("Transaction Cancelled", true);
+            } else if (e.message && e.message.includes('User rejects')) {
+                showToast("Transaction Rejected", true);
+            } else {
+                showToast("Transaction Failed ❌", true);
+            }
         }
     }
 }
