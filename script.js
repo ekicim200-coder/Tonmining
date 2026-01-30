@@ -357,8 +357,16 @@ function renderMarket() {
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
             <div class="ci-info"><h4>${m.name}</h4><p>+${m.rate} GH/s • Day: ${daily}</p></div>
-            <div class="ci-action"><span class="ci-price">${m.price} TON</span><button id="btn-${m.id}" class="action-btn" onclick="buy(${m.id})">BUY</button></div>
+            <div class="ci-action"><span class="ci-price">${m.price} TON</span><button id="btn-${m.id}" class="action-btn" data-machine-id="${m.id}">BUY</button></div>
         </div>`;
+    });
+    
+    // Event listener'ları ekle (dinamik olarak oluşturulan butonlar için)
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const machineId = parseInt(this.getAttribute('data-machine-id'));
+            buy(machineId);
+        });
     });
 }
 
@@ -385,12 +393,48 @@ function showToast(msg, err=false) {
     setTimeout(()=>t.style.display="none", 2000);
 }
 
-// --- GLOBAL BINDING ---
+// --- GLOBAL BINDING (Module içinde çalışması için) ---
 window.toggleWallet = toggleWallet;
 window.watchAd = watchAd;
 window.buy = buy;
 window.withdraw = withdraw;
 window.go = go;
+
+// --- DOM HAZIR OLUNCA EVENT LISTENER'LARI EKLE ---
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Ready - Attaching event listeners...');
+    
+    // Connect Wallet Button
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', toggleWallet);
+        console.log('Connect button listener attached');
+    }
+    
+    // Withdraw Button
+    const withdrawBtn = document.querySelector('.w-btn');
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', withdraw);
+        console.log('Withdraw button listener attached');
+    }
+    
+    // Watch Ad Button
+    const adBtn = document.querySelector('.ad-btn');
+    if (adBtn) {
+        adBtn.addEventListener('click', watchAd);
+        console.log('Ad button listener attached');
+    }
+    
+    // Navigation Items
+    document.querySelectorAll('.nav-item').forEach((navItem, index) => {
+        navItem.addEventListener('click', function() {
+            const views = ['dash', 'market', 'inv', 'wallet'];
+            go(views[index], this);
+        });
+    });
+    
+    console.log('All event listeners attached successfully!');
+});
 
 // Init
 init();
