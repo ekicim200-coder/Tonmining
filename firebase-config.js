@@ -91,3 +91,31 @@ export async function getUserFromFire(walletAddress) {
         return null;
     }
 }
+
+// Çekim talebi kaydet
+export async function saveWithdrawalRequest(walletAddress, amount) {
+    if (!currentUser) {
+        console.error("Kullanıcı giriş yapmamış!");
+        return false;
+    }
+
+    try {
+        const withdrawalId = `WD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const withdrawalRef = doc(db, "withdrawals", withdrawalId);
+        
+        await setDoc(withdrawalRef, {
+            walletAddress: walletAddress,
+            amount: amount,
+            status: "pending",
+            requestDate: Date.now(),
+            userId: currentUser.uid,
+            processedDate: null
+        });
+        
+        console.log("✅ Çekim talebi kaydedildi:", withdrawalId);
+        return true;
+    } catch (error) {
+        console.error("❌ Çekim talebi kaydetme hatası:", error.code, error.message);
+        return false;
+    }
+}
