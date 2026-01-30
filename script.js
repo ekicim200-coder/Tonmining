@@ -126,7 +126,7 @@ function calculateOfflineProgress() {
 // --- TON CONNECT ---
 function setupTonConnect() {
     tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
+        manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
     });
 
     tonConnectUI.onStatusChange((wallet) => {
