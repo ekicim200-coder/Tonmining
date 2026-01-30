@@ -91,7 +91,10 @@ async function loadGame() {
     if (window.nexusFirebase) {
         try {
             const cloudData = await window.nexusFirebase.loadUserData(currentUserId);
-            if (cloudData) loadedData = cloudData;
+            if (cloudData) {
+                loadedData = cloudData;
+                console.log("Veri Buluttan Yüklendi");
+            }
         } catch (e) { console.log("Offline mode"); }
     }
 
