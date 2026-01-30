@@ -1,5 +1,7 @@
 {
-  "url": "https://senin-site-adresin.com",
-  "name": "Mining Game",
-  "iconUrl": "https://senin-site-adresin.com/logo.png"
+  "url": "https://tonmining.vercel.app",
+  "name": "TON Pro Miner",
+  "iconUrl": "https://ton.org/download/ton_symbol.png",
+  "termsOfUseUrl": "https://tonmining.vercel.app",
+  "privacyPolicyUrl": "https://tonmining.vercel.app"
 }
