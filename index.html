@@ -6,7 +6,6 @@
     <title>NEXUS MINER - Pro Structure</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,108 +13,132 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        /* Telegram'da sayfa kaymasını ve seçimi engelleyen stil */
+        /* TEMEL AYARLAR */
         body {
-            overflow: hidden; /* Ana sayfa kaymasını engeller */
-            user-select: none; /* Metin seçimini engeller */
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #020205; /* Orijinal Koyu Arka Plan */
+            color: white;
+            overflow: hidden; /* Sayfanın kendisi kaymaz, sadece içi kayar */
             -webkit-tap-highlight-color: transparent;
-            /* Arka plan rengi, style.css'teki gradyanı tamamlar */
-            background-color: #020205;
+            user-select: none;
         }
-        
-        /* Scrollbar Gizleme */
+
+        /* CUSTOM FONTLAR */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+        .digit-font { font-family: 'Orbitron', sans-serif; }
+
+        /* SCROLLBAR GİZLEME */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Arka Plan Canvas Ayarı (Tıklamayı engellememesi için) */
+        /* ARKA PLAN CANVASI (Tıklamayı engellememesi için fixlendi) */
         #bg-canvas {
-            pointer-events: none; /* Butonların çalışması için kritiktir */
-            z-index: -1;
-        }
-
-        /* Sayfa Geçişleri için Animasyon */
-        .page-section { display: none; }
-        .page-section.active {
-            display: block;
-            animation: fadeIn 0.2s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Mobil Alt Menü (Masaüstünde gizlenir) */
-        .bottom-nav {
             position: fixed;
-            bottom: 0;
+            top: 0;
             left: 0;
             width: 100%;
-            /* Orijinal tasarıma uygun arka plan rengi ve efekti */
-            background: rgba(10, 15, 30, 0.95);
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none; /* ÖNEMLİ: Tıklamaları engellemez */
+        }
+
+        /* GLASS PANEL (Orijinal Tasarım) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* SAYFA GEÇİŞLERİ */
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* MOBİL ALT MENÜ - DÜZELTİLDİ */
+        /* Kayma yapmaması için 'fixed' ve ortalanmış yapıda */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px; /* Alttan biraz yukarıda (iPhone çubuğu için) */
+            left: 50%;
+            transform: translateX(-50%); /* Tam ortalar */
+            width: 90%; /* Genişlik */
+            max-width: 400px;
+            height: 70px;
+            background: rgba(10, 15, 30, 0.95); /* Çok koyu lacivert/siyah */
             backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px; /* Yuvarlak köşeler */
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 12px 0;
-            z-index: 50;
-            padding-bottom: env(safe-area-inset-bottom); /* iPhone X+ için alt boşluk */
-        }
-        
-        .nav-btn {
-            color: #6b7280; /* Gri */
-            font-size: 1.5rem;
-            padding: 10px 20px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .nav-btn.active {
-            color: #22d3ee; /* Cyan */
-            transform: translateY(-3px);
+            z-index: 9999; /* En üstte */
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7); /* Derin gölge */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Orijinal tasarımın aktif menü göstergesi (alttaki nokta) */
-        .nav-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background: #22d3ee;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #22d3ee;
+        .nav-btn {
+            color: #6b7280;
+            font-size: 1.4rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
+
+        .nav-btn.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(59, 130, 246, 0.2));
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .nav-btn.active i {
+            color: #22d3ee; /* Cyan ikon rengi */
+            text-shadow: 0 0 10px #22d3ee;
+        }
+
+        /* NEON EFEKTLERİ */
+        .neon-blue { text-shadow: 0 0 10px rgba(34, 211, 238, 0.8); }
+        .neon-green { text-shadow: 0 0 10px rgba(74, 222, 128, 0.8); }
     </style>
 </head>
 <body class="flex h-screen w-full">
 
     <canvas id="bg-canvas"></canvas>
-    <div id="save-indicator" class="hidden fixed top-4 right-4 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500 z-50"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
+    
+    <div id="save-indicator" class="hidden fixed top-4 right-4 bg-green-900/40 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/50 backdrop-blur-md z-50"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
     <div id="toast-container"></div>
 
     <div id="offline-modal" class="hidden fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="modal-content glass-panel p-6 rounded-2xl w-full max-w-sm text-center relative overflow-hidden border border-gray-700">
-            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+        <div class="glass-panel p-6 rounded-3xl w-full max-w-sm text-center border border-gray-700 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-70"></div>
+            
+            <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 border border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
                 <i class="fa-solid fa-sack-dollar text-3xl"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
-            <p class="text-gray-400 text-sm mb-6">Your rigs continued mining while you were away.</p>
+            <h2 class="text-2xl font-bold text-white mb-2 tracking-wide">SYSTEM ONLINE</h2>
+            <p class="text-gray-400 text-sm mb-6">Mining operations continued in background.</p>
             
-            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
-                <div class="text-xs text-gray-500 uppercase tracking-wider">Offline Earnings</div>
-                <div class="text-3xl font-bold text-white digit-font neon-green mt-1" id="offline-amount">0.00</div>
-                <div class="text-xs text-green-500 font-bold">TON COIN</div>
+            <div class="bg-black/40 p-4 rounded-xl border border-gray-700 mb-6 relative">
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Generated Revenue</div>
+                <div class="text-3xl font-bold text-white digit-font neon-green" id="offline-amount">0.00</div>
+                <div class="text-xs text-green-500 font-bold absolute top-4 right-4">TON</div>
             </div>
 
-            <button onclick="window.gameApp.closeModal()" class="w-full btn-main py-3 rounded-xl font-bold uppercase transition active:scale-95 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg">Collect & Continue</button>
+            <button onclick="window.gameApp.closeModal()" class="w-full bg-gradient-to-r from-green-600 to-green-800 hover:from-green-500 hover:to-green-700 text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg transition transform active:scale-95">
+                Collect Resources
+            </button>
         </div>
     </div>
 
-    <aside class="desktop-sidebar hidden lg:flex w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex-col z-20 bg-[#020205]/60">
+    <aside class="hidden md:flex w-72 glass-panel border-r-0 border-r border-gray-700/50 h-full flex-col z-20">
         <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
             <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
                 <i class="fa-solid fa-cube text-xl"></i>
@@ -125,21 +148,21 @@
                 <span class="text-[10px] text-cyan-400 tracking-[0.3em] font-bold">PROTOCOL</span>
             </div>
         </div>
-        <nav class="flex-1 p-6 space-y-4">
-            <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-cyan-400">
-                <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Dashboard</span>
+        <nav class="flex-1 p-6 space-y-3">
+            <div onclick="window.gameApp.showPage('dashboard')" id="side-dashboard" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-gray-400 hover:text-cyan-400">
+                <i class="fa-solid fa-gauge-high text-xl group-hover:text-cyan-400 transition"></i> <span class="font-semibold tracking-wide">Dashboard</span>
             </div>
-            <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Global Market</span>
+            <div onclick="window.gameApp.showPage('market')" id="side-market" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-gray-400 hover:text-cyan-400">
+                <i class="fa-solid fa-store text-xl group-hover:text-cyan-400 transition"></i> <span class="font-semibold tracking-wide">Global Market</span>
             </div>
-            <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-server text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Inventory</span>
+            <div onclick="window.gameApp.showPage('inventory')" id="side-inventory" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-gray-400 hover:text-cyan-400">
+                <i class="fa-solid fa-server text-xl group-hover:text-cyan-400 transition"></i> <span class="font-semibold tracking-wide">Inventory</span>
             </div>
-            <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
-                <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400"></i> <span class="font-semibold tracking-wide">Wallet</span>
+            <div onclick="window.gameApp.showPage('wallet')" id="side-wallet" class="nav-item cursor-pointer group flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition text-gray-400 hover:text-cyan-400">
+                <i class="fa-solid fa-wallet text-xl group-hover:text-cyan-400 transition"></i> <span class="font-semibold tracking-wide">Wallet</span>
             </div>
         </nav>
-        <div class="p-6 text-xs text-gray-500 text-center">
+        <div class="p-6 text-xs text-gray-500 text-center font-mono opacity-50">
             v14.0 Production Ready<br>Client-Side Core
         </div>
     </aside>
@@ -152,48 +175,65 @@
                     <h2 class="text-gray-400 text-xs tracking-widest uppercase">Mined Assets</h2>
                     <div class="text-3xl font-bold text-white digit-font neon-blue mt-1" id="main-balance">0.0000000</div>
                 </div>
-                <div class="md:hidden flex items-center gap-2">
-                    <i class="fa-solid fa-gem text-cyan-400 text-xl"></i> <span class="font-bold text-xl digit-font tracking-wide">NEXUS</span>
+                <div class="md:hidden flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-cube text-xs"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-lg digit-font tracking-wide text-white">NEXUS</div>
+                    </div>
                 </div>
             </div>
-            <div class="px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.2)]">
-                <div id="status-indicator" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
-                <span id="status-text">STANDBY</span>
+            <div class="px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] md:text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(10,255,96,0.1)]">
+                <div id="status-indicator" class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span id="status-text">ONLINE</span>
             </div>
         </div>
 
-        <div class="p-4 md:p-8 max-w-7xl mx-auto pb-24">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto pb-32">
             
-            <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden border border-gray-700">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
-                <div class="text-gray-400 text-xs font-bold tracking-widest mb-1">WALLET BALANCE</div>
-                <div class="text-3xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
-                <div class="text-cyan-500 text-xs font-bold mt-1 tracking-widest">TON NETWORK</div>
+            <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden shadow-lg">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-70"></div>
+                <div class="text-gray-500 text-[10px] font-bold tracking-[0.2em] mb-2">TOTAL BALANCE</div>
+                <div class="text-4xl font-bold text-white digit-font neon-blue" id="mobile-balance">0.0000000</div>
+                <div class="flex justify-center items-center gap-2 mt-3 opacity-60">
+                    <i class="fa-solid fa-circle-nodes text-cyan-400 text-xs"></i>
+                    <div class="text-cyan-500 text-[10px] font-bold tracking-widest">TON NETWORK</div>
+                </div>
             </div>
 
             <div id="page-dashboard" class="page-section active">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    <div class="glass-panel p-4 md:p-5 rounded-2xl relative group hover:bg-white/5 transition">
                         <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Hash Power</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
+                        <div class="text-lg md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-hash">0</span> <span class="text-xs text-cyan-400">TH/s</span></div>
+                        <i class="fa-solid fa-bolt absolute top-4 right-4 text-gray-700 group-hover:text-cyan-400/50 transition"></i>
                     </div>
-                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                    <div class="glass-panel p-4 md:p-5 rounded-2xl relative group hover:bg-white/5 transition">
                         <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Daily Est.</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
+                        <div class="text-lg md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-daily" class="neon-green">0.00</span> <span class="text-xs text-green-400">TON</span></div>
+                        <i class="fa-solid fa-chart-line absolute top-4 right-4 text-gray-700 group-hover:text-green-400/50 transition"></i>
                     </div>
-                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                    <div class="glass-panel p-4 md:p-5 rounded-2xl relative group hover:bg-white/5 transition">
                         <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Live Rate</div>
-                        <div class="text-sm font-bold text-white digit-font mt-2"><span id="dash-income">0.0000000</span> <span class="text-xs text-gray-400">TON/s</span></div>
+                        <div class="text-sm md:text-lg font-bold text-white digit-font mt-2"><span id="dash-income">0.0000</span> <span class="text-xs text-gray-400">TON/s</span></div>
+                        <i class="fa-solid fa-stopwatch absolute top-4 right-4 text-gray-700 group-hover:text-white/30 transition"></i>
                     </div>
-                    <div class="glass-panel p-5 rounded-2xl relative border border-gray-700">
+                    <div class="glass-panel p-4 md:p-5 rounded-2xl relative group hover:bg-white/5 transition">
                         <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Active Rigs</div>
-                        <div class="text-xl md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
+                        <div class="text-lg md:text-2xl font-bold text-white digit-font mt-2"><span id="dash-devices">0</span> <span class="text-xs text-gray-500">Units</span></div>
+                        <i class="fa-solid fa-server absolute top-4 right-4 text-gray-700 group-hover:text-purple-400/50 transition"></i>
                     </div>
                 </div>
                 
-                <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-2 border-t-cyan-500/50 border border-gray-700">
-                    <h3 class="text-lg font-bold text-white mb-6"><i class="fa-solid fa-chart-area text-cyan-400"></i> Network Hashrate</h3>
-                    <div class="relative w-full h-64 md:h-80">
+                <div class="glass-panel p-4 md:p-6 rounded-2xl relative overflow-hidden border-t border-t-cyan-500/30">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm md:text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-area text-cyan-400"></i> Mining Performance
+                        </h3>
+                        <span class="text-[10px] text-gray-500 bg-white/5 px-2 py-1 rounded">LIVE</span>
+                    </div>
+                    <div class="w-full h-56 md:h-80 relative">
                         <canvas id="miningChart"></canvas>
                     </div>
                 </div>
@@ -202,50 +242,54 @@
             <div id="page-market" class="page-section">
                 <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                            <i class="fa-solid fa-shop text-cyan-400"></i> Global Market
+                        <h2 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-microchip text-cyan-400"></i> Hardware Market
                         </h2>
-                        <p class="text-gray-400 text-xs">Invest via TON Balance or direct Telegram Stars payment.</p>
+                        <p class="text-gray-500 text-xs mt-1">Acquire high-performance ASIC & GPU clusters.</p>
                     </div>
                 </div>
-                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+                <div id="market-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"></div>
             </div>
 
             <div id="page-inventory" class="page-section">
-                <h2 class="text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
+                <h2 class="text-xl md:text-2xl font-bold text-white mb-6 border-l-4 border-purple-500 pl-4">Active Fleet</h2>
                 <div id="inventory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
 
             <div id="page-wallet" class="page-section">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass-panel p-8 rounded-3xl text-center border border-gray-700 h-fit">
-                        <div class="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30">
-                            <i class="fa-solid fa-wallet text-3xl text-cyan-400"></i>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                    <div class="glass-panel p-6 md:p-8 rounded-3xl text-center border border-gray-700 h-fit">
+                        <div class="w-16 h-16 md:w-20 md:h-20 bg-black/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                            <i class="fa-solid fa-wallet text-2xl md:text-3xl text-cyan-400"></i>
                         </div>
-                        <div class="text-gray-400 text-sm tracking-widest uppercase mb-2">Withdrawable Balance</div>
-                        <div class="text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
-                        <div class="text-xs text-cyan-500 font-bold mb-8">TON NETWORK</div>
+                        <div class="text-gray-500 text-[10px] tracking-widest uppercase mb-2">Withdrawable Balance</div>
+                        <div class="text-3xl md:text-4xl font-bold text-white digit-font neon-blue mb-2" id="wallet-balance-display">0.0000000</div>
+                        <div class="text-[10px] text-cyan-500 font-bold mb-8 bg-cyan-500/10 inline-block px-3 py-1 rounded-full border border-cyan-500/20">TON NETWORK</div>
 
                         <div class="text-left space-y-4">
                             <div>
-                                <label class="text-xs text-gray-500 ml-1">TON Wallet Address</label>
-                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono">
+                                <label class="text-[10px] text-gray-500 ml-1 uppercase font-bold">TON Wallet Address</label>
+                                <input type="text" id="wallet-address" placeholder="UQc7..." class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 md:p-4 text-white text-sm outline-none focus:border-cyan-500 transition font-mono placeholder-gray-700">
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 ml-1">Amount (Min 50 TON)</label>
-                                <input type="number" id="withdraw-amount" placeholder="0.00 TON" class="w-full bg-black/50 border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-cyan-500 transition">
+                                <label class="text-[10px] text-gray-500 ml-1 uppercase font-bold">Amount (Min 0.5 TON)</label>
+                                <input type="number" id="withdraw-amount" placeholder="0.00" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 md:p-4 text-white text-lg outline-none focus:border-cyan-500 transition placeholder-gray-700">
                             </div>
-                            <button onclick="window.gameApp.processWithdraw()" class="w-full btn-main py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg transition active:scale-95">
+                            <button onclick="window.gameApp.processWithdraw()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 py-4 rounded-xl font-bold text-sm tracking-widest uppercase mt-4 text-white shadow-lg shadow-cyan-500/20 transition transform active:scale-98">
                                 <i class="fa-solid fa-paper-plane mr-2"></i> Confirm Withdrawal
                             </button>
                         </div>
                     </div>
-                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[400px]">
-                        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-700 flex flex-col h-full min-h-[300px]">
+                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
                             <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Transaction History
                         </h3>
                         <div class="flex-1 overflow-y-auto pr-2 custom-scroll" id="history-list">
-                            <div class="text-center text-gray-500 text-sm py-10 italic">No transaction history found.</div>
+                            <div class="flex flex-col items-center justify-center h-40 text-gray-600 text-sm italic">
+                                <i class="fa-regular fa-file-lines text-2xl mb-2 opacity-50"></i>
+                                No transaction history.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -253,27 +297,35 @@
         </div>
     </main>
 
-    <nav class="bottom-nav lg:hidden">
-        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active"><i class="fa-solid fa-chart-line"></i></div>
-        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn"><i class="fa-solid fa-store"></i></div>
-        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn"><i class="fa-solid fa-server"></i></div>
-        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn"><i class="fa-solid fa-wallet"></i></div>
+    <nav class="bottom-nav md:hidden">
+        <div onclick="window.gameApp.showPage('dashboard')" id="nav-dashboard" class="nav-btn active">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div onclick="window.gameApp.showPage('market')" id="nav-market" class="nav-btn">
+            <i class="fa-solid fa-store"></i>
+        </div>
+        <div onclick="window.gameApp.showPage('inventory')" id="nav-inventory" class="nav-btn">
+            <i class="fa-solid fa-server"></i>
+        </div>
+        <div onclick="window.gameApp.showPage('wallet')" id="nav-wallet" class="nav-btn">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
     </nav>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Telegram WebApp Genişletme
+            // Telegram Setup
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
                 tg.expand();
-                // Header ve arka plan rengini, style.css ile uyumlu hale getiriyoruz
                 tg.setHeaderColor('#020205');
                 tg.setBackgroundColor('#020205');
+                tg.enableClosingConfirmation();
             }
-            
-            // Eğer app.js grafiği başlatmazsa, boş bir grafik şablonu oluştur (Görsellik için)
+
+            // Grafik Setup (app.js'e destek için)
             const ctx = document.getElementById('miningChart');
-            if (ctx && typeof Chart !== 'undefined') {
+            if (ctx && typeof Chart !== 'undefined' && !window.myMiningChart) {
                 setTimeout(() => {
                     if (!window.myMiningChart) {
                         window.myMiningChart = new Chart(ctx, {
@@ -281,25 +333,33 @@
                             data: {
                                 labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
                                 datasets: [{
-                                    label: 'Hashrate',
-                                    data: [0, 0, 0, 0, 0, 0], // Veri app.js'ten gelecek
+                                    label: 'Hashrate (TH/s)',
+                                    data: [0,0,0,0,0,0],
                                     borderColor: '#22d3ee',
-                                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                    backgroundColor: (context) => {
+                                        const ctx = context.chart.ctx;
+                                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                                        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
+                                        gradient.addColorStop(1, 'rgba(34, 211, 238, 0.0)');
+                                        return gradient;
+                                    },
                                     borderWidth: 2,
                                     tension: 0.4,
                                     fill: true,
-                                    pointRadius: 0
+                                    pointRadius: 0,
+                                    pointHitRadius: 20
                                 }]
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: { legend: { display: false } },
-                                scales: { x: { display: false }, y: { display: false } }
+                                scales: { x: { display: false }, y: { display: false } },
+                                interaction: { intersect: false, mode: 'index' }
                             }
                         });
                     }
-                }, 1000); // app.js'in yüklenmesi için biraz zaman tanı
+                }, 800);
             }
         });
     </script>
