@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS MINER - Pro Structure</title>
+    <title>NEXUS MINER - Cloud Ecosystem</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
+    
     <style>
+        /* --- TEMEL STİLLER --- */
         :root { --neon-blue: #00f2ff; --neon-green: #0aff60; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #020205; color: white; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #020205; color: white; overflow: hidden; height: 100vh; width: 100vw; }
         .digit-font { font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
         
+        /* Glassmorphism (Cam Efekti) */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
@@ -26,19 +30,24 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
+        /* Animasyonlar */
         @keyframes pulse-glow { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 242, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); } }
         .pulse-active { animation: pulse-glow 2s infinite; border-color: var(--neon-blue); }
         .neon-blue { text-shadow: 0 0 10px rgba(0, 242, 255, 0.7); color: var(--neon-blue); }
         .neon-green { text-shadow: 0 0 10px rgba(10, 255, 96, 0.7); color: var(--neon-green); }
 
+        /* Kaydırma Çubuğu Gizleme */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
         .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--neon-blue); }
 
-        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        /* Arka Plan Canvas */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 
+        /* Kayıt Göstergesi */
         #save-indicator {
             position: fixed; top: 20px; right: 20px;
             background: rgba(0, 0, 0, 0.8); border: 1px solid var(--neon-green);
@@ -48,7 +57,8 @@
             opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
         }
 
-        #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 300px; }
+        /* Bildirimler (Toast) */
+        #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 300px; pointer-events: none; }
         .toast {
             background: rgba(10, 10, 15, 0.95); backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.1); color: white;
@@ -60,6 +70,7 @@
         .toast.error { border-color: #ff3333; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+        /* Offline Modalı */
         #offline-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000;
@@ -73,13 +84,15 @@
         }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+        /* Sayfa Geçişleri */
         .page-section { display: none; opacity: 0; transition: opacity 0.3s; }
         .page-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Alt Menü (Mobil) */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
             display: flex; justify-content: space-around; align-items: center;
             border-top: 1px solid rgba(255,255,255,0.1); z-index: 50;
         }
@@ -90,7 +103,7 @@
         @media (max-width: 767px) { .desktop-sidebar { display: none; } }
     </style>
 </head>
-<body class="flex">
+<body class="flex flex-col md:flex-row h-screen overflow-hidden">
 
     <canvas id="bg-canvas"></canvas>
     <div id="save-indicator"><i class="fa-solid fa-floppy-disk"></i> Saved</div>
@@ -114,7 +127,7 @@
         </div>
     </div>
 
-    <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20">
+    <aside class="desktop-sidebar w-72 glass-panel border-r-0 border-r border-gray-700 h-full flex flex-col z-20 hidden md:flex">
         <div class="p-8 border-b border-gray-700/30 flex items-center gap-4">
             <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
                 <i class="fa-solid fa-cube text-xl"></i>
@@ -161,7 +174,7 @@
             </div>
         </div>
 
-        <div class="p-4 md:p-8 max-w-7xl mx-auto mb-20 md:mb-0">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto mb-24 md:mb-0">
             
             <div class="md:hidden glass-panel p-6 rounded-2xl mb-6 text-center relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
@@ -260,11 +273,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // BURASI DÜZELTİLDİ: SENIN_PROJECT_ID SİLİNDİ, DOĞRUSU YAZILDI
+        // CONFIG (Değişikliğe Gerek Yok)
         const firebaseConfig = {
             apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
             authDomain: "tonm-77373.firebaseapp.com",
-            projectId: "tonm-77373", // <--- DOĞRU ID
+            projectId: "tonm-77373", 
             storageBucket: "tonm-77373.firebasestorage.app",
             messagingSenderId: "507031118335",
             appId: "1:507031118335:web:1d209e303dca154ec487ca"
@@ -273,34 +286,21 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        console.log("Firebase Bağlandı (Project ID: tonm-77373)");
-
         window.nexusFirebase = {
             saveUserData: async (userId, data) => {
                 try {
                     await setDoc(doc(db, "users", userId), data, { merge: true });
-                    console.log("Kayıt Başarılı (Cloud)");
-                } catch (e) {
-                    console.error("Kayıt Hatası:", e);
-                }
+                } catch (e) { console.error("Kayıt Hatası:", e); }
             },
             loadUserData: async (userId) => {
                 try {
                     const docSnap = await getDoc(doc(db, "users", userId));
-                    if (docSnap.exists()) {
-                        return docSnap.data();
-                    } else {
-                        return null;
-                    }
-                } catch (e) {
-                    console.error("Yükleme Hatası:", e);
-                    return null;
-                }
+                    return docSnap.exists() ? docSnap.data() : null;
+                } catch (e) { return null; }
             }
         };
     </script>
 
     <script src="app.js"></script>
-
 </body>
 </html>
