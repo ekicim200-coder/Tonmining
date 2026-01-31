@@ -7,10 +7,13 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- ÖNEMLİ: TON Connect SDK'yı HEAD'de yükle -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
 
-    <!-- Telegram Mini App SDK - Body'nin En Başında -->
+    <!-- Telegram Mini App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <div class="header">
@@ -107,8 +110,9 @@
         console.log('📱 Eruda Mobile Console loaded! Tap the icon in bottom-right corner.');
     </script>
 
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-
+    <!-- DİKKAT: TON Connect SDK artık HEAD'de yüklü, burayı SİLDİK -->
+    
+    <!-- Ana Script - Module olarak -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
