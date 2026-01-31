@@ -7,7 +7,7 @@ import { isTelegramAvailable, createTelegramInvoice, applyTelegramTheme, getTele
 const CFG = { rate: 0.000001, tick: 100 };
 // ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
 // Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
-const ADMIN_WALLET = "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
+const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
 
 let tonConnectUI;
 let currentUserUid = null; // Firebase User ID'sini burada tutacağız
@@ -596,3 +596,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Init
 init();
+
