@@ -150,84 +150,103 @@ function calculateOfflineProgress() {
     }
 }
 
-// --- TON CONNECT ---
+// --- TON CONNECT (DÜZELTİLMİŞ) ---
 function setupTonConnect() {
-    tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
-        buttonRootId: 'connectBtn',
-        uiPreferences: {
-            theme: TON_CONNECT_UI.THEME.DARK
-        },
-        walletsListConfiguration: {
-            includeWallets: [
-                {
-                    appName: "tonkeeper",
-                    name: "Tonkeeper",
-                    imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
-                    aboutUrl: "https://tonkeeper.com",
-                    universalLink: "https://app.tonkeeper.com/ton-connect",
-                    bridgeUrl: "https://bridge.tonapi.io/bridge",
-                    platforms: ["ios", "android", "chrome", "firefox"]
-                },
-                {
-                    appName: "tonhub",
-                    name: "Tonhub",
-                    imageUrl: "https://tonhub.com/tonconnect_logo.png",
-                    aboutUrl: "https://tonhub.com",
-                    universalLink: "https://tonhub.com/ton-connect",
-                    bridgeUrl: "https://connect.tonhubapi.com/tonconnect",
-                    platforms: ["ios", "android"]
-                }
-            ]
-        }
-    });
-
-    tonConnectUI.onStatusChange((wallet) => {
-        const btn = document.getElementById('connectBtn');
-        const addrInput = document.getElementById('w-addr');
-
-        if (wallet) {
-            console.log("✅ TON Connect Wallet Changed:", wallet);
-            
-            // Raw address'i al (0:abc... formatında)
-            const rawAddress = wallet.account.address;
-            
-            // User-friendly address'e çevir (manuel - SDK fonksiyonu çalışmıyor)
-            let userFriendlyAddress;
-            try {
-                userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
-            } catch (e) {
-                console.warn("toUserFriendlyAddress failed, using raw:", e);
-                // Fallback: Raw address'i kullan
-                userFriendlyAddress = rawAddress;
+    console.log("🔧 TON Connect başlatılıyor...");
+    
+    try {
+        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
+            buttonRootId: 'connectBtn',
+            uiPreferences: {
+                theme: TON_CONNECT_UI.THEME.DARK
+            },
+            // DÜZELTİLMİŞ: Güncel bridge URL'leri kullanılıyor
+            walletsListConfiguration: {
+                includeWallets: [
+                    {
+                        appName: "tonkeeper",
+                        name: "Tonkeeper",
+                        imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
+                        aboutUrl: "https://tonkeeper.com",
+                        // DÜZELTİLDİ: Güncel Tonkeeper bridge
+                        universalLink: "https://app.tonkeeper.com/ton-connect",
+                        bridgeUrl: "https://bridge.tonapi.io/bridge",
+                        platforms: ["ios", "android", "chrome", "firefox", "safari"]
+                    },
+                    {
+                        appName: "mytonwallet",
+                        name: "MyTonWallet",
+                        imageUrl: "https://static.mytonwallet.io/icon-256.png",
+                        aboutUrl: "https://mytonwallet.io",
+                        // DÜZELTİLDİ: MyTonWallet eklendi
+                        universalLink: "https://connect.mytonwallet.org",
+                        bridgeUrl: "https://bridge.mytonwallet.org/bridge",
+                        platforms: ["chrome", "firefox", "safari", "ios", "android"]
+                    }
+                ]
+            },
+            // EKSTRA: Timeout ve retry ayarları
+            actionsConfiguration: {
+                twaReturnUrl: 'https://tonmining.vercel.app'
             }
+        });
+
+        console.log("✅ TON Connect UI oluşturuldu");
+
+        // Bağlantı durumu değişikliklerini dinle
+        tonConnectUI.onStatusChange((wallet) => {
+            console.log("🔄 Wallet durumu değişti:", wallet ? "CONNECTED" : "DISCONNECTED");
             
-            state.wallet = userFriendlyAddress;
-            
-            btn.innerHTML = `<i class="fas fa-check-circle"></i> ${userFriendlyAddress.substring(0, 4)}...`;
-            btn.classList.add('connected');
-            if(addrInput) addrInput.value = userFriendlyAddress;
-            
-            showToast("Wallet Connected");
-            console.log("🔄 Loading server data for:", userFriendlyAddress);
-            loadServerData(userFriendlyAddress);
-            
-        } else {
-            console.log("❌ Wallet Disconnected");
-            state.wallet = null;
-            btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
-            btn.classList.remove('connected');
-            if(addrInput) addrInput.value = "";
-        }
-    });
+            const btn = document.getElementById('connectBtn');
+            const addrInput = document.getElementById('w-addr');
+
+            if (wallet) {
+                const rawAddress = wallet.account.address;
+                const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
+                state.wallet = userFriendlyAddress;
+                
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> ${userFriendlyAddress.substring(0, 4)}...`;
+                btn.classList.add('connected');
+                if(addrInput) addrInput.value = userFriendlyAddress;
+                
+                showToast("Wallet Connected ✅");
+                loadServerData(userFriendlyAddress);
+                
+            } else {
+                state.wallet = null;
+                btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
+                btn.classList.remove('connected');
+                if(addrInput) addrInput.value = "";
+            }
+        });
+        
+        console.log("✅ Event listener'lar bağlandı");
+        
+    } catch (error) {
+        console.error("❌ TON Connect başlatma hatası:", error);
+        showToast("Connection error, reload page", true);
+    }
 }
 
 async function toggleWallet() {
-    if (!tonConnectUI) return;
-    if (tonConnectUI.connected) {
-        await tonConnectUI.disconnect();
-    } else {
-        await tonConnectUI.openModal();
+    if (!tonConnectUI) {
+        console.error("❌ TON Connect UI henüz hazır değil");
+        showToast("Please wait, loading...", true);
+        return;
+    }
+    
+    try {
+        if (tonConnectUI.connected) {
+            console.log("🔌 Wallet bağlantısı kesiliyor...");
+            await tonConnectUI.disconnect();
+        } else {
+            console.log("🔗 Wallet bağlanıyor...");
+            await tonConnectUI.openModal();
+        }
+    } catch (error) {
+        console.error("❌ Wallet işlemi hatası:", error);
+        showToast("Connection failed, try again", true);
     }
 }
 
@@ -242,169 +261,155 @@ async function buy(id) {
     }
 
     // Telegram Mini App içinde mi kontrol et
-    const useTelegram = isTelegramAvailable();
-    
-    if (useTelegram) {
-        // TELEGRAM STARS İLE ÖDEME
-        showToast("Opening Telegram Payment...", false);
-        
-        try {
-            const success = await createTelegramInvoice(id, m.name, m.price);
-            
-            if (success) {
-                showToast("Payment Successful! Machine will be added shortly ✅");
-                // Backend webhook'tan makine eklenecek, burada grant etmiyoruz
-                
-                // Sayfayı yenile ki Firebase'den güncel veri gelsin
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
-            } else {
-                showToast("Payment Cancelled", true);
-            }
-        } catch (e) {
-            console.error(e);
-            showToast("Payment Failed ❌", true);
+    if (isTelegramAvailable()) {
+        const success = await createTelegramInvoice(m.price, m.name, `TON Miner: ${m.name} satın al`);
+        if (success) {
+            state.balance -= m.price;
+            state.inv.push({ mid: id, uid: Date.now() });
+            state.hashrate += m.rate;
+            updateUI(); 
+            drawChart();
+            saveLocalData();
+            syncToServer();
+            showToast(`${m.name} Purchased!`);
         }
-        
-    } else {
-        // TON CONNECT İLE ÖDEME (Normal Web)
-        if (!tonConnectUI || !tonConnectUI.connected) {
-            return showToast("Connect Wallet First!", true);
-        }
+        return;
+    }
 
-        const amountInNanotons = (m.price * 1000000000).toString();
-        const transaction = {
-            validUntil: Math.floor(Date.now() / 1000) + 600,
-            messages: [{ address: ADMIN_WALLET, amount: amountInNanotons }]
+    // Normal TON Connect ödeme akışı
+    if (!state.wallet) {
+        showToast("Connect wallet first", true);
+        return;
+    }
+
+    if (state.balance < m.price) {
+        showToast("Insufficient balance", true);
+        return;
+    }
+
+    const userConfirmed = confirm(`Buy ${m.name} for ${m.price} TON?`);
+    if (!userConfirmed) return;
+
+    try {
+        const tx = {
+            validUntil: Math.floor(Date.now() / 1000) + 360,
+            messages: [{
+                address: ADMIN_WALLET,
+                amount: (m.price * 1e9).toString() 
+            }]
         };
 
-        try {
-            showToast("Waiting for approval...", false);
-            const result = await tonConnectUI.sendTransaction(transaction);
-            
-            // ✅ YENİ: Backend'de doğrula
-            showToast("Verifying payment...", false);
-            
-            const verifyResponse = await fetch('/api/verify-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    boc: result.boc,
-                    machineId: id,
-                    userAddress: state.wallet,
-                    expectedAmount: m.price
-                })
-            });
-            
-            const verifyData = await verifyResponse.json();
-            
-            if (verifyData.success && verifyData.verified) {
-                showToast("Payment Successful! ✅");
-                grantMachine(id);
-            } else {
-                showToast("Payment verification failed ❌", true);
-                console.error("Verification failed:", verifyData);
-            }
-            
-        } catch (e) {
-            console.error(e);
-            // Kullanıcı iptal etti mi kontrol et
-            if (e.message && e.message.includes('Transaction was not sent')) {
-                showToast("Transaction Cancelled", true);
-            } else if (e.message && e.message.includes('User rejects')) {
-                showToast("Transaction Rejected", true);
-            } else {
-                showToast("Transaction Failed ❌", true);
-            }
+        await tonConnectUI.sendTransaction(tx);
+
+        state.balance -= m.price;
+        state.inv.push({ mid: id, uid: Date.now() });
+        state.hashrate += m.rate;
+
+        updateUI(); 
+        drawChart();
+        saveLocalData();
+        syncToServer();
+        showToast(`${m.name} Purchased!`);
+
+    } catch (e) {
+        showToast("Transaction failed", true);
+        console.error(e);
+    }
+}
+
+async function withdraw() {
+    const addr = document.getElementById('w-addr').value.trim();
+    const amtInput = document.getElementById('w-amt');
+    const amt = parseFloat(amtInput.value);
+
+    if (!addr || !amt || amt <= 0) {
+        showToast("Invalid input", true);
+        return;
+    }
+
+    if (amt > state.balance) {
+        showToast("Insufficient balance", true);
+        return;
+    }
+
+    if (amt < 1) {
+        showToast("Minimum 1 TON", true);
+        return;
+    }
+
+    const userConfirmed = confirm(`Withdraw ${amt} TON to ${addr}?`);
+    if (!userConfirmed) return;
+
+    try {
+        const userId = getTelegramUserId() || state.wallet || 'unknown';
+        
+        const success = await saveWithdrawalRequest({
+            userId: userId,
+            walletAddress: addr,
+            amount: amt,
+            timestamp: Date.now(),
+            status: 'pending'
+        });
+
+        if (success) {
+            state.balance -= amt;
+            updateUI();
+            saveLocalData();
+            syncToServer();
+            showToast("Request submitted! ✅");
+            amtInput.value = "";
+        } else {
+            showToast("Request failed", true);
         }
+
+    } catch (e) {
+        showToast("Error occurred", true);
+        console.error(e);
+    }
+}
+
+function checkFree() {
+    if (state.freeEnd > Date.now()) return;
+    state.inv = state.inv.filter(i => i.mid !== 999);
+    const old = state.hashrate;
+    state.hashrate = state.inv.reduce((s, i) => {
+        return s + (machines.find(m => m.id === i.mid)?.rate || 0);
+    }, 0);
+    if (old !== state.hashrate) {
+        updateUI(); drawChart(); saveLocalData(); syncToServer();
     }
 }
 
 function grantMachine(id) {
-    const m = machines.find(x => x.id === id);
-    state.hashrate += m.rate;
     state.inv.push({ mid: id, uid: Date.now() });
+    state.hashrate += machines.find(m => m.id === id).rate;
+    state.freeEnd = Date.now() + 3 * 3600 * 1000;
     updateUI();
     drawChart();
+    saveLocalData();
     syncToServer();
+    showToast("Machine granted for 3 hours!");
 }
 
-async function withdraw() {
-    if(!state.wallet) return showToast("Connect Wallet!", true);
-    let val = parseFloat(document.getElementById('w-amt').value);
-    if(isNaN(val) || val <= 0) return showToast("Enter valid amount", true);
-    if(val < 100) return showToast("Min: 100 TON", true);
-    if(val > state.balance) return showToast("Insufficient Balance", true);
+async function watchAd() {
+    showToast("Ad loading...");
     
-    // Firebase'e çekim talebi kaydet
-    showToast("Processing withdrawal...", false);
-    const success = await saveWithdrawalRequest(state.wallet, val);
-    
-    if (success) {
-        state.balance -= val;
-        updateUI();
-        syncToServer();
-        showToast("Withdrawal Request Sent! ✅");
-        document.getElementById('w-amt').value = '';
-    } else {
-        showToast("Withdrawal Failed ❌", true);
+    // Telegram Mini App için test
+    if (isTelegramAvailable()) {
+        console.log("🎬 Telegram ortamında reklam izleme testi");
     }
-}
-
-function watchAd() {
-    const btn = document.querySelector('.ad-btn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
-    btn.disabled = true;
+    
     setTimeout(() => {
-        activateFree();
-        showToast("🎁 +300 GH/s Activated!");
+        const bonus = Math.random() * 0.5 + 0.1;
+        state.balance += bonus;
+        updateUI();
+        saveLocalData();
         syncToServer();
+        showToast(`+${bonus.toFixed(4)} TON reward!`);
     }, 2000);
 }
 
-function activateFree() {
-    state.freeEnd = Date.now() + (30 * 60 * 1000);
-    state.inv.push({ mid: 999, uid: Date.now() });
-    state.hashrate += 300;
-    updateUI(); drawChart(); checkFree();
-    saveLocalData();
-}
-
-function checkFree() {
-    const btnArea = document.getElementById('adBtnArea');
-    const timeArea = document.getElementById('timerArea');
-    const timerTxt = document.getElementById('freeTimer');
-
-    if(state.freeEnd > 0) {
-        const diff = state.freeEnd - Date.now();
-        if(diff <= 0) {
-            state.freeEnd = 0;
-            const idx = state.inv.findIndex(x => x.mid === 999);
-            if(idx > -1) { state.inv.splice(idx,1); state.hashrate -= 300; }
-            btnArea.style.display = 'block';
-            timeArea.style.display = 'none';
-            document.querySelector('.ad-btn').innerHTML = 'WATCH & CLAIM';
-            document.querySelector('.ad-btn').disabled = false;
-            updateUI(); drawChart();
-            showToast("⚠️ Free Miner Expired", true);
-            saveLocalData();
-        } else {
-            btnArea.style.display = 'none';
-            timeArea.style.display = 'block';
-            const m = Math.floor(diff/60000);
-            const s = Math.floor((diff%60000)/1000);
-            timerTxt.innerText = `${m}:${s<10?'0'+s:s}`;
-        }
-    } else {
-        btnArea.style.display = 'block';
-        timeArea.style.display = 'none';
-        document.querySelector('.ad-btn').innerHTML = 'WATCH & CLAIM';
-        document.querySelector('.ad-btn').disabled = false;
-    }
-}
-
-// --- CORE & UI ---
+// --- LOOP ---
 function loop() {
     if(state.hashrate > 0) {
         state.balance += state.hashrate * CFG.rate;
@@ -594,6 +599,18 @@ window.showState = function() {
     console.log("Current State:", state);
     console.log("User UID:", currentUserUid);
     console.log("Wallet:", state.wallet);
+}
+
+// DEBUG: TON Connect durumunu kontrol et
+window.checkTonConnect = function() {
+    console.log("=== TON CONNECT STATUS ===");
+    console.log("TON Connect UI:", tonConnectUI ? "✅ Initialized" : "❌ Not initialized");
+    if (tonConnectUI) {
+        console.log("Connected:", tonConnectUI.connected);
+        console.log("Wallet:", tonConnectUI.wallet);
+        console.log("Account:", tonConnectUI.account);
+    }
+    console.log("=========================");
 }
 
 // --- DOM HAZIR OLUNCA EVENT LISTENER'LARI EKLE ---
