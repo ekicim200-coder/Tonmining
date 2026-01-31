@@ -14,42 +14,38 @@ export async function createTelegramInvoice(machineId, machineName, price) {
     }
 
     try {
-        // Telegram Star fiyatı (1 Star = belirlediğiniz değer)
-        // Örnek: 10 TON = 100 Stars
         const starsPrice = Math.ceil(price * 10); // 10 TON = 100 Stars
         
-        // Invoice oluştur
-        const invoice = {
-            title: machineName,
-            description: `+${getMachineRate(machineId)} GH/s mining power`,
-            payload: JSON.stringify({ 
-                machineId: machineId,
-                userId: tg.initDataUnsafe?.user?.id 
-            }),
-            provider_token: "", // Stars için boş
-            currency: "XTR", // Telegram Stars currency code
-            prices: [{
-                label: machineName,
-                amount: starsPrice
-            }]
+        // Telegram'a veri gönder (bot'a iletilecek)
+        const purchaseData = {
+            machineId: machineId,
+            machineName: machineName,
+            price: price,
+            starsPrice: starsPrice,
+            userId: tg.initDataUnsafe?.user?.id,
+            timestamp: Date.now()
         };
-
-        return new Promise((resolve, reject) => {
-            tg.openInvoice(invoice, (status) => {
-                if (status === 'paid') {
-                    console.log("✅ Telegram Stars ödeme başarılı!");
-                    resolve(true);
-                } else if (status === 'cancelled') {
-                    console.log("❌ Ödeme iptal edildi");
-                    resolve(false);
-                } else if (status === 'failed') {
-                    console.log("❌ Ödeme başarısız");
-                    reject(new Error('Payment failed'));
-                }
-            });
-        });
+        
+        // Web App'den bot'a veri gönder
+        tg.sendData(JSON.stringify(purchaseData));
+        
+        // Kullanıcıya bilgi göster
+        tg.showAlert(
+            `Purchase request sent!\n\n` +
+            `Item: ${machineName}\n` +
+            `Price: ${starsPrice} Stars\n\n` +
+            `Please wait for payment link from bot...`,
+            () => {
+                console.log("Alert closed");
+            }
+        );
+        
+        // Şimdilik otomatik grant (backend implementasyonu için hazırlık)
+        return true;
+        
     } catch (error) {
         console.error("Telegram invoice hatası:", error);
+        tg.showAlert("Payment request failed. Please try again.");
         return false;
     }
 }
