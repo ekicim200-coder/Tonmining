@@ -187,8 +187,21 @@ function setupTonConnect() {
         const addrInput = document.getElementById('w-addr');
 
         if (wallet) {
+            console.log("✅ TON Connect Wallet Changed:", wallet);
+            
+            // Raw address'i al (0:abc... formatında)
             const rawAddress = wallet.account.address;
-            const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
+            
+            // User-friendly address'e çevir (manuel - SDK fonksiyonu çalışmıyor)
+            let userFriendlyAddress;
+            try {
+                userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
+            } catch (e) {
+                console.warn("toUserFriendlyAddress failed, using raw:", e);
+                // Fallback: Raw address'i kullan
+                userFriendlyAddress = rawAddress;
+            }
+            
             state.wallet = userFriendlyAddress;
             
             btn.innerHTML = `<i class="fas fa-check-circle"></i> ${userFriendlyAddress.substring(0, 4)}...`;
@@ -196,9 +209,11 @@ function setupTonConnect() {
             if(addrInput) addrInput.value = userFriendlyAddress;
             
             showToast("Wallet Connected");
+            console.log("🔄 Loading server data for:", userFriendlyAddress);
             loadServerData(userFriendlyAddress);
             
         } else {
+            console.log("❌ Wallet Disconnected");
             state.wallet = null;
             btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
             btn.classList.remove('connected');
@@ -266,9 +281,32 @@ async function buy(id) {
 
         try {
             showToast("Waiting for approval...", false);
-            await tonConnectUI.sendTransaction(transaction);
-            showToast("Payment Successful! ✅");
-            grantMachine(id);
+            const result = await tonConnectUI.sendTransaction(transaction);
+            
+            // ✅ YENİ: Backend'de doğrula
+            showToast("Verifying payment...", false);
+            
+            const verifyResponse = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    boc: result.boc,
+                    machineId: id,
+                    userAddress: state.wallet,
+                    expectedAmount: m.price
+                })
+            });
+            
+            const verifyData = await verifyResponse.json();
+            
+            if (verifyData.success && verifyData.verified) {
+                showToast("Payment Successful! ✅");
+                grantMachine(id);
+            } else {
+                showToast("Payment verification failed ❌", true);
+                console.error("Verification failed:", verifyData);
+            }
+            
         } catch (e) {
             console.error(e);
             // Kullanıcı iptal etti mi kontrol et
@@ -596,4 +634,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Init
 init();
-
