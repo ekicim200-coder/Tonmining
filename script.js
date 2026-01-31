@@ -1,13 +1,16 @@
 // --- IMPORT ---
+// initAuth fonksiyonunu da import ettik
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from './firebase-config.js';
 import { isTelegramAvailable, createTelegramInvoice, applyTelegramTheme, getTelegramUserId } from './telegram-integration.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
-const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc";
+// ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
+// Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
+const ADMIN_WALLET = "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
 
 let tonConnectUI;
-let currentUserUid = null;
+let currentUserUid = null; // Firebase User ID'sini burada tutacağız
 
 let state = { 
     balance: 1.00, 
@@ -29,29 +32,27 @@ const machines = [
 
 let graphData = new Array(20).fill(10);
 
-// --- INIT ---
 function init() {
-    console.log("🚀 App başlatılıyor...");
-    
+    // Telegram Mini App teması uygula
     if (isTelegramAvailable()) {
-        console.log("📱 Telegram Mini App algılandı!");
+        console.log("🚀 Telegram Mini App algılandı!");
         applyTelegramTheme();
     }
     
+    // 1. Önce Anonim Girişi Başlat
     initAuth((uid) => {
         currentUserUid = uid;
-        console.log("✅ Firebase Auth hazır. User:", uid);
+        console.log("Sistem Hazır. User:", uid);
+        // Giriş başarılı olunca diğer işlemleri yapabiliriz (gerekirse)
     });
 
     loadLocalData();
     calculateOfflineProgress();
+
     renderMarket();
     updateUI();
     
-    // TON Connect'i bekle
-    setTimeout(() => {
-        setupTonConnect();
-    }, 1000);
+    setupTonConnect();
 
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 10000); 
@@ -60,66 +61,16 @@ function init() {
     setInterval(checkFree, 1000);
 }
 
-// --- TON CONNECT (MINIMAL) ---
-function setupTonConnect() {
-    console.log("🔧 TON Connect başlatılıyor...");
-    
-    if (typeof TON_CONNECT_UI === 'undefined') {
-        console.error("❌ TON Connect SDK yüklenmedi!");
-        setTimeout(setupTonConnect, 2000);
-        return;
-    }
-    
-    console.log("✅ SDK Version:", TON_CONNECT_UI.SDK_VERSION);
-    
-    try {
-        // MİNİMAL KONFIGÜRASYON - HİÇBİR ÖZEL AYAR YOK
-        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json'
-        });
-
-        console.log("✅ TON Connect UI oluşturuldu");
-
-        // Wallet durumunu izle
-        const unsubscribe = tonConnectUI.onStatusChange((walletInfo) => {
-            console.log("🔄 Wallet durumu:", walletInfo ? "CONNECTED" : "DISCONNECTED");
-            
-            if (walletInfo) {
-                const address = walletInfo.account.address;
-                const friendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(address);
-                state.wallet = friendlyAddress;
-                
-                document.getElementById('w-addr').value = friendlyAddress;
-                document.getElementById('w-addr').disabled = false;
-                
-                showToast("✅ Wallet Connected!");
-                loadServerData(friendlyAddress);
-            } else {
-                state.wallet = null;
-                document.getElementById('w-addr').value = "";
-                document.getElementById('w-addr').disabled = true;
-            }
-        });
-        
-        console.log("✅ Listener bağlandı");
-        
-    } catch (error) {
-        console.error("❌ TON Connect hatası:", error);
-        showToast("Connection error", true);
-    }
-}
-
 // --- DATA MANAGEMENT ---
+
 function loadLocalData() {
     const saved = localStorage.getItem('tonMinerSave');
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
             state = { ...state, ...parsed };
-            state.wallet = null;
-        } catch (e) { 
-            console.error("Save bozuk"); 
-        }
+            state.wallet = null; 
+        } catch (e) { console.error("Corrupted save"); }
     }
 }
 
@@ -133,8 +84,13 @@ function autoSave() {
 }
 
 async function syncToServer() {
-    if (!state.wallet || !currentUserUid) return;
+    if (!state.wallet) return;
+    if (!currentUserUid) {
+        console.log("⏳ Auth not ready yet, skipping sync...");
+        return;
+    }
     
+    // Giriş yapmamışsa sunucuya gönderme (Zaten saveUserToFire kontrol ediyor)
     const dataToSave = {
         balance: state.balance,
         hashrate: state.hashrate,
@@ -145,8 +101,9 @@ async function syncToServer() {
 }
 
 async function loadServerData(walletAddress) {
-    showToast("Syncing...", false);
+    showToast("Syncing data...", false);
     
+    // Auth hazır olana kadar bekle
     let attempts = 0;
     while (!currentUserUid && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -154,7 +111,7 @@ async function loadServerData(walletAddress) {
     }
     
     if (!currentUserUid) {
-        showToast("Auth not ready", true);
+        showToast("Auth not ready, please retry", true);
         return;
     }
     
@@ -168,10 +125,11 @@ async function loadServerData(walletAddress) {
         state.lastSave = serverData.lastSave || Date.now();
         
         calculateOfflineProgress();
+        
         updateUI();
         drawChart();
         saveLocalData();
-        showToast("✅ Synced");
+        showToast("Data Synced ✅");
     } else {
         syncToServer();
     }
@@ -186,9 +144,75 @@ function calculateOfflineProgress() {
         const earned = secondsPassed * state.hashrate * CFG.rate;
         if (earned > 0) {
             state.balance += earned;
-            showToast(`Offline: +${earned.toFixed(4)} TON`);
+            showToast(`Offline Gain: ${earned.toFixed(4)} TON`);
             syncToServer();
         }
+    }
+}
+
+// --- TON CONNECT ---
+function setupTonConnect() {
+    tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
+        buttonRootId: 'connectBtn',
+        uiPreferences: {
+            theme: TON_CONNECT_UI.THEME.DARK
+        },
+        walletsListConfiguration: {
+            includeWallets: [
+                {
+                    appName: "tonkeeper",
+                    name: "Tonkeeper",
+                    imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
+                    aboutUrl: "https://tonkeeper.com",
+                    universalLink: "https://app.tonkeeper.com/ton-connect",
+                    bridgeUrl: "https://bridge.tonapi.io/bridge",
+                    platforms: ["ios", "android", "chrome", "firefox"]
+                },
+                {
+                    appName: "tonhub",
+                    name: "Tonhub",
+                    imageUrl: "https://tonhub.com/tonconnect_logo.png",
+                    aboutUrl: "https://tonhub.com",
+                    universalLink: "https://tonhub.com/ton-connect",
+                    bridgeUrl: "https://connect.tonhubapi.com/tonconnect",
+                    platforms: ["ios", "android"]
+                }
+            ]
+        }
+    });
+
+    tonConnectUI.onStatusChange((wallet) => {
+        const btn = document.getElementById('connectBtn');
+        const addrInput = document.getElementById('w-addr');
+
+        if (wallet) {
+            const rawAddress = wallet.account.address;
+            const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
+            state.wallet = userFriendlyAddress;
+            
+            btn.innerHTML = `<i class="fas fa-check-circle"></i> ${userFriendlyAddress.substring(0, 4)}...`;
+            btn.classList.add('connected');
+            if(addrInput) addrInput.value = userFriendlyAddress;
+            
+            showToast("Wallet Connected");
+            loadServerData(userFriendlyAddress);
+            
+        } else {
+            state.wallet = null;
+            btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
+            btn.classList.remove('connected');
+            if(addrInput) addrInput.value = "";
+        }
+    });
+}
+
+async function toggleWallet() {
+    if (!tonConnectUI) return;
+    if (tonConnectUI.connected) {
+        await tonConnectUI.disconnect();
+    } else {
+        await tonConnectUI.openModal();
     }
 }
 
@@ -202,139 +226,154 @@ async function buy(id) {
         return;
     }
 
-    if (isTelegramAvailable()) {
-        const success = await createTelegramInvoice(m.price, m.name, `TON Miner: ${m.name}`);
-        if (success) {
-            state.balance -= m.price;
-            state.inv.push({ mid: id, uid: Date.now() });
-            state.hashrate += m.rate;
-            updateUI(); 
-            drawChart();
-            saveLocalData();
-            syncToServer();
-            showToast(`${m.name} Purchased!`);
+    // Telegram Mini App içinde mi kontrol et
+    const useTelegram = isTelegramAvailable();
+    
+    if (useTelegram) {
+        // TELEGRAM STARS İLE ÖDEME
+        showToast("Opening Telegram Payment...", false);
+        
+        try {
+            const success = await createTelegramInvoice(id, m.name, m.price);
+            
+            if (success) {
+                showToast("Payment Successful! ✅");
+                grantMachine(id);
+                
+                // Firebase'e Telegram user ID ile kaydet
+                const telegramUserId = getTelegramUserId();
+                if (telegramUserId) {
+                    await saveUserToFire(`TG_${telegramUserId}`, {
+                        balance: state.balance,
+                        hashrate: state.hashrate,
+                        inv: state.inv,
+                        freeEnd: state.freeEnd,
+                        telegramUserId: telegramUserId
+                    });
+                }
+            } else {
+                showToast("Payment Cancelled", true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Payment Failed ❌", true);
         }
-        return;
-    }
+        
+    } else {
+        // TON CONNECT İLE ÖDEME (Normal Web)
+        if (!tonConnectUI || !tonConnectUI.connected) {
+            return showToast("Connect Wallet First!", true);
+        }
 
-    if (!state.wallet) {
-        showToast("Connect wallet first", true);
-        return;
-    }
-
-    if (state.balance < m.price) {
-        showToast("Insufficient balance", true);
-        return;
-    }
-
-    if (!confirm(`Buy ${m.name} for ${m.price} TON?`)) return;
-
-    try {
-        const tx = {
-            validUntil: Math.floor(Date.now() / 1000) + 360,
-            messages: [{
-                address: ADMIN_WALLET,
-                amount: (m.price * 1e9).toString()
-            }]
+        const amountInNanotons = (m.price * 1000000000).toString();
+        const transaction = {
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [{ address: ADMIN_WALLET, amount: amountInNanotons }]
         };
 
-        await tonConnectUI.sendTransaction(tx);
-
-        state.balance -= m.price;
-        state.inv.push({ mid: id, uid: Date.now() });
-        state.hashrate += m.rate;
-        updateUI(); 
-        drawChart();
-        saveLocalData();
-        syncToServer();
-        showToast(`${m.name} Purchased!`);
-    } catch (e) {
-        showToast("Transaction failed", true);
-        console.error(e);
-    }
-}
-
-async function withdraw() {
-    const addr = document.getElementById('w-addr').value.trim();
-    const amtInput = document.getElementById('w-amt');
-    const amt = parseFloat(amtInput.value);
-
-    if (!addr || !amt || amt <= 0) {
-        showToast("Invalid input", true);
-        return;
-    }
-
-    if (amt > state.balance) {
-        showToast("Insufficient balance", true);
-        return;
-    }
-
-    if (amt < 1) {
-        showToast("Minimum 1 TON", true);
-        return;
-    }
-
-    if (!confirm(`Withdraw ${amt} TON?`)) return;
-
-    try {
-        const success = await saveWithdrawalRequest(addr, amt);
-
-        if (success) {
-            state.balance -= amt;
-            updateUI();
-            saveLocalData();
-            syncToServer();
-            showToast("✅ Request submitted!");
-            amtInput.value = "";
-        } else {
-            showToast("Request failed", true);
+        try {
+            showToast("Waiting for approval...", false);
+            await tonConnectUI.sendTransaction(transaction);
+            showToast("Payment Successful! ✅");
+            grantMachine(id);
+        } catch (e) {
+            console.error(e);
+            // Kullanıcı iptal etti mi kontrol et
+            if (e.message && e.message.includes('Transaction was not sent')) {
+                showToast("Transaction Cancelled", true);
+            } else if (e.message && e.message.includes('User rejects')) {
+                showToast("Transaction Rejected", true);
+            } else {
+                showToast("Transaction Failed ❌", true);
+            }
         }
-    } catch (e) {
-        showToast("Error", true);
-        console.error(e);
-    }
-}
-
-function checkFree() {
-    if (state.freeEnd > Date.now()) return;
-    state.inv = state.inv.filter(i => i.mid !== 999);
-    const old = state.hashrate;
-    state.hashrate = state.inv.reduce((s, i) => {
-        return s + (machines.find(m => m.id === i.mid)?.rate || 0);
-    }, 0);
-    if (old !== state.hashrate) {
-        updateUI(); 
-        drawChart(); 
-        saveLocalData(); 
-        syncToServer();
     }
 }
 
 function grantMachine(id) {
+    const m = machines.find(x => x.id === id);
+    state.hashrate += m.rate;
     state.inv.push({ mid: id, uid: Date.now() });
-    state.hashrate += machines.find(m => m.id === id).rate;
-    state.freeEnd = Date.now() + 3 * 3600 * 1000;
     updateUI();
     drawChart();
-    saveLocalData();
     syncToServer();
-    showToast("Machine granted for 3h!");
 }
 
-async function watchAd() {
-    showToast("Ad loading...");
+async function withdraw() {
+    if(!state.wallet) return showToast("Connect Wallet!", true);
+    let val = parseFloat(document.getElementById('w-amt').value);
+    if(isNaN(val) || val <= 0) return showToast("Enter valid amount", true);
+    if(val < 100) return showToast("Min: 100 TON", true);
+    if(val > state.balance) return showToast("Insufficient Balance", true);
     
-    setTimeout(() => {
-        const bonus = Math.random() * 0.5 + 0.1;
-        state.balance += bonus;
+    // Firebase'e çekim talebi kaydet
+    showToast("Processing withdrawal...", false);
+    const success = await saveWithdrawalRequest(state.wallet, val);
+    
+    if (success) {
+        state.balance -= val;
         updateUI();
-        saveLocalData();
         syncToServer();
-        showToast(`+${bonus.toFixed(4)} TON!`);
+        showToast("Withdrawal Request Sent! ✅");
+        document.getElementById('w-amt').value = '';
+    } else {
+        showToast("Withdrawal Failed ❌", true);
+    }
+}
+
+function watchAd() {
+    const btn = document.querySelector('.ad-btn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+    btn.disabled = true;
+    setTimeout(() => {
+        activateFree();
+        showToast("🎁 +300 GH/s Activated!");
+        syncToServer();
     }, 2000);
 }
 
-// --- LOOP & UI ---
+function activateFree() {
+    state.freeEnd = Date.now() + (30 * 60 * 1000);
+    state.inv.push({ mid: 999, uid: Date.now() });
+    state.hashrate += 300;
+    updateUI(); drawChart(); checkFree();
+    saveLocalData();
+}
+
+function checkFree() {
+    const btnArea = document.getElementById('adBtnArea');
+    const timeArea = document.getElementById('timerArea');
+    const timerTxt = document.getElementById('freeTimer');
+
+    if(state.freeEnd > 0) {
+        const diff = state.freeEnd - Date.now();
+        if(diff <= 0) {
+            state.freeEnd = 0;
+            const idx = state.inv.findIndex(x => x.mid === 999);
+            if(idx > -1) { state.inv.splice(idx,1); state.hashrate -= 300; }
+            btnArea.style.display = 'block';
+            timeArea.style.display = 'none';
+            document.querySelector('.ad-btn').innerHTML = 'WATCH & CLAIM';
+            document.querySelector('.ad-btn').disabled = false;
+            updateUI(); drawChart();
+            showToast("⚠️ Free Miner Expired", true);
+            saveLocalData();
+        } else {
+            btnArea.style.display = 'none';
+            timeArea.style.display = 'block';
+            const m = Math.floor(diff/60000);
+            const s = Math.floor((diff%60000)/1000);
+            timerTxt.innerText = `${m}:${s<10?'0'+s:s}`;
+        }
+    } else {
+        btnArea.style.display = 'block';
+        timeArea.style.display = 'none';
+        document.querySelector('.ad-btn').innerHTML = 'WATCH & CLAIM';
+        document.querySelector('.ad-btn').disabled = false;
+    }
+}
+
+// --- CORE & UI ---
 function loop() {
     if(state.hashrate > 0) {
         state.balance += state.hashrate * CFG.rate;
@@ -348,6 +387,10 @@ function updateUI() {
     document.getElementById('d-count').innerText = state.inv.length;
     const daily = state.hashrate * CFG.rate * 86400;
     document.getElementById('d-daily').innerText = daily.toFixed(2);
+    machines.forEach(m => {
+        let btn = document.getElementById('btn-'+m.id);
+        if(btn) btn.disabled = false; 
+    });
 }
 
 function go(id, el) {
@@ -367,17 +410,14 @@ function drawChart() {
     state.inv.forEach(i => {
         let m = machines.find(x => x.id === i.mid);
         if(!groups[m.id]) groups[m.id] = { ...m, count:0, total:0 };
-        groups[m.id].count++; 
-        groups[m.id].total += m.rate;
+        groups[m.id].count++; groups[m.id].total += m.rate;
     });
     let r=40, circ=2*Math.PI*r, off=0;
     Object.values(groups).forEach(g => {
         let pct = g.total / state.hashrate;
         let len = circ * pct;
         let c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        c.setAttribute("cx", 50); 
-        c.setAttribute("cy", 50); 
-        c.setAttribute("r", r);
+        c.setAttribute("cx", 50); c.setAttribute("cy", 50); c.setAttribute("r", r);
         c.setAttribute("class", "c-seg");
         c.setAttribute("stroke", g.color);
         c.setAttribute("stroke-dasharray", `${len} ${circ}`);
@@ -418,8 +458,7 @@ function log(msg) {
 }
 
 function renderMarket() {
-    const l = document.getElementById('marketList'); 
-    l.innerHTML = "";
+    const l = document.getElementById('marketList'); l.innerHTML = "";
     machines.filter(m=>m.id!==999).forEach(m => {
         let daily = (m.rate * CFG.rate * 86400).toFixed(2);
         l.innerHTML += `
@@ -430,6 +469,7 @@ function renderMarket() {
         </div>`;
     });
     
+    // Event listener'ları ekle (dinamik olarak oluşturulan butonlar için)
     document.querySelectorAll('.action-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const machineId = parseInt(this.getAttribute('data-machine-id'));
@@ -439,8 +479,7 @@ function renderMarket() {
 }
 
 function renderInv() {
-    const l = document.getElementById('invList'); 
-    l.innerHTML = "";
+    const l = document.getElementById('invList'); l.innerHTML = "";
     if(state.inv.length===0) l.innerHTML = "<div style='text-align:center; color:#666'>Empty</div>";
     state.inv.slice().reverse().forEach(i => {
         let m = machines.find(x => x.id === i.mid);
@@ -448,7 +487,7 @@ function renderInv() {
         l.innerHTML += `
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
-            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited':'Unlimited'}</p></div>
+            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited Time':'Unlimited'}</p></div>
             <div class="ci-action" style="color:${isFree?'var(--danger)':'var(--success)'}; font-weight:bold; font-size:0.8rem;">${isFree?'FREE':'ACTIVE'}</div>
         </div>`;
     });
@@ -456,36 +495,89 @@ function renderInv() {
 
 function showToast(msg, err=false) {
     const t = document.getElementById('toast');
-    t.innerText = msg; 
-    t.style.display="block";
+    t.innerText = msg; t.style.display="block";
     t.style.border = err ? "1px solid #ff453a" : "1px solid #10b981";
     t.style.color = err ? "#ff453a" : "#10b981";
     setTimeout(()=>t.style.display="none", 2000);
 }
 
-// --- GLOBAL ---
+// --- GLOBAL BINDING (Module içinde çalışması için) ---
+window.toggleWallet = toggleWallet;
+window.watchAd = watchAd;
 window.buy = buy;
 window.withdraw = withdraw;
 window.go = go;
-window.watchAd = watchAd;
 
-// --- DOM LISTENERS ---
+// DEBUG: Firebase test fonksiyonu
+window.testFirebaseManual = async function() {
+    console.log("🔍 Firebase Manuel Test Başlıyor...");
+    
+    if (!currentUserUid) {
+        console.error("❌ Kullanıcı henüz giriş yapmamış, bekleyin...");
+        return;
+    }
+    
+    const testWallet = "TEST_WALLET_" + Date.now();
+    const testData = {
+        balance: 999.99,
+        hashrate: 500,
+        inv: [{mid: 1, uid: Date.now()}],
+        freeEnd: 0
+    };
+    
+    console.log("📤 Test verisi gönderiliyor:", testWallet);
+    const result = await saveUserToFire(testWallet, testData);
+    
+    if (result) {
+        console.log("✅ BAŞARILI! Firebase Console'da kontrol edin.");
+        console.log("🔗 https://console.firebase.google.com/project/tonm-77373/firestore/data");
+    } else {
+        console.log("❌ BAŞARISIZ! Yukarıdaki hatalara bakın.");
+    }
+}
+
+// DEBUG: State göster
+window.showState = function() {
+    console.log("Current State:", state);
+    console.log("User UID:", currentUserUid);
+    console.log("Wallet:", state.wallet);
+}
+
+// --- DOM HAZIR OLUNCA EVENT LISTENER'LARI EKLE ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Ready');
+    console.log('DOM Ready - Attaching event listeners...');
     
+    // Connect Wallet Button
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', toggleWallet);
+        console.log('Connect button listener attached');
+    }
+    
+    // Withdraw Button
     const withdrawBtn = document.querySelector('.w-btn');
-    if (withdrawBtn) withdrawBtn.addEventListener('click', withdraw);
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', withdraw);
+        console.log('Withdraw button listener attached');
+    }
     
+    // Watch Ad Button
     const adBtn = document.querySelector('.ad-btn');
-    if (adBtn) adBtn.addEventListener('click', watchAd);
+    if (adBtn) {
+        adBtn.addEventListener('click', watchAd);
+        console.log('Ad button listener attached');
+    }
     
+    // Navigation Items
     document.querySelectorAll('.nav-item').forEach((navItem, index) => {
         navItem.addEventListener('click', function() {
             const views = ['dash', 'market', 'inv', 'wallet'];
             go(views[index], this);
         });
     });
+    
+    console.log('All event listeners attached successfully!');
 });
 
-// INIT
+// Init
 init();

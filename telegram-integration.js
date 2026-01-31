@@ -14,53 +14,42 @@ export async function createTelegramInvoice(machineId, machineName, price) {
     }
 
     try {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) {
-            tg.showAlert("User ID not found. Please restart the app.");
-            return false;
-        }
+        // Telegram Star fiyatı (1 Star = belirlediğiniz değer)
+        // Örnek: 10 TON = 100 Stars
+        const starsPrice = Math.ceil(price * 10); // 10 TON = 100 Stars
+        
+        // Invoice oluştur
+        const invoice = {
+            title: machineName,
+            description: `+${getMachineRate(machineId)} GH/s mining power`,
+            payload: JSON.stringify({ 
+                machineId: machineId,
+                userId: tg.initDataUnsafe?.user?.id 
+            }),
+            provider_token: "", // Stars için boş
+            currency: "XTR", // Telegram Stars currency code
+            prices: [{
+                label: machineName,
+                amount: starsPrice
+            }]
+        };
 
-        // Backend'den invoice URL al
-        const response = await fetch('/api/create-invoice', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                machineId,
-                machineName,
-                price,
-                userId
-            })
-        });
-
-        const data = await response.json();
-
-        if (!data.success || !data.invoiceUrl) {
-            console.error('Invoice creation failed:', data);
-            tg.showAlert("Failed to create payment link. Please try again.");
-            return false;
-        }
-
-        // Invoice URL ile ödeme ekranını aç
-        return new Promise((resolve) => {
-            tg.openInvoice(data.invoiceUrl, (status) => {
+        return new Promise((resolve, reject) => {
+            tg.openInvoice(invoice, (status) => {
                 if (status === 'paid') {
                     console.log("✅ Telegram Stars ödeme başarılı!");
-                    tg.showAlert("Payment successful! Your machine will be added shortly.");
                     resolve(true);
                 } else if (status === 'cancelled') {
                     console.log("❌ Ödeme iptal edildi");
                     resolve(false);
                 } else if (status === 'failed') {
                     console.log("❌ Ödeme başarısız");
-                    tg.showAlert("Payment failed. Please try again.");
-                    resolve(false);
+                    reject(new Error('Payment failed'));
                 }
             });
         });
-        
     } catch (error) {
         console.error("Telegram invoice hatası:", error);
-        tg.showAlert("An error occurred. Please try again.");
         return false;
     }
 }
