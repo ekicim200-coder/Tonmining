@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://telegram.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://ton-connect.github.io https://*.ton.org https://bridge.tonapi.io https://tonapi.io https://*.tonapi.io https://bridge.mytonwallet.org https://*.mytonwallet.org wss://*.firebaseio.com wss://bridge.tonapi.io wss://*.tonapi.io wss://bridge.mytonwallet.org wss://*.mytonwallet.org https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; frame-src 'self' https://ton-connect.github.io;"
+        }
+      ]
+    }
+  ]
+}

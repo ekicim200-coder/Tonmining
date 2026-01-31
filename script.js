@@ -1,16 +1,13 @@
 // --- IMPORT ---
-// initAuth fonksiyonunu da import ettik
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from './firebase-config.js';
 import { isTelegramAvailable, createTelegramInvoice, applyTelegramTheme, getTelegramUserId } from './telegram-integration.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
-// ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
-// Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
-const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
+const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc";
 
 let tonConnectUI;
-let currentUserUid = null; // Firebase User ID'sini burada tutacağız
+let currentUserUid = null;
 
 let state = { 
     balance: 1.00, 
@@ -33,26 +30,28 @@ const machines = [
 let graphData = new Array(20).fill(10);
 
 function init() {
-    // Telegram Mini App teması uygula
     if (isTelegramAvailable()) {
         console.log("🚀 Telegram Mini App algılandı!");
         applyTelegramTheme();
     }
     
-    // 1. Önce Anonim Girişi Başlat
+    // Firebase auth'ı async bekle
     initAuth((uid) => {
         currentUserUid = uid;
         console.log("Sistem Hazır. User:", uid);
-        // Giriş başarılı olunca diğer işlemleri yapabiliriz (gerekirse)
     });
 
     loadLocalData();
     calculateOfflineProgress();
-
     renderMarket();
     updateUI();
     
-    setupTonConnect();
+    // DOM hazır olana kadar bekle
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupTonConnect);
+    } else {
+        setupTonConnect();
+    }
 
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 10000); 
@@ -90,7 +89,6 @@ async function syncToServer() {
         return;
     }
     
-    // Giriş yapmamışsa sunucuya gönderme (Zaten saveUserToFire kontrol ediyor)
     const dataToSave = {
         balance: state.balance,
         hashrate: state.hashrate,
@@ -103,7 +101,6 @@ async function syncToServer() {
 async function loadServerData(walletAddress) {
     showToast("Syncing data...", false);
     
-    // Auth hazır olana kadar bekle
     let attempts = 0;
     while (!currentUserUid && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -150,43 +147,26 @@ function calculateOfflineProgress() {
     }
 }
 
-// --- TON CONNECT (DÜZELTİLMİŞ) ---
+// --- TON CONNECT (TAM DÜZELTİLMİŞ) ---
 function setupTonConnect() {
     console.log("🔧 TON Connect başlatılıyor...");
     
+    // SDK yüklü mü kontrol et
+    if (typeof TON_CONNECT_UI === 'undefined') {
+        console.error("❌ TON Connect SDK yüklenmemiş!");
+        showToast("SDK loading error, please reload", true);
+        return;
+    }
+    
     try {
+        // ÖNEMLİ: walletsListConfiguration KALDIRILDI
+        // SDK otomatik olarak tüm walletları tespit edecek
         tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
             buttonRootId: 'connectBtn',
             uiPreferences: {
                 theme: TON_CONNECT_UI.THEME.DARK
             },
-            // DÜZELTİLMİŞ: Güncel bridge URL'leri kullanılıyor
-            walletsListConfiguration: {
-                includeWallets: [
-                    {
-                        appName: "tonkeeper",
-                        name: "Tonkeeper",
-                        imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
-                        aboutUrl: "https://tonkeeper.com",
-                        // DÜZELTİLDİ: Güncel Tonkeeper bridge
-                        universalLink: "https://app.tonkeeper.com/ton-connect",
-                        bridgeUrl: "https://bridge.tonapi.io/bridge",
-                        platforms: ["ios", "android", "chrome", "firefox", "safari"]
-                    },
-                    {
-                        appName: "mytonwallet",
-                        name: "MyTonWallet",
-                        imageUrl: "https://static.mytonwallet.io/icon-256.png",
-                        aboutUrl: "https://mytonwallet.io",
-                        // DÜZELTİLDİ: MyTonWallet eklendi
-                        universalLink: "https://connect.mytonwallet.org",
-                        bridgeUrl: "https://bridge.mytonwallet.org/bridge",
-                        platforms: ["chrome", "firefox", "safari", "ios", "android"]
-                    }
-                ]
-            },
-            // EKSTRA: Timeout ve retry ayarları
             actionsConfiguration: {
                 twaReturnUrl: 'https://tonmining.vercel.app'
             }
@@ -260,7 +240,6 @@ async function buy(id) {
         return;
     }
 
-    // Telegram Mini App içinde mi kontrol et
     if (isTelegramAvailable()) {
         const success = await createTelegramInvoice(m.price, m.name, `TON Miner: ${m.name} satın al`);
         if (success) {
@@ -276,7 +255,6 @@ async function buy(id) {
         return;
     }
 
-    // Normal TON Connect ödeme akışı
     if (!state.wallet) {
         showToast("Connect wallet first", true);
         return;
@@ -343,13 +321,7 @@ async function withdraw() {
     try {
         const userId = getTelegramUserId() || state.wallet || 'unknown';
         
-        const success = await saveWithdrawalRequest({
-            userId: userId,
-            walletAddress: addr,
-            amount: amt,
-            timestamp: Date.now(),
-            status: 'pending'
-        });
+        const success = await saveWithdrawalRequest(addr, amt);
 
         if (success) {
             state.balance -= amt;
@@ -394,7 +366,6 @@ function grantMachine(id) {
 async function watchAd() {
     showToast("Ad loading...");
     
-    // Telegram Mini App için test
     if (isTelegramAvailable()) {
         console.log("🎬 Telegram ortamında reklam izleme testi");
     }
@@ -505,7 +476,6 @@ function renderMarket() {
         </div>`;
     });
     
-    // Event listener'ları ekle (dinamik olarak oluşturulan butonlar için)
     document.querySelectorAll('.action-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const machineId = parseInt(this.getAttribute('data-machine-id'));
@@ -537,14 +507,14 @@ function showToast(msg, err=false) {
     setTimeout(()=>t.style.display="none", 2000);
 }
 
-// --- GLOBAL BINDING (Module içinde çalışması için) ---
+// --- GLOBAL BINDING ---
 window.toggleWallet = toggleWallet;
 window.watchAd = watchAd;
 window.buy = buy;
 window.withdraw = withdraw;
 window.go = go;
 
-// DEBUG: Firebase test fonksiyonu
+// DEBUG Functions
 window.testFirebaseManual = async function() {
     console.log("🔍 Firebase Manuel Test Başlıyor...");
     
@@ -566,79 +536,49 @@ window.testFirebaseManual = async function() {
     
     if (result) {
         console.log("✅ BAŞARILI! Firebase Console'da kontrol edin.");
-        console.log("🔗 https://console.firebase.google.com/project/tonm-77373/firestore/data");
     } else {
         console.log("❌ BAŞARISIZ! Yukarıdaki hatalara bakın.");
     }
 }
 
-// DEBUG: Telegram Mode Test
-window.testTelegramMode = function() {
-    console.log("🧪 Telegram Mode Testi");
-    console.log("Telegram Available:", isTelegramAvailable());
-    console.log("Current Payment Mode:", isTelegramAvailable() ? "TELEGRAM STARS" : "TON CONNECT");
-    
-    // Test için Telegram'ı simüle et
-    if (!window.Telegram) {
-        console.log("⚠️ Telegram SDK yok, simülasyon yapılıyor...");
-        window.Telegram = {
-            WebApp: {
-                initDataUnsafe: { user: { id: 123456789 } },
-                themeParams: {},
-                expand: () => console.log("Telegram expand()"),
-                BackButton: { hide: () => {} },
-                MainButton: { hide: () => {} }
-            }
-        };
-        console.log("✅ Telegram simüle edildi! Sayfayı yenileyin.");
-    }
-}
-
-// DEBUG: State göster
 window.showState = function() {
     console.log("Current State:", state);
     console.log("User UID:", currentUserUid);
     console.log("Wallet:", state.wallet);
 }
 
-// DEBUG: TON Connect durumunu kontrol et
 window.checkTonConnect = function() {
     console.log("=== TON CONNECT STATUS ===");
     console.log("TON Connect UI:", tonConnectUI ? "✅ Initialized" : "❌ Not initialized");
     if (tonConnectUI) {
         console.log("Connected:", tonConnectUI.connected);
         console.log("Wallet:", tonConnectUI.wallet);
-        console.log("Account:", tonConnectUI.account);
     }
     console.log("=========================");
 }
 
-// --- DOM HAZIR OLUNCA EVENT LISTENER'LARI EKLE ---
+// --- DOM EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Ready - Attaching event listeners...');
     
-    // Connect Wallet Button
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn) {
         connectBtn.addEventListener('click', toggleWallet);
         console.log('Connect button listener attached');
     }
     
-    // Withdraw Button
     const withdrawBtn = document.querySelector('.w-btn');
     if (withdrawBtn) {
         withdrawBtn.addEventListener('click', withdraw);
         console.log('Withdraw button listener attached');
     }
     
-    // Watch Ad Button
     const adBtn = document.querySelector('.ad-btn');
     if (adBtn) {
         adBtn.addEventListener('click', watchAd);
         console.log('Ad button listener attached');
     }
     
-    // Navigation Items
     document.querySelectorAll('.nav-item').forEach((navItem, index) => {
         navItem.addEventListener('click', function() {
             const views = ['dash', 'market', 'inv', 'wallet'];
