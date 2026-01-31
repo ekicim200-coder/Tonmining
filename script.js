@@ -29,16 +29,18 @@ const machines = [
 
 let graphData = new Array(20).fill(10);
 
+// --- INIT ---
 function init() {
+    console.log("🚀 App başlatılıyor...");
+    
     if (isTelegramAvailable()) {
-        console.log("🚀 Telegram Mini App algılandı!");
+        console.log("📱 Telegram Mini App algılandı!");
         applyTelegramTheme();
     }
     
-    // Firebase auth'ı async bekle
     initAuth((uid) => {
         currentUserUid = uid;
-        console.log("Sistem Hazır. User:", uid);
+        console.log("✅ Firebase Auth hazır. User:", uid);
     });
 
     loadLocalData();
@@ -46,12 +48,10 @@ function init() {
     renderMarket();
     updateUI();
     
-    // DOM hazır olana kadar bekle
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupTonConnect);
-    } else {
+    // TON Connect'i bekle
+    setTimeout(() => {
         setupTonConnect();
-    }
+    }, 1000);
 
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 10000); 
@@ -60,16 +60,66 @@ function init() {
     setInterval(checkFree, 1000);
 }
 
-// --- DATA MANAGEMENT ---
+// --- TON CONNECT (MINIMAL) ---
+function setupTonConnect() {
+    console.log("🔧 TON Connect başlatılıyor...");
+    
+    if (typeof TON_CONNECT_UI === 'undefined') {
+        console.error("❌ TON Connect SDK yüklenmedi!");
+        setTimeout(setupTonConnect, 2000);
+        return;
+    }
+    
+    console.log("✅ SDK Version:", TON_CONNECT_UI.SDK_VERSION);
+    
+    try {
+        // MİNİMAL KONFIGÜRASYON - HİÇBİR ÖZEL AYAR YOK
+        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json'
+        });
 
+        console.log("✅ TON Connect UI oluşturuldu");
+
+        // Wallet durumunu izle
+        const unsubscribe = tonConnectUI.onStatusChange((walletInfo) => {
+            console.log("🔄 Wallet durumu:", walletInfo ? "CONNECTED" : "DISCONNECTED");
+            
+            if (walletInfo) {
+                const address = walletInfo.account.address;
+                const friendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(address);
+                state.wallet = friendlyAddress;
+                
+                document.getElementById('w-addr').value = friendlyAddress;
+                document.getElementById('w-addr').disabled = false;
+                
+                showToast("✅ Wallet Connected!");
+                loadServerData(friendlyAddress);
+            } else {
+                state.wallet = null;
+                document.getElementById('w-addr').value = "";
+                document.getElementById('w-addr').disabled = true;
+            }
+        });
+        
+        console.log("✅ Listener bağlandı");
+        
+    } catch (error) {
+        console.error("❌ TON Connect hatası:", error);
+        showToast("Connection error", true);
+    }
+}
+
+// --- DATA MANAGEMENT ---
 function loadLocalData() {
     const saved = localStorage.getItem('tonMinerSave');
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
             state = { ...state, ...parsed };
-            state.wallet = null; 
-        } catch (e) { console.error("Corrupted save"); }
+            state.wallet = null;
+        } catch (e) { 
+            console.error("Save bozuk"); 
+        }
     }
 }
 
@@ -83,11 +133,7 @@ function autoSave() {
 }
 
 async function syncToServer() {
-    if (!state.wallet) return;
-    if (!currentUserUid) {
-        console.log("⏳ Auth not ready yet, skipping sync...");
-        return;
-    }
+    if (!state.wallet || !currentUserUid) return;
     
     const dataToSave = {
         balance: state.balance,
@@ -99,7 +145,7 @@ async function syncToServer() {
 }
 
 async function loadServerData(walletAddress) {
-    showToast("Syncing data...", false);
+    showToast("Syncing...", false);
     
     let attempts = 0;
     while (!currentUserUid && attempts < 50) {
@@ -108,7 +154,7 @@ async function loadServerData(walletAddress) {
     }
     
     if (!currentUserUid) {
-        showToast("Auth not ready, please retry", true);
+        showToast("Auth not ready", true);
         return;
     }
     
@@ -122,11 +168,10 @@ async function loadServerData(walletAddress) {
         state.lastSave = serverData.lastSave || Date.now();
         
         calculateOfflineProgress();
-        
         updateUI();
         drawChart();
         saveLocalData();
-        showToast("Data Synced ✅");
+        showToast("✅ Synced");
     } else {
         syncToServer();
     }
@@ -141,92 +186,9 @@ function calculateOfflineProgress() {
         const earned = secondsPassed * state.hashrate * CFG.rate;
         if (earned > 0) {
             state.balance += earned;
-            showToast(`Offline Gain: ${earned.toFixed(4)} TON`);
+            showToast(`Offline: +${earned.toFixed(4)} TON`);
             syncToServer();
         }
-    }
-}
-
-// --- TON CONNECT (TAM DÜZELTİLMİŞ) ---
-function setupTonConnect() {
-    console.log("🔧 TON Connect başlatılıyor...");
-    
-    // SDK yüklü mü kontrol et
-    if (typeof TON_CONNECT_UI === 'undefined') {
-        console.error("❌ TON Connect SDK yüklenmemiş!");
-        showToast("SDK loading error, please reload", true);
-        return;
-    }
-    
-    try {
-        // ÖNEMLİ: walletsListConfiguration KALDIRILDI
-        // SDK otomatik olarak tüm walletları tespit edecek
-        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
-            buttonRootId: 'connectBtn',
-            uiPreferences: {
-                theme: TON_CONNECT_UI.THEME.DARK
-            },
-            actionsConfiguration: {
-                twaReturnUrl: 'https://tonmining.vercel.app'
-            }
-        });
-
-        console.log("✅ TON Connect UI oluşturuldu");
-
-        // Bağlantı durumu değişikliklerini dinle
-        tonConnectUI.onStatusChange((wallet) => {
-            console.log("🔄 Wallet durumu değişti:", wallet ? "CONNECTED" : "DISCONNECTED");
-            
-            const btn = document.getElementById('connectBtn');
-            const addrInput = document.getElementById('w-addr');
-
-            if (wallet) {
-                const rawAddress = wallet.account.address;
-                const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress(rawAddress);
-                state.wallet = userFriendlyAddress;
-                
-                btn.innerHTML = `<i class="fas fa-check-circle"></i> ${userFriendlyAddress.substring(0, 4)}...`;
-                btn.classList.add('connected');
-                if(addrInput) addrInput.value = userFriendlyAddress;
-                
-                showToast("Wallet Connected ✅");
-                loadServerData(userFriendlyAddress);
-                
-            } else {
-                state.wallet = null;
-                btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
-                btn.classList.remove('connected');
-                if(addrInput) addrInput.value = "";
-            }
-        });
-        
-        console.log("✅ Event listener'lar bağlandı");
-        
-    } catch (error) {
-        console.error("❌ TON Connect başlatma hatası:", error);
-        showToast("Connection error, reload page", true);
-    }
-}
-
-async function toggleWallet() {
-    if (!tonConnectUI) {
-        console.error("❌ TON Connect UI henüz hazır değil");
-        showToast("Please wait, loading...", true);
-        return;
-    }
-    
-    try {
-        if (tonConnectUI.connected) {
-            console.log("🔌 Wallet bağlantısı kesiliyor...");
-            await tonConnectUI.disconnect();
-        } else {
-            console.log("🔗 Wallet bağlanıyor...");
-            await tonConnectUI.openModal();
-        }
-    } catch (error) {
-        console.error("❌ Wallet işlemi hatası:", error);
-        showToast("Connection failed, try again", true);
     }
 }
 
@@ -241,7 +203,7 @@ async function buy(id) {
     }
 
     if (isTelegramAvailable()) {
-        const success = await createTelegramInvoice(m.price, m.name, `TON Miner: ${m.name} satın al`);
+        const success = await createTelegramInvoice(m.price, m.name, `TON Miner: ${m.name}`);
         if (success) {
             state.balance -= m.price;
             state.inv.push({ mid: id, uid: Date.now() });
@@ -265,15 +227,14 @@ async function buy(id) {
         return;
     }
 
-    const userConfirmed = confirm(`Buy ${m.name} for ${m.price} TON?`);
-    if (!userConfirmed) return;
+    if (!confirm(`Buy ${m.name} for ${m.price} TON?`)) return;
 
     try {
         const tx = {
             validUntil: Math.floor(Date.now() / 1000) + 360,
             messages: [{
                 address: ADMIN_WALLET,
-                amount: (m.price * 1e9).toString() 
+                amount: (m.price * 1e9).toString()
             }]
         };
 
@@ -282,13 +243,11 @@ async function buy(id) {
         state.balance -= m.price;
         state.inv.push({ mid: id, uid: Date.now() });
         state.hashrate += m.rate;
-
         updateUI(); 
         drawChart();
         saveLocalData();
         syncToServer();
         showToast(`${m.name} Purchased!`);
-
     } catch (e) {
         showToast("Transaction failed", true);
         console.error(e);
@@ -315,12 +274,9 @@ async function withdraw() {
         return;
     }
 
-    const userConfirmed = confirm(`Withdraw ${amt} TON to ${addr}?`);
-    if (!userConfirmed) return;
+    if (!confirm(`Withdraw ${amt} TON?`)) return;
 
     try {
-        const userId = getTelegramUserId() || state.wallet || 'unknown';
-        
         const success = await saveWithdrawalRequest(addr, amt);
 
         if (success) {
@@ -328,14 +284,13 @@ async function withdraw() {
             updateUI();
             saveLocalData();
             syncToServer();
-            showToast("Request submitted! ✅");
+            showToast("✅ Request submitted!");
             amtInput.value = "";
         } else {
             showToast("Request failed", true);
         }
-
     } catch (e) {
-        showToast("Error occurred", true);
+        showToast("Error", true);
         console.error(e);
     }
 }
@@ -348,7 +303,10 @@ function checkFree() {
         return s + (machines.find(m => m.id === i.mid)?.rate || 0);
     }, 0);
     if (old !== state.hashrate) {
-        updateUI(); drawChart(); saveLocalData(); syncToServer();
+        updateUI(); 
+        drawChart(); 
+        saveLocalData(); 
+        syncToServer();
     }
 }
 
@@ -360,15 +318,11 @@ function grantMachine(id) {
     drawChart();
     saveLocalData();
     syncToServer();
-    showToast("Machine granted for 3 hours!");
+    showToast("Machine granted for 3h!");
 }
 
 async function watchAd() {
     showToast("Ad loading...");
-    
-    if (isTelegramAvailable()) {
-        console.log("🎬 Telegram ortamında reklam izleme testi");
-    }
     
     setTimeout(() => {
         const bonus = Math.random() * 0.5 + 0.1;
@@ -376,11 +330,11 @@ async function watchAd() {
         updateUI();
         saveLocalData();
         syncToServer();
-        showToast(`+${bonus.toFixed(4)} TON reward!`);
+        showToast(`+${bonus.toFixed(4)} TON!`);
     }, 2000);
 }
 
-// --- LOOP ---
+// --- LOOP & UI ---
 function loop() {
     if(state.hashrate > 0) {
         state.balance += state.hashrate * CFG.rate;
@@ -394,10 +348,6 @@ function updateUI() {
     document.getElementById('d-count').innerText = state.inv.length;
     const daily = state.hashrate * CFG.rate * 86400;
     document.getElementById('d-daily').innerText = daily.toFixed(2);
-    machines.forEach(m => {
-        let btn = document.getElementById('btn-'+m.id);
-        if(btn) btn.disabled = false; 
-    });
 }
 
 function go(id, el) {
@@ -417,14 +367,17 @@ function drawChart() {
     state.inv.forEach(i => {
         let m = machines.find(x => x.id === i.mid);
         if(!groups[m.id]) groups[m.id] = { ...m, count:0, total:0 };
-        groups[m.id].count++; groups[m.id].total += m.rate;
+        groups[m.id].count++; 
+        groups[m.id].total += m.rate;
     });
     let r=40, circ=2*Math.PI*r, off=0;
     Object.values(groups).forEach(g => {
         let pct = g.total / state.hashrate;
         let len = circ * pct;
         let c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        c.setAttribute("cx", 50); c.setAttribute("cy", 50); c.setAttribute("r", r);
+        c.setAttribute("cx", 50); 
+        c.setAttribute("cy", 50); 
+        c.setAttribute("r", r);
         c.setAttribute("class", "c-seg");
         c.setAttribute("stroke", g.color);
         c.setAttribute("stroke-dasharray", `${len} ${circ}`);
@@ -465,7 +418,8 @@ function log(msg) {
 }
 
 function renderMarket() {
-    const l = document.getElementById('marketList'); l.innerHTML = "";
+    const l = document.getElementById('marketList'); 
+    l.innerHTML = "";
     machines.filter(m=>m.id!==999).forEach(m => {
         let daily = (m.rate * CFG.rate * 86400).toFixed(2);
         l.innerHTML += `
@@ -485,7 +439,8 @@ function renderMarket() {
 }
 
 function renderInv() {
-    const l = document.getElementById('invList'); l.innerHTML = "";
+    const l = document.getElementById('invList'); 
+    l.innerHTML = "";
     if(state.inv.length===0) l.innerHTML = "<div style='text-align:center; color:#666'>Empty</div>";
     state.inv.slice().reverse().forEach(i => {
         let m = machines.find(x => x.id === i.mid);
@@ -493,7 +448,7 @@ function renderInv() {
         l.innerHTML += `
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
-            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited Time':'Unlimited'}</p></div>
+            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited':'Unlimited'}</p></div>
             <div class="ci-action" style="color:${isFree?'var(--danger)':'var(--success)'}; font-weight:bold; font-size:0.8rem;">${isFree?'FREE':'ACTIVE'}</div>
         </div>`;
     });
@@ -501,83 +456,28 @@ function renderInv() {
 
 function showToast(msg, err=false) {
     const t = document.getElementById('toast');
-    t.innerText = msg; t.style.display="block";
+    t.innerText = msg; 
+    t.style.display="block";
     t.style.border = err ? "1px solid #ff453a" : "1px solid #10b981";
     t.style.color = err ? "#ff453a" : "#10b981";
     setTimeout(()=>t.style.display="none", 2000);
 }
 
-// --- GLOBAL BINDING ---
-window.toggleWallet = toggleWallet;
-window.watchAd = watchAd;
+// --- GLOBAL ---
 window.buy = buy;
 window.withdraw = withdraw;
 window.go = go;
+window.watchAd = watchAd;
 
-// DEBUG Functions
-window.testFirebaseManual = async function() {
-    console.log("🔍 Firebase Manuel Test Başlıyor...");
-    
-    if (!currentUserUid) {
-        console.error("❌ Kullanıcı henüz giriş yapmamış, bekleyin...");
-        return;
-    }
-    
-    const testWallet = "TEST_WALLET_" + Date.now();
-    const testData = {
-        balance: 999.99,
-        hashrate: 500,
-        inv: [{mid: 1, uid: Date.now()}],
-        freeEnd: 0
-    };
-    
-    console.log("📤 Test verisi gönderiliyor:", testWallet);
-    const result = await saveUserToFire(testWallet, testData);
-    
-    if (result) {
-        console.log("✅ BAŞARILI! Firebase Console'da kontrol edin.");
-    } else {
-        console.log("❌ BAŞARISIZ! Yukarıdaki hatalara bakın.");
-    }
-}
-
-window.showState = function() {
-    console.log("Current State:", state);
-    console.log("User UID:", currentUserUid);
-    console.log("Wallet:", state.wallet);
-}
-
-window.checkTonConnect = function() {
-    console.log("=== TON CONNECT STATUS ===");
-    console.log("TON Connect UI:", tonConnectUI ? "✅ Initialized" : "❌ Not initialized");
-    if (tonConnectUI) {
-        console.log("Connected:", tonConnectUI.connected);
-        console.log("Wallet:", tonConnectUI.wallet);
-    }
-    console.log("=========================");
-}
-
-// --- DOM EVENT LISTENERS ---
+// --- DOM LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Ready - Attaching event listeners...');
-    
-    const connectBtn = document.getElementById('connectBtn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', toggleWallet);
-        console.log('Connect button listener attached');
-    }
+    console.log('DOM Ready');
     
     const withdrawBtn = document.querySelector('.w-btn');
-    if (withdrawBtn) {
-        withdrawBtn.addEventListener('click', withdraw);
-        console.log('Withdraw button listener attached');
-    }
+    if (withdrawBtn) withdrawBtn.addEventListener('click', withdraw);
     
     const adBtn = document.querySelector('.ad-btn');
-    if (adBtn) {
-        adBtn.addEventListener('click', watchAd);
-        console.log('Ad button listener attached');
-    }
+    if (adBtn) adBtn.addEventListener('click', watchAd);
     
     document.querySelectorAll('.nav-item').forEach((navItem, index) => {
         navItem.addEventListener('click', function() {
@@ -585,9 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             go(views[index], this);
         });
     });
-    
-    console.log('All event listeners attached successfully!');
 });
 
-// Init
+// INIT
 init();

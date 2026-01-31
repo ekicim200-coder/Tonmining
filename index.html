@@ -7,23 +7,15 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- ÖNEMLİ: TON Connect SDK'yı HEAD'de yükle -->
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
-
-    <!-- Telegram Mini App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <div class="header">
         <div class="bal-box">
             <span class="bal-lbl">TOTAL BALANCE</span>
             <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
         </div>
-        <button class="wallet-btn" id="connectBtn">
-            <i class="fas fa-wallet"></i> Connect
-        </button>
+        <div id="ton-connect-button"></div>
     </div>
 
     <div id="v-dash" class="view active">
@@ -103,16 +95,17 @@
 
     <div id="toast">Message</div>
 
-    <!-- Eruda Mobile Console -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>
-        eruda.init();
-        console.log('📱 Eruda Mobile Console loaded! Tap the icon in bottom-right corner.');
-    </script>
+    <!-- Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- DİKKAT: TON Connect SDK artık HEAD'de yüklü, burayı SİLDİK -->
-    
-    <!-- Ana Script - Module olarak -->
+    <!-- TON Connect SDK - LATEST VERSION -->
+    <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
+
+    <!-- Eruda Console -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+
+    <!-- Ana Script -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
