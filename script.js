@@ -237,20 +237,13 @@ async function buy(id) {
             const success = await createTelegramInvoice(id, m.name, m.price);
             
             if (success) {
-                showToast("Payment Successful! ✅");
-                grantMachine(id);
+                showToast("Payment Successful! Machine will be added shortly ✅");
+                // Backend webhook'tan makine eklenecek, burada grant etmiyoruz
                 
-                // Firebase'e Telegram user ID ile kaydet
-                const telegramUserId = getTelegramUserId();
-                if (telegramUserId) {
-                    await saveUserToFire(`TG_${telegramUserId}`, {
-                        balance: state.balance,
-                        hashrate: state.hashrate,
-                        inv: state.inv,
-                        freeEnd: state.freeEnd,
-                        telegramUserId: telegramUserId
-                    });
-                }
+                // Sayfayı yenile ki Firebase'den güncel veri gelsin
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             } else {
                 showToast("Payment Cancelled", true);
             }
@@ -533,6 +526,28 @@ window.testFirebaseManual = async function() {
         console.log("🔗 https://console.firebase.google.com/project/tonm-77373/firestore/data");
     } else {
         console.log("❌ BAŞARISIZ! Yukarıdaki hatalara bakın.");
+    }
+}
+
+// DEBUG: Telegram Mode Test
+window.testTelegramMode = function() {
+    console.log("🧪 Telegram Mode Testi");
+    console.log("Telegram Available:", isTelegramAvailable());
+    console.log("Current Payment Mode:", isTelegramAvailable() ? "TELEGRAM STARS" : "TON CONNECT");
+    
+    // Test için Telegram'ı simüle et
+    if (!window.Telegram) {
+        console.log("⚠️ Telegram SDK yok, simülasyon yapılıyor...");
+        window.Telegram = {
+            WebApp: {
+                initDataUnsafe: { user: { id: 123456789 } },
+                themeParams: {},
+                expand: () => console.log("Telegram expand()"),
+                BackButton: { hide: () => {} },
+                MainButton: { hide: () => {} }
+            }
+        };
+        console.log("✅ Telegram simüle edildi! Sayfayı yenileyin.");
     }
 }
 
