@@ -58,18 +58,27 @@ body {
 /* --- DASHBOARD --- */
 .dashboard { padding: 20px; display: flex; flex-direction: column; align-items: center; }
 
-/* Donut Chart */
-.chart-wrapper { position: relative; width: 220px; height: 220px; margin-bottom: 25px; margin-top: 10px; }
+/* Donut Chart (REVİZE EDİLDİ: 180px) */
+.chart-wrapper { 
+    position: relative; 
+    width: 180px;  /* 220px'den 180px'e düşürüldü */
+    height: 180px; 
+    margin-bottom: 25px; 
+    margin-top: 10px; 
+}
 .chart-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 15; }
-.c-seg { fill: none; stroke-width: 15; stroke-linecap: round; transition: 0.3s; cursor: pointer; }
-.c-seg:hover { stroke-width: 18; filter: drop-shadow(0 0 5px currentColor); }
+
+/* Halka kalınlıkları boyuta göre inceltildi */
+.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
+.c-seg { fill: none; stroke-width: 12; stroke-linecap: round; transition: 0.3s; cursor: pointer; }
+.c-seg:hover { stroke-width: 15; filter: drop-shadow(0 0 5px currentColor); }
 
 .chart-info {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%); text-align: center;
 }
-.chart-val { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+/* Yazı boyutu hafif küçültüldü */
+.chart-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
 .chart-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 5px; }
 
 /* Live Graph */
