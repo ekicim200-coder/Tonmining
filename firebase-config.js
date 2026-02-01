@@ -1,11 +1,11 @@
-// firebase.js
-
+// firebase-config.js
 // Firebase SDK'yı import et
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// 👇 BURASI ÖNEMLİ: collection, query, where, getDocs EKLENDİ 👇
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase Config
+// Firebase Config - SİZİN BİLGİLERİNİZ
 const firebaseConfig = {
   apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
   authDomain: "tonm-77373.firebaseapp.com",
@@ -97,8 +97,20 @@ export async function getUserFromFire(walletAddress) {
 // Çekim talebi kaydet
 export async function saveWithdrawalRequest(walletAddress, amount) {
     if (!currentUser) {
-        console.error("Kullanıcı giriş yapmamış!");
+        console.error("❌ Hata: Kullanıcı giriş yapmamış!");
         return false;
+    }
+
+    if (amount === undefined || amount === null) {
+        console.error("❌ Hata: Çekilecek miktar (amount) belirtilmemiş!");
+        return false;
+    }
+
+    const validAmount = Number(amount);
+    
+    if (isNaN(validAmount) || validAmount <= 0) {
+         console.error("❌ Hata: Geçersiz miktar:", amount);
+         return false;
     }
 
     try {
@@ -107,17 +119,45 @@ export async function saveWithdrawalRequest(walletAddress, amount) {
         
         await setDoc(withdrawalRef, {
             walletAddress: walletAddress,
-            amount: amount,
+            amount: validAmount,
             status: "pending",
             requestDate: Date.now(),
             userId: currentUser.uid,
             processedDate: null
         });
         
-        console.log("✅ Çekim talebi kaydedildi:", withdrawalId);
+        console.log("✅ Çekim talebi kaydedildi ID:", withdrawalId);
         return true;
     } catch (error) {
-        console.error("❌ Çekim talebi kaydetme hatası:", error.code, error.message);
+        console.error("❌ Çekim talebi veritabanı hatası:", error.code, error.message);
         return false;
+    }
+}
+
+// 👇 EKSİK OLAN VE HATAYA SEBEP OLAN FONKSİYON 👇
+export async function getHistoryFromFire(walletAddress) {
+    if (!walletAddress) return [];
+
+    try {
+        // 'withdrawals' koleksiyonunda, cüzdan adresi bizimkiyle eşleşenleri bul
+        const q = query(
+            collection(db, "withdrawals"),
+            where("walletAddress", "==", walletAddress)
+        );
+
+        const querySnapshot = await getDocs(q);
+        let history = [];
+        
+        querySnapshot.forEach((doc) => {
+            history.push(doc.data());
+        });
+
+        // Tarihe göre sırala (En yeni en üstte)
+        history.sort((a, b) => b.requestDate - a.requestDate);
+        
+        return history;
+    } catch (error) {
+        console.error("Geçmiş çekilemedi:", error);
+        return [];
     }
 }
