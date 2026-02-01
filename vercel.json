@@ -2,21 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.js",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     }
   ]
 }
-```
-
----
-
-Bu 2 dosyayı da ekledikten sonra şu yapı olacak:
-```
-Tonmining/
-├── api/
-│   ├── apicreate-invoice.js  ✅
-│   └── apiwebhook.js         ✅
-├── package.json              ← Ekle
-├── vercel.json               ← Ekle
-└── (diğer dosyalar)
