@@ -5,14 +5,17 @@
       "src": "api/*.js",
       "use": "@vercel/node"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ],
-  "env": {
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token"
-  }
+  ]
 }
+```
+
+---
+
+Şimdi GitHub'da şu yapı olmalı:
+```
+tonmining-backend/
+├── api/
+│   ├── create-invoice.js
+│   └── webhook.js
+├── package.json
+└── vercel.json
