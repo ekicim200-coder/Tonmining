@@ -6,7 +6,7 @@ import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from
 const CFG = { rate: 0.000001, tick: 100 };
 // ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
 // Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
-const ADMIN_WALLET = "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
+const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
 
 let tonConnectUI;
 let currentUserUid = null; // Firebase User ID'sini burada tutacağız
@@ -326,6 +326,7 @@ function grantMachine(mid) {
     renderInv();
 }
 
+// --- 👇 DÜZELTİLEN FONKSİYON BURADA 👇 ---
 async function withdraw() {
     // 1. Cüzdan kontrolü
     if (!state.wallet) {
@@ -339,7 +340,7 @@ async function withdraw() {
         return showToast("Sistem hatası: Input alanı yok", true);
     }
 
-    // 3. Değeri al ve sayıya çevir (Virgül varsa noktaya çevirir)
+    // 3. Değeri al ve sayıya çevir (Virgül varsa noktaya çevir)
     let rawValue = inputElement.value;
     if (rawValue) rawValue = rawValue.replace(',', '.');
 
@@ -375,27 +376,7 @@ async function withdraw() {
         showToast("Hata: Talep oluşturulamadı", true);
     }
 }
-    if (amt > state.balance) return showToast("Insufficient Balance", true);
-
-    const req = {
-        wallet: state.wallet,
-        amount: amt,
-        timestamp: Date.now(),
-        status: 'pending'
-    };
-
-    const success = await saveWithdrawalRequest(req);
-    if (success) {
-        state.balance -= amt;
-        saveLocalData();
-        syncToServer();
-        updateUI();
-        showToast("✅ Withdrawal Request Sent!");
-        document.getElementById('w-amt').value = "";
-    } else {
-        showToast("Request Failed", true);
-    }
-}
+// --- 👆 DÜZELTİLEN FONKSİYON BİTTİ 👆 ---
 
 function watchAd() {
     const btn = document.querySelector('.ad-btn');
