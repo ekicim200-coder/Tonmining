@@ -1,9 +1,11 @@
+// firebase.js
+
 // Firebase SDK'yı import et
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase Config - SİZİN BİLGİLERİNİZİ BURAYA GİRİN
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
   authDomain: "tonm-77373.firebaseapp.com",
