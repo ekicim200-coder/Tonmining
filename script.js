@@ -586,8 +586,8 @@ async function renderHistory() {
     let html = "";
     history.forEach(tx => {
         const date = new Date(tx.requestDate).toLocaleString();
-        const color = tx.status === 'pending' ? 'orange' : (tx.status === 'paid' ? '#10b981' : 'red');
-        const statusText = tx.status === 'pending' ? 'Bekliyor' : (tx.status === 'paid' ? 'Ödendi' : 'Red');
+        const color = tx.status === 'pending' ? 'orange' : (tx.status === 'paid' ? '#10b981' : 'rejected');
+        const statusText = tx.status === 'pending' ? 'pending' : (tx.status === 'paid' ? 'paid' : 'rejected');
 
         html += `
         <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
