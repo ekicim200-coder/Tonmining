@@ -1,0 +1,15 @@
+{
+  "name": "tonmining-stars",
+  "version": "1.0.0",
+  "description": "TON Mining with Telegram Stars Payment",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build required'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.x"
+  }
+}
