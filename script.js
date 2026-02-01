@@ -1,12 +1,11 @@
 // --- IMPORT ---
-// initAuth fonksiyonunu da import ettik
-import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest } from './firebase-config.js';
+// getHistoryFromFire eklendi
+import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire } from './firebase-config.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
 // ÖNEMLİ: Buraya KENDİ TON CÜZDAN ADRESİNİZİ girin!
-// Örnek: "UQC5h1-xI12Kq8PsWNK9tBNBzdGw-h0zLyDGPRaz3kw3iuSX"
-const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; // BURAYA KENDİ CÜZDAN ADRESİNİZİ YAZIN!
+const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; 
 
 let tonConnectUI;
 let currentUserUid = null; // Firebase User ID'sini burada tutacağız
@@ -326,7 +325,6 @@ function grantMachine(mid) {
     renderInv();
 }
 
-// --- 👇 DÜZELTİLEN FONKSİYON BURADA 👇 ---
 async function withdraw() {
     // 1. Cüzdan kontrolü
     if (!state.wallet) {
@@ -362,7 +360,6 @@ async function withdraw() {
     // 5. İsteği gönder
     showToast("İşlem yapılıyor...", false);
 
-    // Düzeltilen kısım: (Cüzdan, Miktar) olarak iki parça gönderiyoruz
     const success = await saveWithdrawalRequest(state.wallet, amt);
 
     if (success) {
@@ -372,11 +369,11 @@ async function withdraw() {
         updateUI();
         showToast("✅ Çekim Talebi Alındı!");
         inputElement.value = ""; 
+        renderHistory(); // Çekimden sonra geçmişi güncelle
     } else {
         showToast("Hata: Talep oluşturulamadı", true);
     }
 }
-// --- 👆 DÜZELTİLEN FONKSİYON BİTTİ 👆 ---
 
 function watchAd() {
     const btn = document.querySelector('.ad-btn');
@@ -449,13 +446,17 @@ function updateUI() {
     });
 }
 
+// GÜNCELLENEN go FONKSİYONU
 function go(id, el) {
     document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
     document.getElementById('v-'+id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-    el.classList.add('active');
+    
+    if(el) el.classList.add('active');
+    
     if(id==='dash') drawChart();
     if(id==='inv') renderInv();
+    if(id==='wallet') renderHistory(); // Wallet açılınca geçmişi getir
 }
 
 function drawChart() {
@@ -560,6 +561,47 @@ function renderInv() {
             <div class="ci-action" style="color:${isFree?'var(--danger)':'var(--success)'}; font-weight:bold; font-size:0.8rem;">${isFree?'FREE':'ACTIVE'}</div>
         </div>`;
     });
+}
+
+// YENİ EKLENEN HISTORY FONKSİYONU
+async function renderHistory() {
+    const listEl = document.getElementById('tx-history-list');
+    if (!listEl) return;
+
+    if (!state.wallet) {
+        listEl.innerHTML = "<p style='color:#666'>Please connect wallet.</p>";
+        return;
+    }
+
+    listEl.innerHTML = "<p style='color:#999'>Loading...</p>";
+
+    // Firebase'den veriyi çek
+    const history = await getHistoryFromFire(state.wallet);
+
+    if (history.length === 0) {
+        listEl.innerHTML = "<p style='color:#666'>No transactions yet.</p>";
+        return;
+    }
+
+    let html = "";
+    history.forEach(tx => {
+        const date = new Date(tx.requestDate).toLocaleString();
+        const color = tx.status === 'pending' ? 'orange' : (tx.status === 'paid' ? '#10b981' : 'red');
+        const statusText = tx.status === 'pending' ? 'Bekliyor' : (tx.status === 'paid' ? 'Ödendi' : 'Red');
+
+        html += `
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: bold; color: #fff;">-${tx.amount} TON</div>
+                <div style="font-size: 0.75rem; color: #888;">${date}</div>
+            </div>
+            <div style="color: ${color}; font-size: 0.85rem; font-weight: bold;">
+                ${statusText} <i class="fas fa-circle" style="font-size: 6px; vertical-align: middle;"></i>
+            </div>
+        </div>`;
+    });
+
+    listEl.innerHTML = html;
 }
 
 function showToast(msg, err=false) {
