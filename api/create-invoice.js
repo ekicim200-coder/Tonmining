@@ -30,9 +30,10 @@ module.exports = async (req, res) => {
     }
 
     try {
+        // wallet verisini alıyoruz ama payload'a koymayacağız (sınır yüzünden)
         const { machineId, userId, wallet } = req.body;
         
-        if (!machineId || !userId || !wallet) {
+        if (!machineId || !userId) {
             return res.status(400).json({ 
                 success: false, 
                 error: 'Gerekli alanlar eksik' 
@@ -56,19 +57,18 @@ module.exports = async (req, res) => {
             });
         }
 
-        const payloadData = {
-            machineId: machineId,
-            userId: userId,
-            wallet: wallet,
-            timestamp: Date.now()
-        };
-        const payload = JSON.stringify(payloadData);
+        // --- DÜZELTME BAŞLANGICI ---
+        // HATA ÇÖZÜMÜ: Payload 128 byte sınırını aşmamalı.
+        // JSON ve uzun wallet adresi yerine sadece ID'leri birleştiriyoruz.
+        // Örnek Çıktı: "3_123456789" (Makine 3, Kullanıcı 123456789)
+        const payload = `${machineId}_${userId}`;
+        // --- DÜZELTME BİTİŞİ ---
 
         const invoiceData = {
             title: machine.name,
             description: `Mining Hardware: ${machine.name} (+${machine.rate} GH/s)`,
-            payload: payload,
-            provider_token: '',
+            payload: payload, // Artık kısa ve temiz
+            provider_token: '', // Stars için boş kalmalı
             currency: 'XTR',
             prices: [{
                 label: machine.name,
@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
             }]
         };
 
-        console.log('📤 Invoice oluşturuluyor:', machine.name);
+        console.log('📤 Invoice oluşturuluyor:', machine.name, 'Payload:', payload);
 
         const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
         const response = await fetch(
