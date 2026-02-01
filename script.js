@@ -327,9 +327,54 @@ function grantMachine(mid) {
 }
 
 async function withdraw() {
-    if (!state.wallet) return showToast("Connect Wallet First!", true);
-    const amt = parseFloat(document.getElementById('w-amt').value);
-    if (!amt || amt < 100) return showToast("Min 100 TON required", true);
+    // 1. Cüzdan kontrolü
+    if (!state.wallet) {
+        return showToast("Cüzdan bağlı değil!", true);
+    }
+
+    // 2. Input alanını bul
+    const inputElement = document.getElementById('w-amt');
+    if (!inputElement) {
+        console.error("HATA: 'w-amt' ID'li input alanı bulunamadı!");
+        return showToast("Sistem hatası: Input alanı yok", true);
+    }
+
+    // 3. Değeri al ve sayıya çevir (Virgül varsa noktaya çevirir)
+    let rawValue = inputElement.value;
+    if (rawValue) rawValue = rawValue.replace(',', '.');
+
+    const amt = parseFloat(rawValue);
+
+    // 4. Miktar kontrolleri
+    if (isNaN(amt) || amt <= 0) {
+        return showToast("Geçerli bir miktar girin!", true);
+    }
+
+    if (amt < 100) {
+        return showToast("Minimum çekim: 100 TON", true);
+    }
+
+    if (amt > state.balance) {
+        return showToast(`Yetersiz bakiye! (Mevcut: ${state.balance.toFixed(2)})`, true);
+    }
+
+    // 5. İsteği gönder
+    showToast("İşlem yapılıyor...", false);
+
+    // Düzeltilen kısım: (Cüzdan, Miktar) olarak iki parça gönderiyoruz
+    const success = await saveWithdrawalRequest(state.wallet, amt);
+
+    if (success) {
+        state.balance -= amt;
+        saveLocalData();
+        syncToServer();
+        updateUI();
+        showToast("✅ Çekim Talebi Alındı!");
+        inputElement.value = ""; 
+    } else {
+        showToast("Hata: Talep oluşturulamadı", true);
+    }
+}
     if (amt > state.balance) return showToast("Insufficient Balance", true);
 
     const req = {
