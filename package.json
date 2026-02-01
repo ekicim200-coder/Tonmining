@@ -1,0 +1,12 @@
+{
+  "name": "tonmining-stars-backend",
+  "version": "1.0.0",
+  "description": "Telegram Stars payment backend for TON Mining",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
