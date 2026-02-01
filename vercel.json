@@ -7,15 +7,3 @@
     }
   ]
 }
-```
-
----
-
-Şimdi GitHub'da şu yapı olmalı:
-```
-tonmining-backend/
-├── api/
-│   ├── create-invoice.js
-│   └── webhook.js
-├── package.json
-└── vercel.json
