@@ -1,4 +1,6 @@
 // api/webhook.js
+const fetch = require('node-fetch'); // ← EKLE
+
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
