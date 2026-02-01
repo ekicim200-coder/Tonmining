@@ -7,3 +7,16 @@
     }
   ]
 }
+```
+
+---
+
+Bu 2 dosyayı da ekledikten sonra şu yapı olacak:
+```
+Tonmining/
+├── api/
+│   ├── apicreate-invoice.js  ✅
+│   └── apiwebhook.js         ✅
+├── package.json              ← Ekle
+├── vercel.json               ← Ekle
+└── (diğer dosyalar)
