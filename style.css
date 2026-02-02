@@ -1,239 +1,284 @@
 :root {
-    --bg: #050505;
-    --card: rgba(20, 20, 23, 0.7);
-    --border: rgba(255, 255, 255, 0.1);
-    --primary: #3b82f6; /* Mavi */
-    --accent: #8b5cf6; /* Mor */
-    --success: #10b981; /* Yeşil */
-    --danger: #ef4444; /* Kırmızı */
-    --gold: #f59e0b; /* Altın */
-    --text: #ffffff;
-    --muted: #a1a1aa;
-    --nav-h: 70px;
+    /* Daha derin ve zengin bir zemin rengi */
+    --bg: #030304; 
+    /* Kartlar için daha şeffaf ve bulanık zemin */
+    --card: rgba(255, 255, 255, 0.03);
+    --card-hover: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.08);
+    
+    /* Renk Paleti - Biraz daha canlı ve neon */
+    --primary: #3b82f6; 
+    --primary-glow: rgba(59, 130, 246, 0.5);
+    
+    --accent: #8b5cf6;
+    
+    --success: #10b981;
+    --success-glow: rgba(16, 185, 129, 0.5);
+    
+    --danger: #f43f5e;
+    --danger-glow: rgba(244, 63, 94, 0.5);
+    
+    --gold: #f59e0b;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --nav-h: 75px; /* Navigasyon biraz daha geniş */
 }
 
 body {
     background-color: var(--bg);
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
     color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    margin: 0; padding: 0; padding-bottom: var(--nav-h);
+    margin: 0; padding: 0; padding-bottom: calc(var(--nav-h) + 20px);
     user-select: none; -webkit-tap-highlight-color: transparent;
+    
+    /* Arka Plan Deseni: Grid + Radyal Işık (Spotlight) */
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 30px 30px, 30px 30px;
+    background-attachment: fixed; /* Scroll yaparken arka plan sabit kalsın */
 }
 
 /* --- HEADER --- */
 .header {
-    padding: 15px 20px;
-    background: rgba(5, 5, 5, 0.95);
-    backdrop-filter: blur(10px);
+    padding: 15px 24px;
+    background: rgba(3, 3, 4, 0.8);
+    backdrop-filter: blur(20px); /* Daha güçlü blur */
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
-.bal-box { display: flex; flex-direction: column; }
-.bal-lbl { font-size: 0.7rem; color: var(--muted); letter-spacing: 1px; font-weight: 600; }
-.bal-val { font-size: 1.4rem; font-weight: 800; color: #fff; }
-.bal-unit { font-size: 0.8rem; color: var(--primary); }
+.bal-box { display: flex; flex-direction: column; gap: 2px; }
+.bal-lbl { font-size: 0.75rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.bal-val { font-size: 1.5rem; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+.bal-unit { font-size: 0.85rem; color: var(--primary); margin-left: 4px; }
 
-/* Wallet Button */
+/* Wallet Button - Daha şık border ve glow */
 .wallet-btn {
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(59, 130, 246, 0.05);
     color: var(--primary);
-    border: 1px solid var(--primary);
-    padding: 8px 16px; border-radius: 20px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 8px 18px; border-radius: 14px;
     font-size: 0.85rem; font-weight: 600;
     cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 0 transparent;
+}
+.wallet-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 15px var(--primary-glow);
+    border-color: var(--primary);
 }
 .wallet-btn.connected {
-    background: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.1);
     color: var(--success);
-    border-color: var(--success);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.wallet-btn.connected:hover {
+    box-shadow: 0 0 15px var(--success-glow);
 }
 
 /* --- DASHBOARD --- */
-.dashboard { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+.dashboard { padding: 24px; display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
 
-/* Donut Chart (REVİZE EDİLDİ: 130px - En Kompakt Hali) */
+/* Chart Wrapper - Glow efekti eklendi */
 .chart-wrapper { 
     position: relative; 
-    width: 130px;  /* 135px'den 130px'e indirildi */
-    height: 130px; 
-    margin-bottom: 25px; 
-    margin-top: 10px; 
+    width: 140px; 
+    height: 140px; 
+    margin-bottom: 30px; 
+    margin-top: 10px;
+    /* Chart arkasına hafif bir parlama */
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.1)); 
 }
 .chart-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 
-/* Halka çizgileri */
-.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 10; }
-.c-seg { fill: none; stroke-width: 10; stroke-linecap: round; transition: 0.3s; cursor: pointer; }
-.c-seg:hover { stroke-width: 12; filter: drop-shadow(0 0 5px currentColor); }
+.c-bg { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 8; }
+.c-seg { 
+    fill: none; stroke-width: 8; stroke-linecap: round; 
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Yaylanan animasyon */
+    cursor: pointer; 
+}
+.c-seg:hover { stroke-width: 12; filter: drop-shadow(0 0 8px currentColor); }
 
 .chart-info {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%); text-align: center;
 }
-/* Fontlar 130px içine tam oturacak şekilde revize edildi */
-.chart-val { font-size: 1.1rem; font-weight: 800; line-height: 1; }
-.chart-lbl { font-size: 0.6rem; color: var(--muted); margin-top: 3px; }
+.chart-val { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+.chart-lbl { font-size: 0.65rem; color: var(--muted); font-weight: 500; text-transform: uppercase; margin-top: 4px; }
 
-/* Live Graph */
+/* Live Graph - Glassmorphism */
 .live-graph {
-    width: 100%; background: var(--card);
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 15px; margin-bottom: 20px;
+    width: 100%; 
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border); 
+    border-radius: 20px;
+    padding: 20px; margin-bottom: 24px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2); /* Derin gölge */
 }
-.lg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
-.lg-svg { width: 100%; height: 60px; overflow: visible; }
-.lg-line { fill: none; stroke: var(--success); stroke-width: 2; vector-effect: non-scaling-stroke; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.4)); }
+.lg-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 15px; }
+.lg-svg { width: 100%; height: 70px; overflow: visible; }
+/* Çizgiye Neon Efekti */
+.lg-line { 
+    fill: none; stroke: var(--success); stroke-width: 2.5; 
+    vector-effect: non-scaling-stroke; 
+    filter: drop-shadow(0 0 6px var(--success)); 
+}
 
-/* Terminal */
+/* Terminal - Cyberpunk Tarzı */
 .terminal {
-    width: 100%; background: #000;
-    border: 1px solid var(--border); border-left: 3px solid var(--success);
-    border-radius: 8px; padding: 15px; font-family: 'Courier New', monospace;
-    margin-bottom: 20px;
+    width: 100%; background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    border-left: 3px solid var(--success);
+    border-radius: 12px; padding: 15px; font-family: 'JetBrains Mono', 'Courier New', monospace;
+    margin-bottom: 24px; box-sizing: border-box;
 }
-.term-content { height: 80px; overflow: hidden; font-size: 0.75rem; color: var(--success); display: flex; flex-direction: column; justify-content: flex-end; }
-.log-line { margin-bottom: 4px; opacity: 0.9; }
+.term-content { height: 80px; overflow: hidden; font-size: 0.75rem; color: var(--success); display: flex; flex-direction: column; justify-content: flex-end; text-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
 
 /* Info Grid */
 .info-grid {
-    width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+    width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;
 }
 .info-box {
-    background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--card); 
+    padding: 16px; border-radius: 16px; 
+    border: 1px solid var(--border);
     text-align: center;
+    transition: transform 0.2s, background 0.2s;
 }
-.ib-val { font-size: 1.1rem; font-weight: bold; color: #fff; display: block; }
-.ib-lbl { font-size: 0.7rem; color: var(--muted); }
+.info-box:hover {
+    background: var(--card-hover);
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.15);
+}
+.ib-val { font-size: 1.2rem; font-weight: 800; color: #fff; display: block; margin-bottom: 4px; }
+.ib-lbl { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
 
-/* Free Card */
+/* Free Card - Premium Gradyan */
 .free-card {
     width: 100%;
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(0,0,0,0) 100%);
-    border: 1px solid var(--danger); border-radius: 12px;
-    padding: 15px; display: flex; align-items: center; justify-content: space-between;
-    position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+    /* Çok daha modern bir kırmızı/karanlık gradyan */
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, rgba(20, 20, 23, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(244, 63, 94, 0.2); 
+    border-radius: 20px;
+    padding: 18px; display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden; 
+    box-sizing: border-box;
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.05);
 }
+/* Shine animasyonu korundu ama yumuşatıldı */
 .free-card::after {
-    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    transform: skewX(-25deg); animation: shine 3s infinite;
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transform: skewX(-25deg); animation: shine 4s infinite;
 }
-@keyframes shine { 100% { left: 150%; } }
 
-.fc-info h4 { margin: 0; color: var(--danger); font-size: 1rem; }
-.fc-info p { margin: 4px 0 0; font-size: 0.75rem; color: #ddd; }
+.fc-info h4 { margin: 0; color: #fff; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px;}
+.fc-info h4::before { content: '●'; color: var(--danger); font-size: 0.6rem; animation: pulse 2s infinite; }
+.fc-info p { margin: 5px 0 0; font-size: 0.8rem; color: var(--muted); }
 
 .ad-btn {
-    background: var(--danger); color: #fff; border: none; padding: 10px 20px;
-    border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; z-index: 2;
+    background: var(--danger); color: #fff; border: none; padding: 10px 22px;
+    border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85rem; z-index: 2;
+    box-shadow: 0 4px 12px var(--danger-glow);
+    transition: transform 0.2s;
 }
-.ad-btn:disabled { opacity: 0.6; cursor: wait; }
+.ad-btn:active { transform: scale(0.95); }
 
-.timer-badge {
-    border: 1px solid var(--danger); color: var(--danger);
-    padding: 8px 12px; border-radius: 6px; font-family: monospace; font-weight: bold;
-}
+@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
 /* --- LISTS (MARKET/INV) --- */
-.list-grid { padding: 20px; display: grid; gap: 12px; }
+.list-grid { padding: 24px; display: grid; gap: 16px; width: 100%; box-sizing: border-box; }
 .card-item {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px;
+    backdrop-filter: blur(5px);
+    border-radius: 18px; padding: 16px; display: flex; align-items: center; gap: 16px;
+    transition: all 0.2s;
 }
-.ci-icon { font-size: 1.5rem; width: 40px; text-align: center; }
-.ci-info h4 { margin: 0; font-size: 0.95rem; }
-.ci-info p { margin: 2px 0 0; font-size: 0.75rem; color: var(--muted); }
+.card-item:hover {
+    background: var(--card-hover);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateX(4px);
+}
+.ci-icon { font-size: 1.8rem; width: 48px; height: 48px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.05); border-radius: 12px; }
+.ci-info h4 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; }
 .ci-action { margin-left: auto; text-align: right; }
-.ci-price { font-weight: bold; display: block; margin-bottom: 5px; font-size: 0.9rem; }
 
 .action-btn {
     background: var(--primary); color: #fff; border: none;
-    padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer;
+    padding: 8px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    font-size: 0.85rem;
 }
-.action-btn:disabled { background: #333; color: #666; }
 
-/* --- WALLET PAGE --- */
-.wallet-page { padding: 30px 20px; text-align: center; }
-.w-input {
-    width: 100%; padding: 15px; background: #000; border: 1px solid var(--border);
-    color: #fff; border-radius: 10px; margin-bottom: 15px; box-sizing: border-box;
+/* --- PRICE BUTTONS (TON / STAR) --- */
+.price-btn {
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
 }
-.w-btn {
-    width: 100%; padding: 15px; background: var(--success); border: none;
-    border-radius: 10px; color: #000; font-weight: bold; cursor: pointer; font-size: 1rem;
+
+/* TON Butonu - Daha canlı mavi ve parlak */
+.ton-btn {
+    background: linear-gradient(135deg, #0098EA 0%, #007AFF 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+.ton-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 122, 255, 0.5);
+}
+
+/* STAR Butonu - Altın Glow */
+.star-btn {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #000; /* Siyah yazı altın üzerinde daha okunur */
+    box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+    border-top: 1px solid rgba(255,255,255,0.4);
+}
+.star-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 165, 0, 0.5);
 }
 
 /* --- NAV --- */
 .nav {
-    position: fixed; bottom: 0; width: 100%; height: var(--nav-h);
-    background: rgba(5,5,5,0.95); border-top: 1px solid var(--border);
-    display: flex; justify-content: space-around; align-items: center; z-index: 100;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 400px; height: 65px;
+    background: rgba(20, 20, 25, 0.85); /* Ada şeklinde navigasyon */
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 35px; /* Tam yuvarlak köşeler */
+    display: flex; justify-content: space-evenly; align-items: center; z-index: 100;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
-.nav-item { color: var(--muted); font-size: 1.3rem; padding: 10px; transition: 0.2s; }
-.nav-item.active { color: var(--primary); transform: translateY(-3px); }
-
-/* UTILS */
-.view { display: none; animation: fadeIn 0.3s; }
-.view.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-#toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    background: #111; border: 1px solid var(--success); color: var(--success);
-    padding: 10px 20px; border-radius: 20px; display: none; z-index: 2000;
+.nav-item { 
+    color: var(--muted); font-size: 1.4rem; padding: 12px; 
+    border-radius: 50%; transition: all 0.3s; position: relative;
 }
-
-/* Price Options Container */
-.price-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Price Buttons */
-.price-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.ton-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.ton-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
-}
-
-.star-btn {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-.star-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
-}
-
-.price-btn:active {
-    transform: translateY(0);
+.nav-item.active { color: #fff; background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+/* Aktif iconun altında nokta */
+.nav-item.active::after {
+    content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; background: var(--primary); border-radius: 50%;
+    box-shadow: 0 0 5px var(--primary);
 }
