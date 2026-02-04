@@ -443,7 +443,7 @@ function watchAd() {
         // Örnek: "1234" veya "abcd-1234-efgh-5678" gibi
         
         adsgramController.show({
-            blockId: "8425987610"  // ← BURAYA KENDİ BLOCK ID'NİZİ YAZIN
+            blockId: "8245972406"  // ← BURAYA KENDİ BLOCK ID'NİZİ YAZIN
         }).then((result) => {
             // Hile Önleme 4: Reklam gerçekten tamamlandı mı kontrol et
             if (result.done) {
