@@ -151,23 +151,28 @@ function calculateOfflineProgress() {
 // --- ADSGRAM INIT ---
 function initAdsgram() {
     // Adsgram'ı başlat - YENİ API
-    // NOT: 'YOUR_BLOCK_ID' kısmını Adsgram dashboard'unuzdan alacağınız Block ID ile değiştirin
-    // Adsgram'a kaydolmak için: https://adsgram.ai
+    // NOT: Kendi Block ID'nizi almak için https://partner.adsgram.ai adresine gidin
     
     console.log("🔄 Adsgram başlatılıyor...");
+    
+    // GERÇEK BLOCK ID - Adsgram Partner'dan alındı
+    const BLOCK_ID = "22343"; // ← Gerçek Block ID
     
     // Script yüklenene kadar bekle
     const checkAdsgram = setInterval(() => {
         if (typeof window.Adsgram !== 'undefined') {
             clearInterval(checkAdsgram);
             try {
-                // Yeni Adsgram API - Adsgram() ile controller oluştur
+                // Yeni Adsgram API - Adsgram.init() ile controller oluştur
                 adsgramController = window.Adsgram.init({
-                    blockId: "8245972406"  // ← BURAYA KENDİ BLOCK ID'NİZİ YAZIN
+                    blockId: BLOCK_ID,
+                    debug: false // Production modu
                 });
-                console.log("✅ Adsgram başarıyla başlatıldı");
+                console.log(`✅ Adsgram başarıyla başlatıldı (Block ID: ${BLOCK_ID})`);
+                console.log("ℹ️ Test modunda çalışıyorsanız gerçek reklam gösterilmeyebilir");
             } catch (error) {
                 console.error("❌ Adsgram başlatma hatası:", error);
+                console.log("💡 Block ID'nin doğru olduğundan emin olun");
             }
         }
     }, 100); // Her 100ms kontrol et
@@ -178,6 +183,7 @@ function initAdsgram() {
             clearInterval(checkAdsgram);
             console.error("❌ Adsgram yüklenemedi - Timeout");
             console.log("💡 Telegram WebApp içinde mi çalıştığınızı kontrol edin");
+            console.log("💡 https://partner.adsgram.ai adresinden Block ID aldınız mı?");
         }
     }, 5000);
 }
