@@ -150,22 +150,36 @@ function calculateOfflineProgress() {
 // --- TON CONNECT ---
 // --- ADSGRAM INIT ---
 function initAdsgram() {
-    // Adsgram'ı başlat
+    // Adsgram'ı başlat - YENİ API
     // NOT: 'YOUR_BLOCK_ID' kısmını Adsgram dashboard'unuzdan alacağınız Block ID ile değiştirin
     // Adsgram'a kaydolmak için: https://adsgram.ai
     
-    if (typeof AdController !== 'undefined') {
-        try {
-            // Adsgram controller'ı başlat
-            adsgramController = window.AdController;
-            console.log("✅ Adsgram başarıyla yüklendi");
-        } catch (error) {
-            console.error("❌ Adsgram başlatma hatası:", error);
+    console.log("🔄 Adsgram başlatılıyor...");
+    
+    // Script yüklenene kadar bekle
+    const checkAdsgram = setInterval(() => {
+        if (typeof window.Adsgram !== 'undefined') {
+            clearInterval(checkAdsgram);
+            try {
+                // Yeni Adsgram API - Adsgram() ile controller oluştur
+                adsgramController = window.Adsgram.init({
+                    blockId: "8245972406"  // ← BURAYA KENDİ BLOCK ID'NİZİ YAZIN
+                });
+                console.log("✅ Adsgram başarıyla başlatıldı");
+            } catch (error) {
+                console.error("❌ Adsgram başlatma hatası:", error);
+            }
         }
-    } else {
-        console.error("❌ Adsgram yüklenemedi - Script yüklü değil");
-        console.log("💡 index.html dosyasında Adsgram script'i yüklü mü kontrol edin");
-    }
+    }, 100); // Her 100ms kontrol et
+    
+    // 5 saniye sonra hala yüklenmediyse uyar
+    setTimeout(() => {
+        if (!adsgramController) {
+            clearInterval(checkAdsgram);
+            console.error("❌ Adsgram yüklenemedi - Timeout");
+            console.log("💡 Telegram WebApp içinde mi çalıştığınızı kontrol edin");
+        }
+    }, 5000);
 }
 
 // --- TON CONNECT ---
@@ -429,7 +443,7 @@ function watchAd() {
     
     // Adsgram kontrolü
     if (!adsgramController) {
-        showToast("❌ Reklam sistemi yüklenemedi", true);
+        showToast("❌ Reklam sistemi henüz yüklenmedi, lütfen birkaç saniye bekleyin", true);
         console.error("Adsgram controller mevcut değil");
         return;
     }
@@ -438,15 +452,12 @@ function watchAd() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reklam Yükleniyor...';
     
     try {
-        // Adsgram reklam gösterme
-        // NOT: Aşağıdaki 'YOUR_BLOCK_ID' kısmını kendi Adsgram Block ID'niz ile değiştirin
-        // Örnek: "1234" veya "abcd-1234-efgh-5678" gibi
-        
-        adsgramController.show({
-            blockId: "8245972406"  // ← BURAYA KENDİ BLOCK ID'NİZİ YAZIN
-        }).then((result) => {
+        // YENİ Adsgram API - .show() metodu promise döndürür
+        adsgramController.show().then((result) => {
+            console.log("Adsgram sonucu:", result);
+            
             // Hile Önleme 4: Reklam gerçekten tamamlandı mı kontrol et
-            if (result.done) {
+            if (result && (result.done || result.success)) {
                 // Reklam başarıyla izlendi
                 state.lastAdTime = Date.now(); // Son izlenme zamanını kaydet
                 grantMachine(999);
@@ -456,13 +467,13 @@ function watchAd() {
             } else {
                 // Reklam tamamlanmadı veya atlandı
                 showToast("❌ Reklam tamamlanmadı", true);
-                btn.innerHTML = 'WATCH & CLAIM';
-                btn.disabled = false;
             }
+            btn.innerHTML = 'WATCH & CLAIM';
+            btn.disabled = false;
         }).catch((error) => {
             // Reklam gösterme hatası
             console.error("Adsgram error:", error);
-            showToast("❌ Reklam gösterilemedi: " + error.message, true);
+            showToast("❌ Reklam gösterilemedi: " + (error.message || error), true);
             btn.innerHTML = 'WATCH & CLAIM';
             btn.disabled = false;
         });
