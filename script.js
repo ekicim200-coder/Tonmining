@@ -22,12 +22,12 @@ let state = {
 };
 
 const machines = [
-    { id: 1, name: "Starter CPU", price: 10, starPrice: 50, rate: 5, color: "#94a3b8", icon: "fa-microchip" },
-    { id: 2, name: "GTX 1660", price: 30, starPrice: 150, rate: 15, color: "#2dd4bf", icon: "fa-memory" },
-    { id: 3, name: "RTX 3060", price: 75, starPrice: 375, rate: 40, color: "#3b82f6", icon: "fa-gamepad" },
-    { id: 4, name: "RTX 4090", price: 150, starPrice: 750, rate: 90, color: "#8b5cf6", icon: "fa-rocket" },
-    { id: 5, name: "ASIC Miner", price: 400, starPrice: 2000, rate: 250, color: "#f472b6", icon: "fa-server" },
-    { id: 999, name: "FREE ASIC", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
+    { id: 1, name: "Basic Chip v1", price: 10, starPrice: 50, rate: 5, color: "#94a3b8", icon: "fa-microchip" },
+    { id: 2, name: "Dual Core X", price: 30, starPrice: 150, rate: 15, color: "#2dd4bf", icon: "fa-memory" },
+    { id: 3, name: "Quantum Processor", price: 75, starPrice: 375, rate: 40, color: "#3b82f6", icon: "fa-gamepad" },
+    { id: 4, name: "Fusion Reactor", price: 150, starPrice: 750, rate: 90, color: "#8b5cf6", icon: "fa-rocket" },
+    { id: 5, name: "Dark Matter Node", price: 400, starPrice: 2000, rate: 250, color: "#f472b6", icon: "fa-server" },
+    { id: 999, name: "FREE Dark Matter Node", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
 ];
 
 let graphData = new Array(20).fill(10);
