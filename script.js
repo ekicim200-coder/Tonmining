@@ -423,7 +423,7 @@ function watchAd() {
     
     // Hile Önleme 3: Aktif bir free miner var mı kontrol et
     if (state.freeEnd > now) {
-        showToast("❌ Zaten aktif bir FREE ASIC var", true);
+        showToast("❌ Zaten aktif bir FREE Dark Matter Node var", true);
         return;
     }
     
@@ -450,7 +450,7 @@ function watchAd() {
                 // Reklam başarıyla izlendi
                 state.lastAdTime = Date.now(); // Son izlenme zamanını kaydet
                 grantMachine(999);
-                showToast("✅ FREE ASIC Activated!", false);
+                showToast("✅ FREE Dark Matter Node Activated!", false);
                 saveLocalData(); // Zamanı kaydet
                 syncToServer(); // Sunucuya senkronize et
             } else {
