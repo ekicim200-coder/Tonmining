@@ -413,7 +413,7 @@ async function withdraw() {
         saveLocalData();
         syncToServer();
         updateUI();
-        showToast("✅ Çekim Talebi Alındı!");
+        showToast("✅ shooting request received!");
         inputElement.value = ""; 
         renderHistory(); // Çekimden sonra geçmişi güncelle
     } else {
