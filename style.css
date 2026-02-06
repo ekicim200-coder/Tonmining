@@ -1,239 +1,216 @@
 :root {
-    /* --- OYUN TARZI CANLI RENKLER --- */
-    --bg-dark: #1c1028; /* Çok koyu mor arka plan */
-    --card-bg: #2d1b4e; /* Kart rengi */
+    /* --- PREMIUM PALET (Space & Neon) --- */
+    --bg-void: #030305; /* Sonsuz Siyah */
+    --glass-surface: rgba(20, 20, 25, 0.6); /* Buzlu Cam */
+    --glass-border: rgba(255, 255, 255, 0.08); /* İnce Işık Çizgisi */
     
-    /* BUTON RENKLERİ (Ana Renk + Gölge Rengi) */
-    /* Mavi (Satın Al) */
-    --blue-face: #4361ee;
-    --blue-side: #3046b5;
+    /* Vurgu Renkleri (Neon Glow) */
+    --neon-blue: #00f0ff; /* Cyber Blue */
+    --neon-purple: #7000ff; /* Deep Violet */
+    --neon-green: #00ff9d; /* Matrix Green */
+    --neon-red: #ff0055; /* Laser Red */
+    --gold: #ffd700;
 
-    /* Yeşil (Başlat) */
-    --green-face: #06d6a0;
-    --green-side: #049c74;
-
-    /* Kırmızı (Upgrade) */
-    --red-face: #ef476f;
-    --red-side: #b81d42;
-
-    /* Sarı/Altın (VIP) */
-    --gold-face: #ffd166;
-    --gold-side: #cc9900;
-
-    --text-white: #ffffff;
-    --text-soft: #b8b8d0;
+    --text-main: #ffffff;
+    --text-dim: #8b8b99;
     
-    --nav-h: 85px;
+    --nav-h: 80px;
 }
 
 body {
-    background-color: var(--bg-dark);
-    /* Çizgili modern desen */
-    background-image: repeating-linear-gradient(
-        45deg,
-        #1c1028,
-        #1c1028 10px,
-        #231432 10px,
-        #231432 20px
-    );
-    font-family: 'Verdana', sans-serif; /* Daha yuvarlak, okunaklı */
-    color: var(--text-white);
+    background-color: var(--bg-void);
+    /* Sinematik Arka Plan */
+    background-image: 
+        radial-gradient(circle at 50% -20%, rgba(112, 0, 255, 0.15), transparent 60%),
+        radial-gradient(circle at 100% 50%, rgba(0, 240, 255, 0.1), transparent 50%);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, sans-serif;
     margin: 0; padding: 0;
-    padding-bottom: calc(var(--nav-h) + 20px);
-    -webkit-tap-highlight-color: transparent;
+    padding-bottom: calc(var(--nav-h) + 30px);
+    -webkit-font-smoothing: antialiased; /* Yazıları kristal netliğinde yapar */
 }
 
-/* --- GİZLE/GÖSTER (SAYFALAR) --- */
-.view { display: none; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.view.active { display: block; }
+/* --- GÖRÜNÜM GEÇİŞLERİ --- */
+.view { display: none; opacity: 0; transition: opacity 0.4s ease; }
+.view.active { display: block; opacity: 1; animation: softFade 0.5s ease forwards; }
+@keyframes softFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Sayfa açılış efekti (Balon gibi büyüyerek gelir) */
-@keyframes popIn {
-    0% { opacity: 0; transform: scale(0.9); }
-    100% { opacity: 1; transform: scale(1); }
-}
-
-/* --- HEADER --- */
+/* --- HEADER (Cam Panel) --- */
 .header {
-    background: var(--card-bg);
-    padding: 15px 20px;
-    border-bottom: 4px solid #140b24; /* Kalın kenarlık */
+    background: rgba(3, 3, 5, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 15px 25px;
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.bal-lbl { font-size: 0.8rem; color: var(--text-soft); font-weight: bold; letter-spacing: 1px; }
+.bal-lbl { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
 .bal-val { 
-    font-size: 1.8rem; font-weight: 900; 
-    color: var(--gold-face); 
-    text-shadow: 2px 2px 0px #000; /* Çizgi roman efekti */
+    font-size: 1.8rem; font-weight: 300; letter-spacing: -1px; 
+    background: linear-gradient(to right, #fff, #a5a5a5);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-/* Cüzdan butonu */
 .wallet-btn {
-    background: #3a2266;
-    color: #fff;
-    border: 2px solid #5a369e;
-    padding: 8px 16px; border-radius: 12px;
-    font-weight: bold; font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    padding: 10px 20px; border-radius: 30px; /* Tam yuvarlak */
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px;
+    transition: 0.3s;
+}
+.wallet-btn.connected {
+    background: rgba(0, 255, 157, 0.05);
+    border-color: rgba(0, 255, 157, 0.3);
+    color: var(--neon-green);
+    box-shadow: 0 0 15px rgba(0, 255, 157, 0.1);
 }
 
-/* --- KARTLAR --- */
-.card-base, .dashboard, .live-graph, .info-box, .card-item, .free-card {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 20px;
-    /* Kartın kendisi de 3D */
-    box-shadow: 0 8px 0 #140b24, 0 15px 20px rgba(0,0,0,0.2); 
-    border: 2px solid #3f256e;
-    position: relative;
-    top: 0;
+/* --- ORTAK KART (Glass Tech) --- */
+.glass-card, .dashboard, .live-graph, .card-item {
+    background: var(--glass-surface);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid rgba(255,255,255,0.15); /* Üstten ışık vuruyor hissi */
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
 }
 
 /* --- DASHBOARD --- */
-.dashboard { display: flex; flex-direction: column; align-items: center; }
+.dashboard { display: flex; flex-direction: column; align-items: center; text-align: center; }
 
-/* 3D Coin (Halka yerine) */
+/* REAKTÖR HALKA (Eski basit halka yerine) */
 .chart-wrapper {
-    width: 150px; height: 150px; margin: 10px 0 20px;
-    background: radial-gradient(circle at 30% 30%, #ffd166, #ff9f1c);
-    border-radius: 50%;
-    border: 5px solid #ffaa00;
-    box-shadow: inset -10px -10px 0 rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
+    position: relative; width: 180px; height: 180px; margin: 20px 0 40px;
     display: flex; align-items: center; justify-content: center;
-    animation: float 3s ease-in-out infinite;
 }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+/* Dış Glow Halka */
+.chart-wrapper::before {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    padding: 2px; /* Border kalınlığı */
+    background: linear-gradient(180deg, var(--neon-blue), transparent);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: rotateLight 4s linear infinite;
+}
+@keyframes rotateLight { 100% { transform: rotate(360deg); } }
 
-.chart-val { font-size: 2rem; font-weight: 900; color: #5a189a; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+.chart-val { font-size: 2.2rem; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(0, 240, 255, 0.4); }
+.chart-lbl { font-size: 0.8rem; color: var(--text-dim); margin-top: 5px; }
 
+/* Info Grid */
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-bottom: 20px; }
-.info-box { text-align: center; padding: 15px; background: #341e5c; box-shadow: 0 5px 0 #21123d; }
-.ib-val { font-size: 1.3rem; font-weight: bold; color: #fff; }
-
-/* Terminal */
-.terminal {
-    background: #000; border-radius: 10px; padding: 10px; width: 100%;
-    font-family: monospace; color: var(--green-face); margin-bottom: 20px;
-    border: 2px solid #333;
+.info-box {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 15px;
 }
+.ib-val { font-size: 1.2rem; font-weight: 600; color: #fff; display: block; margin-bottom: 4px; }
+.ib-lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
 
-/* --- EN ÖNEMLİ KISIM: 3D BUTONLAR --- */
-/* HTML'de class="push-btn btn-blue" kullan */
+/* --- PREMIUM BUTONLAR (Metal & Işık) --- */
+/* HTML: class="tech-btn btn-blue" */
 
-.push-btn {
+.tech-btn, .action-btn, .ad-btn {
     width: 100%;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 16px 20px;
-    border-radius: 16px;
-    border: none;
-    font-size: 1rem; font-weight: 900; color: #fff; text-transform: uppercase;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.1s;
-    margin-top: 10px;
-    /* Metin gölgesi */
-    text-shadow: 0 2px 1px rgba(0,0,0,0.2);
+    padding: 16px;
+    border: none; border-radius: 16px;
+    font-size: 0.95rem; font-weight: 600; color: #fff;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background-size: 200% auto;
+    letter-spacing: 0.5px;
+    /* Hafif metalik parlama */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* 1. MAVİ (Blue) */
-.btn-blue {
-    background-color: var(--blue-face);
-    box-shadow: 0 6px 0 var(--blue-side); /* Altındaki kalınlık */
-}
-.btn-blue:active {
-    box-shadow: 0 0 0 var(--blue-side); /* Gölge yok olur */
-    transform: translateY(6px); /* Buton o boşluğa iner */
+.tech-btn:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+.tech-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+/* 1. Mavi (Cyber Blue) */
+.btn-blue, .action-btn {
+    background-image: linear-gradient(to right, #2563eb 0%, #00f0ff 51%, #2563eb 100%);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
 }
 
-/* 2. YEŞİL (Green) */
+/* 2. Yeşil (Matrix) */
 .btn-green {
-    background-color: var(--green-face);
-    box-shadow: 0 6px 0 var(--green-side);
-    color: #0d3b2e; /* Yazı koyu yeşil olsun daha okunur */
-}
-.btn-green:active {
-    box-shadow: 0 0 0 var(--green-side);
-    transform: translateY(6px);
+    background-image: linear-gradient(to right, #059669 0%, #00ff9d 51%, #059669 100%);
+    color: #000; /* Neon yeşil üstüne siyah yazı okunur */
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
 }
 
-/* 3. KIRMIZI (Red) */
-.btn-red {
-    background-color: var(--red-face);
-    box-shadow: 0 6px 0 var(--red-side);
-}
-.btn-red:active {
-    box-shadow: 0 0 0 var(--red-side);
-    transform: translateY(6px);
+/* 3. Kırmızı (Laser) */
+.btn-red, .ad-btn {
+    background-image: linear-gradient(to right, #b91c1c 0%, #ff0055 51%, #b91c1c 100%);
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
 }
 
-/* 4. ALTIN (Gold) */
+/* 4. Altın (Premium) */
 .btn-gold {
-    background-color: var(--gold-face);
-    box-shadow: 0 6px 0 var(--gold-side);
-    color: #4a3b00;
-}
-.btn-gold:active {
-    box-shadow: 0 0 0 var(--gold-side);
-    transform: translateY(6px);
+    background-image: linear-gradient(to right, #d97706 0%, #ffd700 51%, #d97706 100%);
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-/* --- LISTELER (MARKET) --- */
-.list-grid { display: flex; flex-direction: column; gap: 15px; padding: 20px; }
+/* --- LİSTE (MARKET) --- */
+.list-grid { display: flex; flex-direction: column; gap: 15px; padding: 0 20px; }
 .card-item {
-    display: flex; align-items: center; gap: 15px;
-    padding: 15px;
-    background: #341e5c; /* Daha açık mor */
-    border: 2px solid #4a2b7a;
-    box-shadow: 0 6px 0 #21123d; /* Kart altı gölgesi */
+    display: flex; align-items: center; gap: 20px;
+    padding: 20px; margin: 0;
+    transition: transform 0.2s;
 }
+.card-item:hover { background: rgba(255,255,255,0.05); }
 
 .ci-icon {
-    width: 50px; height: 50px;
-    background: rgba(0,0,0,0.2); border-radius: 12px;
-    font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.05); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: var(--text-main);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* İçeri göçük */
 }
-.ci-info h4 { margin: 0; color: #fff; font-size: 1.1rem; }
-.ci-info p { margin: 5px 0 0; color: var(--text-soft); font-size: 0.85rem; }
+.ci-info h4 { margin: 0; font-size: 1rem; color: #fff; font-weight: 500; }
+.ci-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-dim); }
 
-/* Liste içindeki buton */
-.card-item .push-btn {
-    width: auto; padding: 10px 20px; font-size: 0.8rem;
-    box-shadow: 0 4px 0 var(--blue-side); /* Daha ince gölge */
-}
-.card-item .push-btn:active {
-    box-shadow: 0 0 0 var(--blue-side); transform: translateY(4px);
-}
+.card-item .tech-btn { width: auto; padding: 8px 20px; font-size: 0.8rem; box-shadow: none; }
 
-/* --- NAVİGASYON (DOCK) --- */
+/* --- NAVIGATION (FLOATING DOCK) --- */
 .nav {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    width: 90%; max-width: 400px; height: 75px;
-    background: #2d1b4e;
-    border: 3px solid #4a2b7a;
-    border-radius: 25px;
-    display: flex; justify-content: space-around; align-items: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: auto; min-width: 320px; height: 70px;
+    background: rgba(10, 10, 12, 0.8);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 40px;
+    display: flex; justify-content: space-evenly; align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
     z-index: 100;
 }
 
 .nav-item {
-    font-size: 1.6rem; color: #6c4b9a;
-    width: 55px; height: 55px;
-    border-radius: 15px;
+    color: rgba(255,255,255,0.3); font-size: 1.4rem;
+    padding: 12px; border-radius: 50%;
+    transition: all 0.3s ease;
+    position: relative;
     display: flex; align-items: center; justify-content: center;
-    transition: 0.2s;
 }
 
+/* Aktif Navigasyon Efekti - Lazer Nokta */
 .nav-item.active {
-    background: var(--blue-face);
     color: #fff;
-    box-shadow: 0 5px 0 var(--blue-side); /* Nav butonu da 3D */
-    transform: translateY(-20px); /* Yukarı fırlar */
+    background: rgba(255,255,255,0.05);
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    transform: translateY(-5px);
 }
-.nav-item.active:active {
-    box-shadow: 0 0 0 var(--blue-side);
-    transform: translateY(-15px); /* Basınca hafif iner */
+.nav-item.active::after {
+    content: ''; position: absolute; bottom: 5px; width: 4px; height: 4px;
+    background: var(--neon-blue); border-radius: 50%;
+    box-shadow: 0 0 10px var(--neon-blue);
 }
