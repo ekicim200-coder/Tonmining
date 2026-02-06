@@ -1,252 +1,227 @@
 :root {
-    /* --- MODERN PALET (Deep Space & Electric Data) --- */
-    --bg-deep: #020617; /* Slate 950 - Tam siyah değil, çok koyu lacivert */
-    --bg-card: rgba(15, 23, 42, 0.6); /* Yarı saydam panel */
-    
-    /* Vurgu Renkleri */
-    --accent-blue: #38bdf8; /* Sky 400 - Ana Veri Rengi */
-    --accent-glow: rgba(56, 189, 248, 0.4);
-    --accent-purple: #818cf8; /* Indigo 400 */
-    --success: #34d399; /* Emerald 400 */
-    --danger: #fb7185; /* Rose 400 */
-    
-    /* Yapısal Renkler */
+    /* --- ZEMİN & YAPI --- */
+    --bg-deep: #0f172a; /* Çok koyu lacivert (Slate 900) */
+    --bg-card: rgba(30, 41, 59, 0.7); /* Slate 800 - Şeffaf */
     --border-light: rgba(255, 255, 255, 0.08);
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
+    
+    /* --- GÜÇLÜ BUTON RENKLERİ --- */
+    /* Mavi (Standart İşlem) */
+    --btn-blue-bg: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --btn-blue-shadow: rgba(37, 99, 235, 0.5);
+
+    /* Yeşil (Başlat/Topla - Success) */
+    --btn-green-bg: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --btn-green-shadow: rgba(5, 150, 105, 0.5);
+
+    /* Kırmızı (Yükselt/Uyarı - Danger) */
+    --btn-red-bg: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    --btn-red-shadow: rgba(185, 28, 28, 0.5);
+
+    /* Altın (Premium/Satın Al) */
+    --btn-gold-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --btn-gold-shadow: rgba(217, 119, 6, 0.5);
+
+    /* --- METİN --- */
+    --text-primary: #f8fafc;
+    --text-muted: #94a3b8;
     
     --nav-h: 80px;
 }
 
 body {
     background-color: var(--bg-deep);
-    /* Mesh Gradient Arka Plan - Çok daha modern ve akışkan */
+    /* Derinlik veren modern, sade arka plan */
     background-image: 
-        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(15, 23, 42, 1) 0px, transparent 50%);
-    background-attachment: fixed;
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 40%);
     color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    margin: 0; padding: 0; padding-bottom: calc(var(--nav-h) + 30px);
-    -webkit-font-smoothing: antialiased; /* Yazıları keskinleştirir */
+    font-family: 'Inter', sans-serif;
+    margin: 0; padding: 0;
+    overflow-x: hidden; /* Yan kaymayı engelle */
+    /* Sayfa geçişlerinde arkaplan sabit kalsın */
+    background-attachment: fixed; 
 }
 
-/* --- YENİ KART MİMARİSİ --- */
-.card-base {
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-light);
-    border-radius: 24px; /* Daha yuvarlak köşeler */
-    /* Gölge yerine hafif bir iç ışık */
-    box-shadow: 
-        0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05); /* Üst kenar ışığı */
+/* --- SAYFA YAPISI (VIEWS) --- */
+/* Tüm sayfalar varsayılan olarak gizli */
+.view {
+    display: none;
+    padding-bottom: calc(var(--nav-h) + 20px); /* Navigasyon payı */
+    animation: fadeScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    min-height: 100vh;
 }
 
-/* --- HEADER --- */
+/* Sadece 'active' class'ı olan sayfa görünür */
+.view.active {
+    display: block;
+}
+
+/* Sayfa Geçiş Animasyonu */
+@keyframes fadeScale {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* --- HEADER (Her sayfada sabit kalabilir veya view içine alınabilir) --- */
 .header {
-    padding: 20px 24px;
-    background: rgba(2, 6, 23, 0.85);
-    backdrop-filter: blur(15px);
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-light);
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 50;
 }
+.bal-lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+.bal-val { font-size: 1.6rem; font-weight: 800; color: #fff; }
 
-.bal-lbl { 
-    font-size: 0.75rem; 
-    text-transform: uppercase; 
-    letter-spacing: 1px; 
-    color: var(--text-secondary); 
-    font-weight: 600;
-}
-.bal-val { 
-    font-size: 1.8rem; font-weight: 700; color: #fff;
-    letter-spacing: -0.5px;
-    text-shadow: 0 0 20px rgba(56, 189, 248, 0.3); /* Rakam parlaması */
-}
-.bal-unit { font-size: 1rem; color: var(--accent-blue); }
-
+/* Cüzdan Butonu */
 .wallet-btn {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-light);
     color: var(--text-primary);
-    padding: 10px 18px; border-radius: 14px;
-    font-size: 0.85rem; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s;
+    padding: 8px 16px; border-radius: 12px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: 0.2s;
 }
-.wallet-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255,255,255,0.2); }
-.wallet-btn.connected {
-    background: rgba(52, 211, 153, 0.1);
-    color: var(--success);
-    border-color: rgba(52, 211, 153, 0.3);
-}
+.wallet-btn.connected { color: #34d399; border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.1); }
 
-/* --- DASHBOARD & GRAFİKLER --- */
-.dashboard { padding: 25px 20px; display: flex; flex-direction: column; align-items: center; }
+/* --- DASHBOARD İÇERİĞİ --- */
+.dashboard { padding: 20px; display: flex; flex-direction: column; align-items: center; }
 
-/* 1. YENİLENMİŞ DONUT CHART */
+/* Donut Chart */
 .chart-wrapper { 
-    position: relative; 
-    width: 170px; height: 170px; 
-    margin: 20px 0 35px 0;
-    /* Grafiğin etrafına çok hafif bir hale */
-    background: radial-gradient(circle, rgba(56, 189, 248, 0.05) 0%, transparent 70%);
+    position: relative; width: 160px; height: 160px; margin: 20px 0 30px 0; 
 }
-.chart-svg { 
-    width: 100%; height: 100%; transform: rotate(-90deg); 
-    filter: drop-shadow(0 0 8px var(--accent-glow)); /* Neon efekti */
-}
+.chart-svg { width: 100%; height: 100%; transform: rotate(-90deg); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.4)); }
+.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 8; }
+.c-seg { fill: none; stroke: #3b82f6; stroke-width: 8; stroke-linecap: round; transition: 1s; }
+.chart-info { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+.chart-val { font-size: 1.5rem; font-weight: 800; }
 
-/* Arka plan halkası - artık görünür ve şık */
-.c-bg { 
-    fill: none; 
-    stroke: rgba(255,255,255,0.05); 
-    stroke-width: 6; /* Daha ince, daha zarif */
-} 
-/* Değer halkası */
-.c-seg { 
-    fill: none; 
-    stroke: var(--accent-blue);
-    stroke-width: 6; 
-    stroke-linecap: round; /* Uçları yuvarlak */
-    transition: stroke-dasharray 1s ease-out;
-}
-
-.chart-info {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%); text-align: center;
-}
-.chart-val { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1; }
-.chart-lbl { font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px; font-weight: 500; }
-
-/* 2. YENİLENMİŞ CANLI GRAFİK (GRID MODE) */
+/* Live Graph */
 .live-graph {
-    width: 100%; 
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: 20px;
-    padding: 20px; margin-bottom: 25px;
-    position: relative; overflow: hidden;
+    width: 100%; background: var(--bg-card);
+    border: 1px solid var(--border-light); border-radius: 16px;
+    padding: 15px; margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
+.lg-line { fill: none; stroke: #10b981; stroke-width: 3; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5)); }
 
-/* Grafik arka planına TradingView benzeri ızgara ekle */
-.live-graph::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-.lg-header { 
-    position: relative; z-index: 1;
-    display: flex; justify-content: space-between; 
-    font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 15px; 
-}
-.lg-svg { 
-    width: 100%; height: 80px; overflow: visible; position: relative; z-index: 1; 
-}
-.lg-line { 
-    fill: none; 
-    stroke: var(--success); 
-    stroke-width: 2.5; 
-    vector-effect: non-scaling-stroke;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    /* Çizgiye neon parlama ekle */
-    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.6));
-}
-
-/* 3. YENİ TERMİNAL (Modern Log) */
+/* Terminal */
 .terminal {
-    width: 100%; 
-    background: #0f172a; /* Tam opak koyu zemin - okunabilirlik için */
-    border: 1px solid var(--border-light);
-    border-radius: 12px; padding: 15px; 
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    margin-bottom: 25px;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); /* İçeri gömük hissi */
+    width: 100%; background: #020617;
+    border: 1px solid var(--border-light); border-radius: 12px;
+    padding: 15px; font-family: monospace; font-size: 0.8rem;
+    color: #38bdf8; margin-bottom: 20px;
 }
-.term-content { 
-    height: 90px; overflow-y: hidden; 
-    font-size: 0.75rem; color: var(--accent-blue); line-height: 1.6;
-    display: flex; flex-direction: column; justify-content: flex-end; 
-}
-.log-line { opacity: 0.7; }
-.log-line:last-child { opacity: 1; font-weight: bold; color: #fff; } /* Son satır parlak */
-.log-line::before { content: '➜ '; color: var(--success); margin-right: 5px; }
 
-/* --- INFO GRID --- */
-.info-grid {
-    width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;
-}
+/* Info Grid */
+.info-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .info-box {
-    background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-    border: 1px solid var(--border-light);
-    border-radius: 18px; padding: 20px 15px;
-    text-align: center;
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: 14px; padding: 15px; text-align: center;
 }
-.ib-val { font-size: 1.3rem; font-weight: 700; color: #fff; display: block; margin-bottom: 6px; }
-.ib-lbl { font-size: 0.75rem; color: var(--text-secondary); }
+.ib-val { font-size: 1.2rem; font-weight: 700; display: block; }
 
-/* --- BUTTONS --- */
-.action-btn, .ad-btn {
-    border: none; padding: 12px 20px;
-    border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.9rem;
-    transition: transform 0.1s, filter 0.2s;
+/* --- ÖZEL BUTON SINIFLARI (RENKLER BURADA) --- */
+/* Temel Buton Yapısı */
+.action-btn, .ad-btn, .price-btn {
+    width: 100%; /* Kart içinde tam genişlik */
+    padding: 12px; border: none; border-radius: 12px;
+    font-weight: 700; font-size: 0.95rem; color: #fff;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: transform 0.1s, box-shadow 0.2s;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2); /* Yazı okunabilirliği */
+    display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.action-btn {
-    background: var(--accent-blue); color: #000; /* Mavi üzerine siyah yazı daha okunaklıdır */
-}
-.action-btn:active, .ad-btn:active { transform: scale(0.96); }
 
-/* --- LIST ITEMS --- */
+/* Tıklama Efekti */
+.action-btn:active, .ad-btn:active { transform: scale(0.97); }
+
+/* 1. Mavi Buton (Standart / Satın Al) */
+.btn-blue {
+    background: var(--btn-blue-bg);
+    box-shadow: 0 4px 15px var(--btn-blue-shadow);
+}
+
+/* 2. Yeşil Buton (Başlat / Topla / Onayla) */
+.btn-green {
+    background: var(--btn-green-bg);
+    box-shadow: 0 4px 15px var(--btn-green-shadow);
+}
+
+/* 3. Kırmızı Buton (Yükselt / Dikkat / Reklam İzle) */
+.btn-red {
+    background: var(--btn-red-bg);
+    box-shadow: 0 4px 15px var(--btn-red-shadow);
+}
+/* Parlama efekti ekleyelim (özellikle upgrade butonları için) */
+.btn-red::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transform: skewX(-25deg); animation: shineBtn 3s infinite;
+}
+@keyframes shineBtn { 100% { left: 150%; } }
+
+/* 4. Altın Buton (VIP / Premium) */
+.btn-gold {
+    background: var(--btn-gold-bg);
+    box-shadow: 0 4px 15px var(--btn-gold-shadow);
+    color: #fff;
+}
+
+/* Disabled Durumu */
+.action-btn:disabled, .ad-btn:disabled {
+    background: #334155; color: #64748b;
+    box-shadow: none; cursor: not-allowed; transform: none;
+}
+
+/* --- MARKET & ENVANTER LİSTELERİ --- */
+.list-grid { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
 .card-item {
     background: var(--bg-card);
     border: 1px solid var(--border-light);
-    border-radius: 18px; padding: 16px; 
-    display: flex; align-items: center; gap: 16px;
-    margin-bottom: 12px;
+    border-radius: 16px; padding: 15px;
+    display: flex; align-items: center; gap: 15px;
 }
 .ci-icon { 
-    font-size: 1.5rem; width: 44px; height: 44px; 
-    background: rgba(255,255,255,0.05); color: #fff;
-    border-radius: 12px; display: flex; align-items: center; justify-content: center;
-}
-.ci-info h4 { margin: 0; font-size: 0.95rem; font-weight: 600; color: #fff; }
-.ci-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-secondary); }
-
-/* --- FLOATING DOCK NAV --- */
-.nav {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    width: auto; padding: 8px 12px;
-    background: rgba(15, 23, 42, 0.9); /* Neredeyse opak */
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 100px; /* Tam yuvarlak hap */
-    display: flex; gap: 8px; z-index: 100;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4); /* Güçlü gölge - havada duruyor hissi */
-}
-
-.nav-item { 
-    color: rgba(255,255,255,0.4); 
-    font-size: 1.3rem; 
-    width: 50px; height: 50px;
+    font-size: 1.8rem; min-width: 50px; height: 50px;
+    background: rgba(255,255,255,0.05); border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Yaylanma efekti */
+}
+.ci-info { flex: 1; } /* Bilgiyi sola yasla, butonu sağa it */
+.ci-info h4 { margin: 0; font-size: 1rem; color: #fff; }
+.ci-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted); }
+
+/* Kart içindeki buton küçültme */
+.card-item .action-btn { width: auto; padding: 8px 16px; font-size: 0.85rem; }
+
+/* --- NAVİGASYON (ALT BAR) --- */
+.nav {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 400px; height: 65px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border-light);
+    border-radius: 35px;
+    display: flex; justify-content: space-around; align-items: center; z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.nav-item.active { 
-    background: var(--accent-blue); 
-    color: #020617; /* İkon rengi koyu */
-    transform: translateY(-5px) scale(1.1);
-    box-shadow: 0 5px 15px rgba(56, 189, 248, 0.4);
+.nav-item {
+    color: var(--text-muted); font-size: 1.4rem;
+    padding: 10px; border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.nav-item.active {
+    color: #fff;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    transform: translateY(-15px); /* Seçili olan yukarı fırlar */
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+    width: 50px; height: 50px;
 }
