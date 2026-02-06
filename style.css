@@ -89,7 +89,7 @@ body::before {
     margin-left: 4px;
 }
 
-/* Wallet Button */
+/* Wallet Button - HTML'de sadece "Wallet" yazmalı, "Connect" olmamalı */
 .wallet-btn {
     background: rgba(64, 224, 208, 0.1);
     color: var(--primary);
