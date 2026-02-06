@@ -1,239 +1,311 @@
 :root {
-    --bg: #050505;
-    --card: rgba(20, 20, 23, 0.7);
-    --border: rgba(255, 255, 255, 0.1);
-    --primary: #3b82f6; /* Mavi */
-    --accent: #8b5cf6; /* Mor */
-    --success: #10b981; /* Yeşil */
-    --danger: #ef4444; /* Kırmızı */
-    --gold: #f59e0b; /* Altın */
-    --text: #ffffff;
-    --muted: #a1a1aa;
-    --nav-h: 70px;
+    /* Daha derin ve zengin renk paleti */
+    --bg-dark: #030305;
+    --bg-card: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.15);
+    
+    /* Neon Renkler */
+    --primary: #3b82f6; 
+    --primary-glow: rgba(59, 130, 246, 0.5);
+    --accent: #8b5cf6;
+    --success: #10b981;
+    --success-glow: rgba(16, 185, 129, 0.5);
+    --danger: #ef4444;
+    --gold: #f59e0b;
+    
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;
+    --nav-h: 75px;
 }
 
 body {
-    background-color: var(--bg);
+    background-color: var(--bg-dark);
+    /* 3D Derinlik hissi veren kompleks arka plan */
     background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-    color: var(--text);
+        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+    color: var(--text-main);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    margin: 0; padding: 0; padding-bottom: var(--nav-h);
+    margin: 0; padding: 0; padding-bottom: calc(var(--nav-h) + 20px);
     user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
+/* --- ORTAK 3D KART STİLİ (Glassmorphism) --- */
+.card-style {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-highlight); /* Üstten ışık vuruyor hissi */
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* --- HEADER --- */
 .header {
-    padding: 15px 20px;
-    background: rgba(5, 5, 5, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
+    padding: 15px 25px;
+    background: rgba(3, 3, 5, 0.85);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .bal-box { display: flex; flex-direction: column; }
-.bal-lbl { font-size: 0.7rem; color: var(--muted); letter-spacing: 1px; font-weight: 600; }
-.bal-val { font-size: 1.4rem; font-weight: 800; color: #fff; }
-.bal-unit { font-size: 0.8rem; color: var(--primary); }
+.bal-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+.bal-val { 
+    font-size: 1.6rem; font-weight: 800; color: #fff; 
+    text-shadow: 0 0 20px rgba(255,255,255,0.2); /* Hafif parıltı */
+}
+.bal-unit { font-size: 0.9rem; color: var(--primary); font-weight: 600; }
 
-/* Wallet Button */
+/* 3D Wallet Button */
 .wallet-btn {
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--primary);
-    border: 1px solid var(--primary);
-    padding: 8px 16px; border-radius: 20px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+    color: #fff;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    padding: 10px 18px; border-radius: 16px;
     font-size: 0.85rem; font-weight: 600;
     cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.wallet-btn:active { transform: scale(0.95); }
 .wallet-btn.connected {
-    background: rgba(16, 185, 129, 0.15);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05));
+    border-color: rgba(16, 185, 129, 0.4);
     color: var(--success);
-    border-color: var(--success);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
 }
 
 /* --- DASHBOARD --- */
-.dashboard { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+.dashboard { padding: 25px 20px; display: flex; flex-direction: column; align-items: center; }
 
-/* Donut Chart (REVİZE EDİLDİ: 130px - En Kompakt Hali) */
+/* Chart (3D Halka) */
 .chart-wrapper { 
     position: relative; 
-    width: 130px;  /* 135px'den 130px'e indirildi */
-    height: 130px; 
-    margin-bottom: 25px; 
-    margin-top: 10px; 
+    width: 150px; height: 150px; /* Biraz büyüttük */
+    margin-bottom: 30px; margin-top: 15px;
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.2)); /* Tüm grafiğe glow */
 }
 .chart-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 
-/* Halka çizgileri */
-.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 10; }
-.c-seg { fill: none; stroke-width: 10; stroke-linecap: round; transition: 0.3s; cursor: pointer; }
-.c-seg:hover { stroke-width: 12; filter: drop-shadow(0 0 5px currentColor); }
+.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
+.c-seg { 
+    fill: none; stroke-width: 12; stroke-linecap: round; 
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    cursor: pointer;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+.c-seg:hover { stroke-width: 16; opacity: 1; z-index: 2; }
 
 .chart-info {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%); text-align: center;
 }
-/* Fontlar 130px içine tam oturacak şekilde revize edildi */
-.chart-val { font-size: 1.1rem; font-weight: 800; line-height: 1; }
-.chart-lbl { font-size: 0.6rem; color: var(--muted); margin-top: 3px; }
+.chart-val { font-size: 1.3rem; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+.chart-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
 
-/* Live Graph */
+/* 3D Live Graph Container */
 .live-graph {
-    width: 100%; background: var(--card);
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 15px; margin-bottom: 20px;
+    width: 100%; 
+    background: linear-gradient(180deg, rgba(20, 20, 25, 0.8) 0%, rgba(10, 10, 12, 0.9) 100%);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px; margin-bottom: 25px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); /* İçeriye doğru derinlik */
 }
-.lg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-bottom: 10px; }
-.lg-svg { width: 100%; height: 60px; overflow: visible; }
-.lg-line { fill: none; stroke: var(--success); stroke-width: 2; vector-effect: non-scaling-stroke; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.4)); }
+.lg-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
+.lg-svg { width: 100%; height: 70px; overflow: visible; }
+.lg-line { 
+    fill: none; stroke: var(--success); stroke-width: 3; 
+    vector-effect: non-scaling-stroke; 
+    filter: drop-shadow(0 0 8px var(--success)); /* Neon çizgi */
+}
 
-/* Terminal */
+/* Terminal (Retro-Futuristic) */
 .terminal {
-    width: 100%; background: #000;
-    border: 1px solid var(--border); border-left: 3px solid var(--success);
-    border-radius: 8px; padding: 15px; font-family: 'Courier New', monospace;
-    margin-bottom: 20px;
+    width: 100%; background: #050505;
+    border: 1px solid #333; 
+    border-left: 4px solid var(--success);
+    border-radius: 12px; padding: 15px; 
+    font-family: 'Courier New', monospace;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    position: relative;
+    overflow: hidden;
 }
-.term-content { height: 80px; overflow: hidden; font-size: 0.75rem; color: var(--success); display: flex; flex-direction: column; justify-content: flex-end; }
-.log-line { margin-bottom: 4px; opacity: 0.9; }
+/* Ekran yansıması efekti */
+.terminal::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%; pointer-events: none; z-index: 10;
+}
+.term-content { height: 80px; overflow: hidden; font-size: 0.8rem; color: var(--success); text-shadow: 0 0 5px var(--success-glow); display: flex; flex-direction: column; justify-content: flex-end; }
+.log-line { margin-bottom: 5px; opacity: 0.9; }
 
-/* Info Grid */
+/* Info Grid (Glass Cards) */
 .info-grid {
-    width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+    width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;
 }
 .info-box {
-    background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border);
+    /* .card-style özelliklerini alır + özelleştirme */
+    background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px; padding: 20px 10px;
     text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
 }
-.ib-val { font-size: 1.1rem; font-weight: bold; color: #fff; display: block; }
-.ib-lbl { font-size: 0.7rem; color: var(--muted); }
+.info-box:active { transform: scale(0.98); }
 
-/* Free Card */
+.ib-val { font-size: 1.25rem; font-weight: 800; color: #fff; display: block; margin-bottom: 5px; }
+.ib-lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+/* 3D Free Card */
 .free-card {
     width: 100%;
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(0,0,0,0) 100%);
-    border: 1px solid var(--danger); border-radius: 12px;
-    padding: 15px; display: flex; align-items: center; justify-content: space-between;
-    position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(10, 10, 10, 0.8) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 20px;
+    padding: 20px; display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.15), inset 0 0 20px rgba(239, 68, 68, 0.05);
 }
+/* Shine effect animation */
 .free-card::after {
     content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transform: skewX(-25deg); animation: shine 3s infinite;
 }
-@keyframes shine { 100% { left: 150%; } }
-
-.fc-info h4 { margin: 0; color: var(--danger); font-size: 1rem; }
-.fc-info p { margin: 4px 0 0; font-size: 0.75rem; color: #ddd; }
 
 .ad-btn {
-    background: var(--danger); color: #fff; border: none; padding: 10px 20px;
-    border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; z-index: 2;
+    background: linear-gradient(to bottom, #ef4444, #b91c1c);
+    color: #fff; border: none; padding: 12px 24px;
+    border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.9rem; z-index: 2;
+    box-shadow: 0 4px 0 #7f1d1d, 0 5px 10px rgba(0,0,0,0.3); /* 3D Buton */
+    transition: all 0.1s;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
-.ad-btn:disabled { opacity: 0.6; cursor: wait; }
+.ad-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #7f1d1d, inset 0 2px 5px rgba(0,0,0,0.3);
+}
 
 .timer-badge {
+    background: rgba(0,0,0,0.5);
     border: 1px solid var(--danger); color: var(--danger);
-    padding: 8px 12px; border-radius: 6px; font-family: monospace; font-weight: bold;
+    padding: 8px 12px; border-radius: 8px; font-family: monospace; font-weight: bold;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 }
 
 /* --- LISTS (MARKET/INV) --- */
-.list-grid { padding: 20px; display: grid; gap: 12px; }
+.list-grid { padding: 20px; display: grid; gap: 15px; }
 .card-item {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px;
+    background: linear-gradient(145deg, rgba(30, 30, 35, 0.9), rgba(20, 20, 22, 0.95));
+    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px; padding: 18px; 
+    display: flex; align-items: center; gap: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
 }
-.ci-icon { font-size: 1.5rem; width: 40px; text-align: center; }
-.ci-info h4 { margin: 0; font-size: 0.95rem; }
-.ci-info p { margin: 2px 0 0; font-size: 0.75rem; color: var(--muted); }
-.ci-action { margin-left: auto; text-align: right; }
-.ci-price { font-weight: bold; display: block; margin-bottom: 5px; font-size: 0.9rem; }
+.card-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+
+.ci-icon { 
+    font-size: 1.8rem; width: 50px; height: 50px; 
+    background: rgba(255,255,255,0.03); 
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+.ci-info h4 { margin: 0; font-size: 1rem; color: #fff; }
+.ci-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted); }
 
 .action-btn {
-    background: var(--primary); color: #fff; border: none;
-    padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer;
+    background: linear-gradient(to bottom, var(--primary), #2563eb);
+    color: #fff; border: none;
+    padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 3px 0 #1e40af, 0 4px 8px rgba(0,0,0,0.3); /* 3D effect */
+    transition: all 0.1s;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
-.action-btn:disabled { background: #333; color: #666; }
+.action-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 #1e40af, inset 0 2px 4px rgba(0,0,0,0.3);
+}
+.action-btn:disabled { 
+    background: #333; color: #666; box-shadow: none; transform: none; 
+}
 
 /* --- WALLET PAGE --- */
-.wallet-page { padding: 30px 20px; text-align: center; }
 .w-input {
-    width: 100%; padding: 15px; background: #000; border: 1px solid var(--border);
-    color: #fff; border-radius: 10px; margin-bottom: 15px; box-sizing: border-box;
+    width: 100%; padding: 18px; 
+    background: rgba(0,0,0,0.4); 
+    border: 1px solid var(--glass-border);
+    color: #fff; border-radius: 14px; margin-bottom: 20px; box-sizing: border-box;
+    font-size: 1rem;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); /* İçeri göçük */
 }
-.w-btn {
-    width: 100%; padding: 15px; background: var(--success); border: none;
-    border-radius: 10px; color: #000; font-weight: bold; cursor: pointer; font-size: 1rem;
-}
+.w-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3), inset 0 2px 10px rgba(0,0,0,0.5); }
 
-/* --- NAV --- */
-.nav {
-    position: fixed; bottom: 0; width: 100%; height: var(--nav-h);
-    background: rgba(5,5,5,0.95); border-top: 1px solid var(--border);
-    display: flex; justify-content: space-around; align-items: center; z-index: 100;
-}
-.nav-item { color: var(--muted); font-size: 1.3rem; padding: 10px; transition: 0.2s; }
-.nav-item.active { color: var(--primary); transform: translateY(-3px); }
-
-/* UTILS */
-.view { display: none; animation: fadeIn 0.3s; }
-.view.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-#toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    background: #111; border: 1px solid var(--success); color: var(--success);
-    padding: 10px 20px; border-radius: 20px; display: none; z-index: 2000;
-}
-
-/* Price Options Container */
-.price-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Price Buttons */
+/* --- BUTTON PRICES 3D --- */
 .price-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+    padding: 12px 16px; border-radius: 12px;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.1s;
+    position: relative;
+    overflow: hidden;
 }
-
+/* TON Button 3D */
 .ton-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+    background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 0 #1e3a8a, 0 5px 15px rgba(59, 130, 246, 0.4);
 }
+.ton-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #1e3a8a; }
 
-.ton-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
-}
-
+/* Stars Button 3D */
 .star-btn {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(to bottom, #f59e0b, #d97706);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 0 #78350f, 0 5px 15px rgba(245, 158, 11, 0.4);
+}
+.star-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #78350f; }
+
+/* --- NAV FLOATING BAR --- */
+.nav {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; height: 65px;
+    background: rgba(20, 20, 23, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 35px; /* Hap şeklinde */
+    display: flex; justify-content: space-around; align-items: center; z-index: 100;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
-.star-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+.nav-item { 
+    color: rgba(255,255,255,0.4); 
+    font-size: 1.4rem; padding: 12px; 
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    position: relative;
 }
 
-.price-btn:active {
-    transform: translateY(0);
+.nav-item.active { 
+    color: #fff; 
+    background: var(--primary);
+    transform: translateY(-15px) scale(1.1); /* Yukarı fırlar */
+    box-shadow: 0 5px 15px var(--primary-glow);
+}
+/* Active ikonu için parlama */
+.nav-item.active::after {
+    content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+    width: 6px; height: 6px; background: #fff; border-radius: 50%;
 }
