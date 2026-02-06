@@ -1,268 +1,203 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>3D Miner App</title>
-<style>
-    :root {
-        --bg: #181926; /* Koyu Arka Plan */
-        --card-bg: #24273a; /* Kart Rengi */
-        
-        /* RENKLER VE ONLARIN GÖLGE TONLARI */
-        --yellow: #f9e2af; 
-        --yellow-shadow: #e5c890;
-        
-        --blue: #89b4fa;
-        --blue-shadow: #74c7ec;
-        
-        --red: #f38ba8;
-        --red-shadow: #eba0ac;
-
-        --green: #a6e3a1;
-        --green-shadow: #94e2d5;
-
-        --btn-height: 8px; /* 3D Kalınlığı */
-    }
-
-    body {
-        background-color: var(--bg);
-        color: #fff;
-        font-family: 'Verdana', sans-serif;
-        margin: 0; padding: 0;
-        padding-bottom: 100px;
-        /* Noktalı modern desen */
-        background-image: radial-gradient(#363a4f 1px, transparent 1px);
-        background-size: 20px 20px;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-    }
-
-    /* --- HEADER --- */
-    .header {
-        padding: 20px;
-        display: flex; justify-content: space-between; align-items: center;
-        background: var(--card-bg);
-        border-bottom: 4px solid #1e2030;
-    }
+:root {
+    /* --- ZEMİN RENKLERİ --- */
+    --bg-main: #0b0e14; /* Çok koyu, kaliteli siyah/lacivert */
+    --bg-card: #151a25; /* Kart rengi */
     
-    .user-info h2 { margin: 0; font-size: 1rem; color: #cdd6f4; }
-    .balance { 
-        font-size: 1.5rem; font-weight: 900; color: var(--yellow); 
-        text-shadow: 2px 2px 0px #000;
-    }
-
-    /* --- SAHNE DÜZENİ --- */
-    .container { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-
-    /* --- 3D KART --- */
-    .card-3d {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 20px;
-        position: relative;
-        /* Kartın kendisi de havada duruyor */
-        border: 2px solid #363a4f;
-        box-shadow: 0 8px 0 #11111b; 
-    }
-
-    /* --- ANA MINING BUTONU (DEVASA 3D) --- */
-    .miner-area {
-        display: flex; justify-content: center; margin: 20px 0;
-    }
+    /* --- BUTON RENKLERİ (GRADIENT 3D) --- */
+    /* Mavi (Satın Al) */
+    --btn-blue-1: #3b82f6;
+    --btn-blue-2: #1d4ed8;
     
-    .big-coin {
-        width: 200px; height: 200px;
-        background: radial-gradient(circle at 30% 30%, #f9e2af, #fab387);
-        border-radius: 50%;
-        border: 4px solid #fff;
-        
-        /* Olay burada: Blok Gölge */
-        box-shadow: 0 15px 0 #e5c890, 0 20px 20px rgba(0,0,0,0.5);
-        
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-        transition: all 0.1s;
-    }
+    /* Yeşil (Başlat) */
+    --btn-green-1: #10b981;
+    --btn-green-2: #059669;
     
-    /* Basınca ezilme efekti */
-    .big-coin:active {
-        box-shadow: 0 0 0 #e5c890; /* Gölge gider */
-        transform: translateY(15px); /* Aşağı iner */
-    }
+    /* Kırmızı (Upgrade) */
+    --btn-red-1: #ef4444;
+    --btn-red-2: #b91c1c;
+    
+    /* Altın (VIP) */
+    --btn-gold-1: #f59e0b;
+    --btn-gold-2: #b45309;
 
-    .big-coin span {
-        font-size: 3rem; font-weight: 900; color: #d20f39;
-        -webkit-text-stroke: 2px #fff;
-    }
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;
+    --border: rgba(255,255,255,0.08);
+}
 
-    /* --- AKSİYON BUTONLARI (RENKLİ BLOKLAR) --- */
-    /* HTML'de class="btn-block color-blue" kullan */
-    .btn-block {
-        width: 100%;
-        border: none;
-        padding: 15px;
-        border-radius: 15px;
-        font-size: 1rem; font-weight: 800; color: #181926;
-        cursor: pointer;
-        position: relative;
-        text-transform: uppercase;
-        margin-bottom: 15px; /* Alt boşluk, çünkü basınca inecek */
-        transition: transform 0.1s, box-shadow 0.1s;
-        
-        /* Varsayılan 3D yüksekliği */
-        box-shadow: 0 var(--btn-height) 0 rgba(0,0,0,0.3);
-    }
+/* --- GENEL AYARLAR --- */
+body {
+    background-color: var(--bg-main);
+    /* Modern Grid Arka Plan */
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0; padding: 0;
+    padding-bottom: 90px;
+}
 
-    /* Basınca */
-    .btn-block:active {
-        transform: translateY(var(--btn-height)); /* Yükseklik kadar in */
-        box-shadow: 0 0 0 transparent; /* Gölgeyi sil */
-    }
+/* --- GİZLE/GÖSTER (SAYFALAR) --- */
+.view { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Renk Varyasyonları */
-    .color-blue { background: var(--blue); box-shadow: 0 var(--btn-height) 0 var(--blue-shadow); }
-    .color-green { background: var(--green); box-shadow: 0 var(--btn-height) 0 var(--green-shadow); }
-    .color-red { background: var(--red); box-shadow: 0 var(--btn-height) 0 var(--red-shadow); color: #fff; }
+/* --- HEADER --- */
+.header {
+    background: rgba(21, 26, 37, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 15px 20px;
+    position: sticky; top: 0; z-index: 50;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.bal-val { font-size: 1.5rem; font-weight: 800; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+.bal-lbl { color: var(--text-muted); font-size: 0.8rem; font-weight: 600; }
 
-    /* --- LİSTE GÖRÜNÜMÜ --- */
-    .list-item {
-        background: #313244;
-        padding: 15px; border-radius: 15px;
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 15px;
-        border-bottom: 4px solid #181926;
-    }
-    .item-left { display: flex; align-items: center; gap: 15px; }
-    .icon-sq { 
-        width: 50px; height: 50px; background: #45475a; 
-        border-radius: 12px; display: flex; align-items: center; justify-content: center;
-        font-size: 1.5rem;
-    }
-    .sm-btn { padding: 8px 20px; font-size: 0.8rem; var(--btn-height): 4px; } /* Küçük buton */
+/* --- KART TASARIMI (DOLGUN GÖRÜNÜM) --- */
+.card-base, .dashboard, .card-item, .info-box {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 15px;
+    /* Kartın kendisi de hafif 3D */
+    box-shadow: 
+        0 4px 6px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1); /* Üst kenar ışığı */
+    border: 1px solid var(--border);
+}
 
-    /* --- ALT MENÜ (YÜZEN DOCK) --- */
-    .nav {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: #313244;
-        padding: 10px 20px;
-        border-radius: 25px;
-        display: flex; gap: 20px;
-        border: 3px solid #11111b;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        z-index: 100;
-    }
+/* --- ANA BUTONLAR (GERÇEK 3D GRADIENT) --- */
+/* HTML'de class="btn-3d btn-blue" şeklinde kullan */
 
-    .nav-item {
-        width: 60px; height: 60px;
-        background: #45475a;
-        border-radius: 15px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.8rem;
-        cursor: pointer;
-        transition: 0.2s;
-        /* Nav butonları da 3D */
-        box-shadow: 0 6px 0 #181926;
-    }
+.btn-3d, .action-btn, .ad-btn {
+    width: 100%;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem; font-weight: 700; color: #fff;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-top: 10px;
+    
+    /* Yazı gölgesi */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
 
-    .nav-item.active {
-        background: var(--yellow);
-        color: #181926;
-        transform: translateY(-20px);
-        box-shadow: 0 8px 0 var(--yellow-shadow);
-    }
-    .nav-item:active {
-        transform: translateY(0);
-        box-shadow: 0 0 0;
-    }
+/* 1. Mavi Buton */
+.btn-blue, .action-btn {
+    background: linear-gradient(to bottom, var(--btn-blue-1), var(--btn-blue-2));
+    box-shadow: 0 4px 0 #1e3a8a, 0 10px 10px rgba(0,0,0,0.2);
+}
 
-    /* Sayfa Kontrolü */
-    .view { display: none; }
-    .view.active { display: block; }
-</style>
-</head>
-<body>
+/* 2. Yeşil Buton */
+.btn-green {
+    background: linear-gradient(to bottom, var(--btn-green-1), var(--btn-green-2));
+    box-shadow: 0 4px 0 #064e3b, 0 10px 10px rgba(0,0,0,0.2);
+}
 
-    <div class="header">
-        <div class="user-info">
-            <h2>Kullanıcı</h2>
-            <div style="font-size: 0.8rem; opacity: 0.7;">Level 5</div>
-        </div>
-        <div class="balance">14,250 💰</div>
-    </div>
+/* 3. Kırmızı Buton */
+.btn-red, .ad-btn {
+    background: linear-gradient(to bottom, var(--btn-red-1), var(--btn-red-2));
+    box-shadow: 0 4px 0 #7f1d1d, 0 10px 10px rgba(0,0,0,0.2);
+}
 
-    <div id="home" class="view active">
-        <div class="container">
-            <div class="card-3d">
-                <h3 style="margin:0; color:var(--blue)">Kazım Gücü</h3>
-                <div style="font-size:2rem; font-weight:bold;">125/saat</div>
-            </div>
+/* 4. Altın Buton */
+.btn-gold {
+    background: linear-gradient(to bottom, var(--btn-gold-1), var(--btn-gold-2));
+    box-shadow: 0 4px 0 #78350f, 0 10px 10px rgba(0,0,0,0.2);
+}
 
-            <div class="miner-area">
-                <div class="big-coin" onclick="this.style.transform='scale(0.95) translateY(15px)'; setTimeout(()=>this.style.transform='', 100)">
-                    <span>⛏️</span>
-                </div>
-            </div>
+/* Tıklama Efekti (İçine Göçme) */
+.btn-3d:active, .action-btn:active, .ad-btn:active {
+    transform: translateY(4px); /* Aşağı iner */
+    box-shadow: 0 0 0 transparent !important; /* Alt gölge kaybolur */
+}
 
-            <button class="btn-block color-green">TURBO MODU AÇ</button>
-            <button class="btn-block color-red">REKLAM İZLE (+500)</button>
-        </div>
-    </div>
+/* Disabled */
+.btn-3d:disabled {
+    background: #333; color: #666; box-shadow: none; transform: none;
+}
 
-    <div id="market" class="view">
-        <div class="container">
-            <h2 style="margin-bottom:20px;">Yükseltmeler</h2>
-            
-            <div class="list-item">
-                <div class="item-left">
-                    <div class="icon-sq">⚡</div>
-                    <div>
-                        <div style="font-weight:bold;">Hızlı Kazım</div>
-                        <div style="font-size:0.8rem; opacity:0.7;">+50/saat</div>
-                    </div>
-                </div>
-                <button class="btn-block color-blue sm-btn" style="width:auto; margin:0;">AL</button>
-            </div>
+/* --- DASHBOARD ELEMANLARI --- */
+.dashboard { display: flex; flex-direction: column; align-items: center; }
 
-            <div class="list-item">
-                <div class="item-left">
-                    <div class="icon-sq">🔋</div>
-                    <div>
-                        <div style="font-weight:bold;">Enerji Deposu</div>
-                        <div style="font-size:0.8rem; opacity:0.7;">Max 5000</div>
-                    </div>
-                </div>
-                <button class="btn-block color-blue sm-btn" style="width:auto; margin:0;">AL</button>
-            </div>
-        </div>
-    </div>
+/* Yuvarlak Grafik */
+.chart-wrapper {
+    width: 160px; height: 160px; margin: 20px 0;
+    position: relative;
+    border-radius: 50%;
+    /* 3D Halka Görünümü */
+    background: radial-gradient(circle, #1e293b 60%, #0f172a 100%);
+    box-shadow: 
+        inset 0 0 20px rgba(0,0,0,0.8),
+        0 0 0 5px #1e293b;
+    display: flex; align-items: center; justify-content: center;
+}
+.chart-val { font-size: 1.8rem; font-weight: 800; color: #fff; }
 
-    <div id="wallet" class="view">
-        <div class="container">
-            <div class="card-3d" style="text-align:center;">
-                <h2>Cüzdanını Bağla</h2>
-                <p style="opacity:0.7; margin-bottom:20px;">Ödemeleri almak için TON cüzdanını bağla.</p>
-                <button class="btn-block color-blue">TON CONNECT</button>
-            </div>
-        </div>
-    </div>
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-bottom: 20px; }
+.info-box { text-align: center; background: linear-gradient(145deg, #1a202c, #151a25); }
+.ib-val { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; display: block; }
 
-    <div class="nav">
-        <div class="nav-item active" onclick="switchTab('home', this)">🏠</div>
-        <div class="nav-item" onclick="switchTab('market', this)">🛒</div>
-        <div class="nav-item" onclick="switchTab('wallet', this)">💼</div>
-    </div>
+/* --- LİSTE GÖRÜNÜMÜ --- */
+.card-item {
+    display: flex; align-items: center; gap: 15px;
+    padding: 15px;
+    transition: transform 0.2s;
+}
+.card-item:active { transform: scale(0.98); }
 
-    <script>
-        function switchTab(tabId, btn) {
-            // Sayfaları gizle
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            
-            // Butonları resetle
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-    </script>
-</body>
-</html>
+.ci-icon {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, #334155, #1e293b);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.ci-info h4 { margin: 0; font-size: 1rem; color: #fff; }
+.ci-info p { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-muted); }
+
+/* Liste içindeki butonları küçült */
+.card-item .btn-3d, .card-item .action-btn { 
+    width: auto; padding: 8px 16px; font-size: 0.8rem; margin: 0; 
+    box-shadow: 0 3px 0 rgba(0,0,0,0.3); /* Daha küçük gölge */
+}
+.card-item .btn-3d:active { transform: translateY(3px); }
+
+/* --- ALT MENÜ --- */
+.nav {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 400px; height: 70px;
+    background: rgba(21, 26, 37, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    display: flex; justify-content: space-around; align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 100;
+}
+
+.nav-item {
+    font-size: 1.5rem; color: #64748b;
+    width: 50px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+.nav-item.active {
+    background: var(--btn-blue-1);
+    color: #fff;
+    transform: translateY(-15px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+    border: 3px solid var(--bg-main); /* Arka planla karışmasın diye */
+}
