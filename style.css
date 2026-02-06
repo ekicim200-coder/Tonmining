@@ -1,311 +1,274 @@
 :root {
-    /* Daha derin ve zengin renk paleti */
-    --bg-dark: #030305;
-    --bg-card: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-highlight: rgba(255, 255, 255, 0.15);
+    /*--- YENİ PROFESYONEL PALET ---*/
+    /* Arka plan: Zifiri karanlık yerine derin uzay/okyanus mavisi */
+    --bg-main: #0a0e17; 
+    --bg-secondary: #111827;
     
-    /* Neon Renkler */
-    --primary: #3b82f6; 
-    --primary-glow: rgba(59, 130, 246, 0.5);
-    --accent: #8b5cf6;
-    --success: #10b981;
-    --success-glow: rgba(16, 185, 129, 0.5);
-    --danger: #ef4444;
-    --gold: #f59e0b;
+    /* Kartlar için çok hafif, sofistike yüzey */
+    --card-surface: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+    --card-border: rgba(56, 189, 248, 0.1); /* Çok ince, zarif mavi çerçeve */
     
-    --text-main: #ffffff;
+    /* Vurgu Renkleri: Neon yerine "Elektrik" ve "Veri" tonları */
+    --primary: #0ea5e9; /* Sky Blue - Veri akışı */
+    --primary-soft: rgba(14, 165, 233, 0.2);
+    --accent: #6366f1; /* Indigo - Derinlik */
+    --success: #10b981; /* Emerald - Kararlılık */
+    --danger: #f43f5e; /* Rose - Uyarı */
+    --gold: #f59e0b; /* Amber - Değer */
+    
+    /* Tipografi */
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --nav-h: 75px;
+    
+    --nav-h: 80px; /* Navigasyon için biraz daha alan */
 }
 
 body {
-    background-color: var(--bg-dark);
-    /* 3D Derinlik hissi veren kompleks arka plan */
+    background-color: var(--bg-main);
+    /* Sadeleştirilmiş, derinlik veren modern arka plan */
     background-image: 
-        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%),
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+        radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 60%),
+        radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.1), transparent 50%);
+    background-attachment: fixed;
     color: var(--text-main);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     margin: 0; padding: 0; padding-bottom: calc(var(--nav-h) + 20px);
     user-select: none; -webkit-tap-highlight-color: transparent;
+    line-height: 1.5;
 }
 
-/* --- ORTAK 3D KART STİLİ (Glassmorphism) --- */
-.card-style {
-    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-top: 1px solid var(--glass-highlight); /* Üstten ışık vuruyor hissi */
-    border-radius: 20px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+/* --- ORTAK KART STİLİ (Modern & Temiz) --- */
+/* Aşırı cam efekti yerine, hafif şeffaf, modern yüzeyler */
+.card-base {
+    background: var(--card-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    /* Yumuşak, profesyonel gölge */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* --- HEADER --- */
 .header {
     padding: 15px 25px;
-    background: rgba(3, 3, 5, 0.85);
-    backdrop-filter: blur(15px);
-    border-bottom: 1px solid var(--glass-border);
+    background: rgba(10, 14, 23, 0.8); /* Daha opak, daha net */
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--card-border);
     display: flex; justify-content: space-between; align-items: center;
     position: sticky; top: 0; z-index: 50;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .bal-box { display: flex; flex-direction: column; }
-.bal-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+.bal-lbl { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; }
 .bal-val { 
-    font-size: 1.6rem; font-weight: 800; color: #fff; 
-    text-shadow: 0 0 20px rgba(255,255,255,0.2); /* Hafif parıltı */
+    font-size: 1.75rem; font-weight: 700; color: var(--text-main);
+    /* Rakamlara hafif bir degrade vererek modernleştirme */
+    background: linear-gradient(to right, #fff, #e2e8f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
-.bal-unit { font-size: 0.9rem; color: var(--primary); font-weight: 600; }
+.bal-unit { font-size: 0.9rem; color: var(--primary); font-weight: 600; margin-left: 4px; -webkit-text-fill-color: var(--primary); }
 
-/* 3D Wallet Button */
+/* Wallet Button - Sadeleştirilmiş */
 .wallet-btn {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
-    color: #fff;
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255,255,255,0.1);
-    padding: 10px 18px; border-radius: 16px;
-    font-size: 0.85rem; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--primary-soft);
+    color: var(--primary);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    padding: 10px 20px; border-radius: 12px;
+    font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    transition: all 0.2s ease;
 }
-.wallet-btn:active { transform: scale(0.95); }
+.wallet-btn:hover { background: rgba(14, 165, 233, 0.3); }
 .wallet-btn.connected {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05));
-    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.15);
     color: var(--success);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.3);
 }
 
-/* --- DASHBOARD --- */
+/* --- DASHBOARD GRAFİKLERİ (EN ÖNEMLİ KISIM) --- */
 .dashboard { padding: 25px 20px; display: flex; flex-direction: column; align-items: center; }
 
-/* Chart (3D Halka) */
+/* 1. Donut Chart - Daha İnce ve Zarif */
 .chart-wrapper { 
     position: relative; 
-    width: 150px; height: 150px; /* Biraz büyüttük */
-    margin-bottom: 30px; margin-top: 15px;
-    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.2)); /* Tüm grafiğe glow */
+    width: 160px; height: 160px; 
+    margin-bottom: 30px; margin-top: 10px;
 }
 .chart-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 
-.c-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
+/* Arka plan halkası daha silik */
+.c-bg { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 8; } 
+/* Ana segmentler daha ince ve net */
 .c-seg { 
-    fill: none; stroke-width: 12; stroke-linecap: round; 
-    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    cursor: pointer;
-    filter: drop-shadow(0 0 5px currentColor);
+    fill: none; stroke-width: 8; stroke-linecap: round; 
+    transition: all 0.3s ease; cursor: pointer;
 }
-.c-seg:hover { stroke-width: 16; opacity: 1; z-index: 2; }
+/* Hover efekti abartılı değil, sadece hafif kalınlaşma */
+.c-seg:hover { stroke-width: 10; filter: brightness(1.2); }
 
 .chart-info {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%); text-align: center;
 }
-.chart-val { font-size: 1.3rem; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-.chart-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
+.chart-val { font-size: 1.5rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px;}
+.chart-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; font-weight: 500;}
 
-/* 3D Live Graph Container */
+/* 2. Live Graph - Modern Alan Grafiği Hissi */
 .live-graph {
     width: 100%; 
-    background: linear-gradient(180deg, rgba(20, 20, 25, 0.8) 0%, rgba(10, 10, 12, 0.9) 100%);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    background: var(--card-surface);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
     padding: 20px; margin-bottom: 25px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); /* İçeriye doğru derinlik */
+    /* İçeriye hafif bir parlama ekleyerek "ekran" hissi verelim */
+    box-shadow: inset 0 0 30px rgba(14, 165, 233, 0.05);
 }
-.lg-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; }
-.lg-svg { width: 100%; height: 70px; overflow: visible; }
+.lg-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
+.lg-svg { width: 100%; height: 80px; overflow: visible; }
+
+/* Çizgi artık neon değil, pürüzsüz ve zarif bir veri akışı */
 .lg-line { 
-    fill: none; stroke: var(--success); stroke-width: 3; 
+    fill: none; 
+    stroke: var(--success); /* veya --primary */
+    stroke-width: 3; 
+    stroke-linecap: round;
     vector-effect: non-scaling-stroke; 
-    filter: drop-shadow(0 0 8px var(--success)); /* Neon çizgi */
+    /* Neon yerine yumuşak bir "hale" efekti */
+    filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.3));
 }
 
-/* Terminal (Retro-Futuristic) */
+/* 3. Terminal - "System Log" Görünümü */
 .terminal {
-    width: 100%; background: #050505;
-    border: 1px solid #333; 
-    border-left: 4px solid var(--success);
+    width: 100%; 
+    background: rgba(0, 0, 0, 0.3); /* Daha koyu, daha net */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Sol taraftaki kalın neon çizgi yerine zarif bir indikatör */
+    border-left: 3px solid var(--accent); 
     border-radius: 12px; padding: 15px; 
-    font-family: 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Courier New', monospace; /* Daha modern bir monospace font */
     margin-bottom: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    position: relative;
-    overflow: hidden;
 }
-/* Ekran yansıması efekti */
-.terminal::before {
-    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 100%;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    background-size: 100% 2px, 3px 100%; pointer-events: none; z-index: 10;
+.term-content { 
+    height: auto; max-height: 100px; overflow-y: auto; 
+    font-size: 0.8rem; 
+    color: #a5b4fc; /* Göz yormayan yumuşak bir mavi/mor */
+    display: flex; flex-direction: column; justify-content: flex-end; 
 }
-.term-content { height: 80px; overflow: hidden; font-size: 0.8rem; color: var(--success); text-shadow: 0 0 5px var(--success-glow); display: flex; flex-direction: column; justify-content: flex-end; }
-.log-line { margin-bottom: 5px; opacity: 0.9; }
+.log-line { margin-bottom: 6px; display: flex; align-items: center; }
+/* Log satırlarının başına küçük bir nokta ekleyelim */
+.log-line::before { content: '>'; color: var(--primary); margin-right: 8px; font-weight: bold; font-size: 0.7rem;}
 
-/* Info Grid (Glass Cards) */
+/* --- INFO GRID & CARDS --- */
 .info-grid {
     width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;
 }
 .info-box {
-    /* .card-style özelliklerini alır + özelleştirme */
-    background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.6));
     backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: 18px; padding: 20px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px; padding: 20px 15px;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: transform 0.2s;
+    transition: transform 0.2s, border-color 0.2s;
 }
-.info-box:active { transform: scale(0.98); }
+.info-box:hover { border-color: var(--primary-soft); transform: translateY(-2px); }
 
-.ib-val { font-size: 1.25rem; font-weight: 800; color: #fff; display: block; margin-bottom: 5px; }
-.ib-lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+.ib-val { font-size: 1.4rem; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 8px; }
+.ib-lbl { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
 
-/* 3D Free Card */
+/* Free Card - Daha Az Agresif */
 .free-card {
     width: 100%;
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(10, 10, 10, 0.8) 100%);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 20px;
+    /* Kırmızı yerine daha profesyonel bir degrade */
+    background: linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 1) 100%);
+    border: 1px solid rgba(244, 63, 94, 0.3); /* Subtle danger border */
+    border-radius: 16px;
     padding: 20px; display: flex; align-items: center; justify-content: space-between;
     position: relative; overflow: hidden;
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.15), inset 0 0 20px rgba(239, 68, 68, 0.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
-/* Shine effect animation */
+/* Parlama efekti daha yavaş ve yumuşak */
 .free-card::after {
-    content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transform: skewX(-25deg); animation: shine 3s infinite;
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transform: skewX(-20deg); animation: shine 6s infinite; /* Daha yavaş animasyon */
 }
+.fc-info h4 { margin: 0; color: var(--danger); font-size: 1.1rem; font-weight: 700; }
+.fc-info p { margin: 6px 0 0; font-size: 0.85rem; color: var(--text-muted); }
 
+/* Butonlar - 3D efekti kaldırıldı, "Flat 2.0" */
+.ad-btn, .action-btn {
+    border: none; padding: 10px 20px;
+    border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; z-index: 2;
+    transition: all 0.2s;
+    /* Hafif bir degrade ve gölge ile derinlik */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
 .ad-btn {
-    background: linear-gradient(to bottom, #ef4444, #b91c1c);
-    color: #fff; border: none; padding: 12px 24px;
-    border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.9rem; z-index: 2;
-    box-shadow: 0 4px 0 #7f1d1d, 0 5px 10px rgba(0,0,0,0.3); /* 3D Buton */
-    transition: all 0.1s;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, var(--danger), #be123c);
+    color: #fff;
 }
-.ad-btn:active {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 #7f1d1d, inset 0 2px 5px rgba(0,0,0,0.3);
+.ad-btn:hover, .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
-
-.timer-badge {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid var(--danger); color: var(--danger);
-    padding: 8px 12px; border-radius: 8px; font-family: monospace; font-weight: bold;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+.action-btn {
+    background: linear-gradient(135deg, var(--primary), #0284c7);
+    color: #fff;
 }
 
-/* --- LISTS (MARKET/INV) --- */
-.list-grid { padding: 20px; display: grid; gap: 15px; }
+/* --- LISTS --- */
+.list-grid { padding: 20px; display: grid; gap: 12px; }
 .card-item {
-    background: linear-gradient(145deg, rgba(30, 30, 35, 0.9), rgba(20, 20, 22, 0.95));
-    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.1);
-    border-radius: 18px; padding: 18px; 
+    background: var(--card-surface);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 15px; 
     display: flex; align-items: center; gap: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
 }
-.card-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+.card-item:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: var(--primary-soft);
+}
 
 .ci-icon { 
-    font-size: 1.8rem; width: 50px; height: 50px; 
-    background: rgba(255,255,255,0.03); 
+    font-size: 1.6rem; width: 48px; height: 48px; 
+    background: rgba(255,255,255,0.03); color: var(--primary);
     border-radius: 12px; display: flex; align-items: center; justify-content: center;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-}
-.ci-info h4 { margin: 0; font-size: 1rem; color: #fff; }
-.ci-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted); }
-
-.action-btn {
-    background: linear-gradient(to bottom, var(--primary), #2563eb);
-    color: #fff; border: none;
-    padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;
-    box-shadow: 0 3px 0 #1e40af, 0 4px 8px rgba(0,0,0,0.3); /* 3D effect */
-    transition: all 0.1s;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-}
-.action-btn:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 #1e40af, inset 0 2px 4px rgba(0,0,0,0.3);
-}
-.action-btn:disabled { 
-    background: #333; color: #666; box-shadow: none; transform: none; 
 }
 
-/* --- WALLET PAGE --- */
-.w-input {
-    width: 100%; padding: 18px; 
-    background: rgba(0,0,0,0.4); 
-    border: 1px solid var(--glass-border);
-    color: #fff; border-radius: 14px; margin-bottom: 20px; box-sizing: border-box;
-    font-size: 1rem;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); /* İçeri göçük */
-}
-.w-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3), inset 0 2px 10px rgba(0,0,0,0.5); }
-
-/* --- BUTTON PRICES 3D --- */
-.price-btn {
-    padding: 12px 16px; border-radius: 12px;
-    font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: all 0.1s;
-    position: relative;
-    overflow: hidden;
-}
-/* TON Button 3D */
-.ton-btn {
-    background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
-    color: #fff;
-    box-shadow: 0 4px 0 #1e3a8a, 0 5px 15px rgba(59, 130, 246, 0.4);
-}
-.ton-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #1e3a8a; }
-
-/* Stars Button 3D */
-.star-btn {
-    background: linear-gradient(to bottom, #f59e0b, #d97706);
-    color: #fff;
-    box-shadow: 0 4px 0 #78350f, 0 5px 15px rgba(245, 158, 11, 0.4);
-}
-.star-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #78350f; }
-
-/* --- NAV FLOATING BAR --- */
+/* --- NAV --- */
 .nav {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    width: 90%; height: 65px;
-    background: rgba(20, 20, 23, 0.85);
+    position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+    width: auto; min-width: 300px; height: 65px;
+    background: rgba(15, 23, 42, 0.85); /* Koyu, şeffaf */
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 35px; /* Hap şeklinde */
-    display: flex; justify-content: space-around; align-items: center; z-index: 100;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 35px;
+    display: flex; justify-content: space-evenly; align-items: center; z-index: 100;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    padding: 0 10px;
 }
 
 .nav-item { 
-    color: rgba(255,255,255,0.4); 
-    font-size: 1.4rem; padding: 12px; 
-    border-radius: 50%;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    color: var(--text-muted); 
+    font-size: 1.3rem; padding: 12px 16px; 
+    border-radius: 20px;
+    transition: all 0.3s ease; 
+    display: flex; align-items: center; justify-content: center;
     position: relative;
 }
 
+/* Aktif durum daha zarif */
 .nav-item.active { 
-    color: #fff; 
-    background: var(--primary);
-    transform: translateY(-15px) scale(1.1); /* Yukarı fırlar */
-    box-shadow: 0 5px 15px var(--primary-glow);
+    color: var(--primary); 
+    background: var(--primary-soft);
 }
-/* Active ikonu için parlama */
+/* Abartılı yukarı fırlama efekti yerine hafif bir belirteç */
 .nav-item.active::after {
-    content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
-    width: 6px; height: 6px; background: #fff; border-radius: 50%;
+    content: ''; position: absolute; bottom: 5px; width: 5px; height: 5px;
+    background: var(--primary); border-radius: 50%;
 }
