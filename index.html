@@ -6,7 +6,6 @@
     <title>TON Pro Miner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
 
@@ -15,7 +14,7 @@
             <span class="bal-lbl">TOTAL BALANCE</span>
             <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
         </div>
-        <button class="wallet-btn" id="connectBtn">
+        <button class="wallet-btn" id="connectBtn" onclick="toggleWallet()">
             <i class="fas fa-wallet"></i> Connect
         </button>
     </div>
@@ -56,7 +55,7 @@
                     <p>+300 GH/s (30 Minutes)</p>
                 </div>
                 <div id="adBtnArea">
-                    <button class="ad-btn">WATCH & CLAIM</button>
+                    <button class="ad-btn" onclick="watchAd()">WATCH & CLAIM</button>
                 </div>
                 <div id="timerArea" style="display:none;">
                     <div class="timer-badge" id="freeTimer">30:00</div>
@@ -84,17 +83,17 @@
             <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
             <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
             
-            <button class="w-btn">WITHDRAW</button>
+            <button class="w-btn" onclick="withdraw()">WITHDRAW</button>
 
             <div class="history-section" style="margin-top: 20px; text-align: left;">
                 <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
                     <i class="fas fa-history"></i> Payment History
                 </h3>
                 <div id="tx-history-list">
-                    <p style="color:#666; font-size: 0.9rem;">Yükleniyor...</p>
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <div id="v-referral" class="view">
@@ -107,7 +106,7 @@
                 <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 10px;">Your Referral Code</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="text" id="ref-code" class="w-input" readonly style="flex: 1; font-weight: bold; color: var(--success);">
-                    <button class="w-btn" id="copy-ref-btn" style="padding: 12px 20px; min-width: auto;">
+                    <button class="w-btn" onclick="copyReferralCode()" style="padding: 12px 20px; min-width: auto;">
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
@@ -117,7 +116,7 @@
                 <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 10px;">Share Your Link</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="text" id="ref-link" class="w-input" readonly style="flex: 1; font-size: 0.8rem;">
-                    <button class="w-btn" id="share-ref-btn" style="padding: 12px 20px; min-width: auto; background: var(--primary);">
+                    <button class="w-btn" onclick="shareReferralLink()" style="padding: 12px 20px; min-width: auto; background: var(--primary);">
                         <i class="fas fa-share-alt"></i>
                     </button>
                 </div>
@@ -146,18 +145,18 @@
     </div>
 
     <div class="nav">
-        <div class="nav-item active"><i class="fas fa-chart-pie"></i></div>
-        <div class="nav-item"><i class="fas fa-shopping-bag"></i></div>
-        <div class="nav-item"><i class="fas fa-server"></i></div>
-        <div class="nav-item"><i class="fas fa-wallet"></i></div>
-        <div class="nav-item"><i class="fas fa-users"></i></div>
+        <div class="nav-item active" onclick="go('dash', this)"><i class="fas fa-chart-pie"></i></div>
+        <div class="nav-item" onclick="go('market', this)"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-item" onclick="go('inv', this)"><i class="fas fa-server"></i></div>
+        <div class="nav-item" onclick="go('wallet', this)"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item" onclick="go('referral', this)"><i class="fas fa-users"></i></div>
     </div>
 
     <div id="toast">Message</div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <script src="https://sad.adsgram.ai/js/sad.min.js" onload="console.log('✅ Adsgram SDK loaded')" onerror="console.error('❌ Adsgram SDK loading failed')"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
     <script type="module" src="script.js"></script>
 </body>
