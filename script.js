@@ -792,5 +792,14 @@ window.go = go;
 window.copyReferralCode = copyReferralCode;
 window.shareReferralLink = shareReferralLink;
 
+// --- DEBUG ---
+console.log("=== SCRIPT LOADED ===");
+console.log("toggleWallet:", typeof window.toggleWallet);
+console.log("buy:", typeof window.buy);
+console.log("watchAd:", typeof window.watchAd);
+console.log("withdraw:", typeof window.withdraw);
+console.log("go:", typeof window.go);
+console.log("====================");
+
 // --- INIT ---
 init();
