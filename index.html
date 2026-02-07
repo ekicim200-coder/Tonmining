@@ -97,11 +97,60 @@
             </div>
     </div>
 
+    <div id="v-referral" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-users fa-4x" style="color:var(--success); margin-bottom:20px;"></i>
+            <h3>Referral System</h3>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Earn 40% commission from your referrals' purchases!</p>
+            
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 10px;">Your Referral Code</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="text" id="ref-code" class="w-input" readonly style="flex: 1; font-weight: bold; color: var(--success);">
+                    <button class="w-btn" id="copy-ref-btn" style="padding: 12px 20px; min-width: auto;">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 10px;">Share Your Link</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="text" id="ref-link" class="w-input" readonly style="flex: 1; font-size: 0.8rem;">
+                    <button class="w-btn" id="share-ref-btn" style="padding: 12px 20px; min-width: auto; background: var(--primary);">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="info-grid" style="margin-bottom: 20px;">
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-count">0</span>
+                    <span class="ib-lbl">Referrals</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-earnings">0.00</span>
+                    <span class="ib-lbl">Total Earned (TON)</span>
+                </div>
+            </div>
+
+            <div class="history-section" style="margin-top: 20px; text-align: left;">
+                <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-chart-line"></i> Referral History
+                </h3>
+                <div id="ref-history-list">
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="nav">
         <div class="nav-item active"><i class="fas fa-chart-pie"></i></div>
         <div class="nav-item"><i class="fas fa-shopping-bag"></i></div>
         <div class="nav-item"><i class="fas fa-server"></i></div>
         <div class="nav-item"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item"><i class="fas fa-users"></i></div>
     </div>
 
     <div id="toast">Message</div>
