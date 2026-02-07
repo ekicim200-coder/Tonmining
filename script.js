@@ -1,6 +1,6 @@
 // --- IMPORT ---
 // getHistoryFromFire eklendi
-import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
 
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
@@ -18,7 +18,11 @@ let state = {
     wallet: null,
     lastSave: Date.now(),
     freeEnd: 0,
-    lastAdTime: 0 // Son reklam izlenme zamanı (hile önleme için)
+    lastAdTime: 0, // Son reklam izlenme zamanı (hile önleme için)
+    referralCode: null,
+    referredBy: null,
+    referralCount: 0,
+    referralEarnings: 0
 };
 
 const machines = [
@@ -120,6 +124,20 @@ async function loadServerData(walletAddress) {
         state.freeEnd = serverData.freeEnd || 0;
         state.lastSave = serverData.lastSave || Date.now();
         state.lastAdTime = serverData.lastAdTime || 0; // Hile önleme için sunucudan yükle
+        
+        // Referans verilerini yükle
+        state.referralCode = serverData.referralCode || null;
+        state.referredBy = serverData.referredBy || null;
+        state.referralCount = serverData.referralCount || 0;
+        state.referralEarnings = serverData.referralEarnings || 0;
+        
+        // Referans kodu yoksa oluştur
+        if (!state.referralCode) {
+            await initReferralCode(walletAddress);
+        }
+        
+        // URL'den referans kodu kontrolü (ilk giriş)
+        await checkReferralParam(walletAddress);
         
         calculateOfflineProgress();
         
@@ -364,6 +382,15 @@ function grantMachine(mid) {
         state.freeEnd = Date.now() + (30 * 60 * 1000);
     }
     
+    // Referans komisyonu ekle (sadece ücretli makineler için)
+    if (m.price > 0 && state.wallet) {
+        addReferralCommission(state.wallet, m.price).then(success => {
+            if (success) {
+                console.log(`✅ Referans komisyonu eklendi: ${m.price * 0.4} TON`);
+            }
+        });
+    }
+    
     saveLocalData();
     syncToServer();
     updateUI();
@@ -561,6 +588,10 @@ function go(id, el) {
     if(id==='dash') drawChart();
     if(id==='inv') renderInv();
     if(id==='wallet') renderHistory(); // Wallet açılınca geçmişi getir
+    if(id==='referral') {
+        updateReferralUI();
+        renderReferralHistory();
+    }
 }
 
 function drawChart() {
@@ -708,6 +739,127 @@ async function renderHistory() {
     listEl.innerHTML = html;
 }
 
+// REFERANS SİSTEMİ FONKSİYONLARI
+
+async function initReferralCode(walletAddress) {
+    if (!walletAddress) return;
+    
+    // Benzersiz referans kodu oluştur (cüzdan adresinden türetilmiş)
+    const code = 'REF' + walletAddress.substring(0, 8).toUpperCase();
+    state.referralCode = code;
+    
+    await saveReferralCode(walletAddress, code);
+    updateReferralUI();
+}
+
+async function checkReferralParam(walletAddress) {
+    if (!walletAddress || state.referredBy) return; // Zaten referans ile kayıtlı
+    
+    // URL'den referans kodunu al
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    
+    if (refCode && refCode !== state.referralCode) {
+        const success = await registerReferral(walletAddress, refCode);
+        if (success) {
+            showToast("✅ Referral bonus activated!", false);
+            state.referredBy = refCode;
+        }
+    }
+}
+
+function updateReferralUI() {
+    const refCodeInput = document.getElementById('ref-code');
+    const refLinkInput = document.getElementById('ref-link');
+    const refCountEl = document.getElementById('ref-count');
+    const refEarningsEl = document.getElementById('ref-earnings');
+    
+    if (refCodeInput && state.referralCode) {
+        refCodeInput.value = state.referralCode;
+    }
+    
+    if (refLinkInput && state.referralCode) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        refLinkInput.value = `${baseUrl}?ref=${state.referralCode}`;
+    }
+    
+    if (refCountEl) {
+        refCountEl.textContent = state.referralCount || 0;
+    }
+    
+    if (refEarningsEl) {
+        refEarningsEl.textContent = (state.referralEarnings || 0).toFixed(2);
+    }
+}
+
+async function renderReferralHistory() {
+    const listEl = document.getElementById('ref-history-list');
+    if (!listEl || !state.wallet) return;
+    
+    listEl.innerHTML = "<p style='color:#999'>Loading...</p>";
+    
+    const stats = await getReferralStats(state.wallet);
+    
+    // İstatistikleri güncelle
+    state.referralCount = stats.count;
+    state.referralEarnings = stats.earnings;
+    updateReferralUI();
+    
+    if (stats.history.length === 0) {
+        listEl.innerHTML = "<p style='color:#666'>No referrals yet. Share your link!</p>";
+        return;
+    }
+    
+    let html = "";
+    stats.history.forEach(ref => {
+        const date = new Date(ref.date).toLocaleString();
+        const buyerShort = ref.buyerWallet.substring(0, 6) + '...' + ref.buyerWallet.substring(ref.buyerWallet.length - 4);
+        
+        html += `
+        <div style="background: rgba(16,185,129,0.1); padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="font-weight: bold; color: var(--success);">+${ref.commission.toFixed(2)} TON</div>
+                <div style="font-size: 0.75rem; color: #888;">${date}</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #aaa;">
+                From: ${buyerShort} • Machine: ${ref.machinePrice} TON
+            </div>
+        </div>`;
+    });
+    
+    listEl.innerHTML = html;
+}
+
+function copyReferralCode() {
+    const refCodeInput = document.getElementById('ref-code');
+    if (refCodeInput) {
+        refCodeInput.select();
+        document.execCommand('copy');
+        showToast("✅ Referral code copied!", false);
+    }
+}
+
+function shareReferralLink() {
+    const refLinkInput = document.getElementById('ref-link');
+    if (!refLinkInput) return;
+    
+    const link = refLinkInput.value;
+    
+    // Telegram Web App içinde mi kontrol et
+    if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        const message = `🚀 Join TON Pro Miner and earn crypto!\n\n💰 Get FREE mining power\n🎁 Use my referral code: ${state.referralCode}\n\n${link}`;
+        
+        // Telegram'da paylaş
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`);
+    } else {
+        // Web tarayıcıda ise kopyala
+        refLinkInput.select();
+        document.execCommand('copy');
+        showToast("✅ Link copied! Share with friends", false);
+    }
+}
+
 function showToast(msg, err=false) {
     const t = document.getElementById('toast');
     t.innerText = msg; t.style.display="block";
@@ -786,10 +938,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Navigation Items
     document.querySelectorAll('.nav-item').forEach((navItem, index) => {
         navItem.addEventListener('click', function() {
-            const views = ['dash', 'market', 'inv', 'wallet'];
+            const views = ['dash', 'market', 'inv', 'wallet', 'referral'];
             go(views[index], this);
         });
     });
+    
+    // Referral Buttons
+    const copyRefBtn = document.getElementById('copy-ref-btn');
+    if (copyRefBtn) {
+        copyRefBtn.addEventListener('click', copyReferralCode);
+        console.log('Copy referral button listener attached');
+    }
+    
+    const shareRefBtn = document.getElementById('share-ref-btn');
+    if (shareRefBtn) {
+        shareRefBtn.addEventListener('click', shareReferralLink);
+        console.log('Share referral button listener attached');
+    }
     
     console.log('All event listeners attached successfully!');
 });
