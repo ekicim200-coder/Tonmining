@@ -161,3 +161,170 @@ export async function getHistoryFromFire(walletAddress) {
         return [];
     }
 }
+
+// REFERANS SİSTEMİ FONKSİYONLARI
+export async function saveReferralCode(walletAddress, referralCode) {
+    if (!currentUser) {
+        console.error("❌ Kullanıcı giriş yapmamış!");
+        return false;
+    }
+
+    try {
+        const userDocRef = doc(db, "users", walletAddress);
+        await setDoc(userDocRef, {
+            referralCode: referralCode,
+            referralCount: 0,
+            referralEarnings: 0
+        }, { merge: true });
+        
+        console.log("✅ Referans kodu kaydedildi:", referralCode);
+        return true;
+    } catch (error) {
+        console.error("❌ Referans kodu kaydetme hatası:", error);
+        return false;
+    }
+}
+
+export async function registerReferral(newUserWallet, referrerCode) {
+    if (!currentUser) return false;
+
+    try {
+        // Referans kodu ile kullanıcıyı bul
+        const q = query(
+            collection(db, "users"),
+            where("referralCode", "==", referrerCode)
+        );
+
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            console.log("⚠️ Geçersiz referans kodu");
+            return false;
+        }
+
+        // Referans sahibinin cüzdan adresini al
+        let referrerWallet = null;
+        querySnapshot.forEach((doc) => {
+            referrerWallet = doc.id;
+        });
+
+        if (referrerWallet) {
+            // Yeni kullanıcının kaydına referans sahibini ekle
+            const newUserRef = doc(db, "users", newUserWallet);
+            await setDoc(newUserRef, {
+                referredBy: referrerWallet,
+                referredByCode: referrerCode,
+                referralDate: Date.now()
+            }, { merge: true });
+
+            // Referans sahibinin sayacını artır
+            const referrerRef = doc(db, "users", referrerWallet);
+            const referrerDoc = await getDoc(referrerRef);
+            
+            if (referrerDoc.exists()) {
+                const currentCount = referrerDoc.data().referralCount || 0;
+                await setDoc(referrerRef, {
+                    referralCount: currentCount + 1
+                }, { merge: true });
+            }
+
+            console.log("✅ Referans kaydedildi:", referrerWallet);
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error("❌ Referans kaydetme hatası:", error);
+        return false;
+    }
+}
+
+export async function addReferralCommission(buyerWallet, machinePrice) {
+    if (!currentUser) return false;
+
+    try {
+        // Alıcının kaydını kontrol et
+        const buyerRef = doc(db, "users", buyerWallet);
+        const buyerDoc = await getDoc(buyerRef);
+        
+        if (!buyerDoc.exists() || !buyerDoc.data().referredBy) {
+            console.log("ℹ️ Bu kullanıcı referans ile kaydolmamış");
+            return false;
+        }
+
+        const referrerWallet = buyerDoc.data().referredBy;
+        const commission = machinePrice * 0.4; // %40 komisyon
+
+        // Referans sahibinin bakiyesine ekle
+        const referrerRef = doc(db, "users", referrerWallet);
+        const referrerDoc = await getDoc(referrerRef);
+        
+        if (referrerDoc.exists()) {
+            const currentBalance = referrerDoc.data().balance || 0;
+            const currentEarnings = referrerDoc.data().referralEarnings || 0;
+            
+            await setDoc(referrerRef, {
+                balance: currentBalance + commission,
+                referralEarnings: currentEarnings + commission
+            }, { merge: true });
+
+            // Referans geçmişi kaydet
+            const historyId = `REF_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const historyRef = doc(db, "referralHistory", historyId);
+            
+            await setDoc(historyRef, {
+                referrerWallet: referrerWallet,
+                buyerWallet: buyerWallet,
+                commission: commission,
+                machinePrice: machinePrice,
+                date: Date.now()
+            });
+
+            console.log(`✅ Referans komisyonu eklendi: ${commission} TON -> ${referrerWallet}`);
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error("❌ Referans komisyonu ekleme hatası:", error);
+        return false;
+    }
+}
+
+export async function getReferralStats(walletAddress) {
+    if (!walletAddress) return { count: 0, earnings: 0, history: [] };
+
+    try {
+        // Kullanıcı verilerini al
+        const userRef = doc(db, "users", walletAddress);
+        const userDoc = await getDoc(userRef);
+        
+        let count = 0;
+        let earnings = 0;
+        
+        if (userDoc.exists()) {
+            count = userDoc.data().referralCount || 0;
+            earnings = userDoc.data().referralEarnings || 0;
+        }
+
+        // Referans geçmişini al
+        const q = query(
+            collection(db, "referralHistory"),
+            where("referrerWallet", "==", walletAddress)
+        );
+
+        const querySnapshot = await getDocs(q);
+        let history = [];
+        
+        querySnapshot.forEach((doc) => {
+            history.push(doc.data());
+        });
+
+        history.sort((a, b) => b.date - a.date);
+        
+        return { count, earnings, history };
+    } catch (error) {
+        console.error("Referans istatistikleri çekilemedi:", error);
+        return { count: 0, earnings: 0, history: [] };
+    }
+}
