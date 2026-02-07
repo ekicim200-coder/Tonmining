@@ -1,6 +1,15 @@
 // --- IMPORT ---
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
 
+// --- TELEGRAM WEBAPP INIT ---
+let tg = null;
+if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    console.log("✅ Telegram WebApp başlatıldı");
+}
+
 // --- AYARLAR ---
 const CFG = { rate: 0.000001, tick: 100 };
 const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; 
@@ -37,7 +46,7 @@ let graphData = new Array(20).fill(10);
 function init() {
     initAuth((uid) => {
         currentUserUid = uid;
-        console.log("✅ Sistem Hazır. User:", uid);
+        console.log("✅ User:", uid);
     });
 
     loadLocalData();
@@ -52,6 +61,48 @@ function init() {
     setInterval(graphLoop, 1000);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
+    
+    // Event listeners
+    setupEventListeners();
+}
+
+function setupEventListeners() {
+    // Connect button
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', () => toggleWallet());
+    }
+    
+    // Ad button
+    const adBtn = document.querySelector('.ad-btn');
+    if (adBtn) {
+        adBtn.addEventListener('click', () => watchAd());
+    }
+    
+    // Withdraw button
+    const withdrawBtn = document.querySelector('.w-btn');
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', () => withdraw());
+    }
+    
+    // Referral buttons
+    const copyBtn = document.getElementById('copy-ref-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => copyReferralCode());
+    }
+    
+    const shareBtn = document.getElementById('share-ref-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => shareReferralLink());
+    }
+    
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach((item, index) => {
+        item.addEventListener('click', function() {
+            const views = ['dash', 'market', 'inv', 'wallet', 'referral'];
+            go(views[index], this);
+        });
+    });
 }
 
 // --- DATA MANAGEMENT ---
@@ -76,11 +127,7 @@ function autoSave() {
 }
 
 async function syncToServer() {
-    if (!state.wallet) return;
-    if (!currentUserUid) {
-        console.log("⏳ Auth not ready yet, skipping sync...");
-        return;
-    }
+    if (!state.wallet || !currentUserUid) return;
     
     const dataToSave = {
         balance: state.balance,
@@ -106,7 +153,7 @@ async function loadServerData(walletAddress) {
     }
     
     if (!currentUserUid) {
-        showToast("Auth not ready, please retry", true);
+        showToast("Auth not ready", true);
         return;
     }
     
@@ -151,7 +198,7 @@ function calculateOfflineProgress() {
         const earned = secondsPassed * state.hashrate * CFG.rate;
         if (earned > 0) {
             state.balance += earned;
-            showToast(`Offline Gain: ${earned.toFixed(4)} TON`);
+            showToast(`Offline: +${earned.toFixed(4)} TON`);
             syncToServer();
         }
     }
@@ -159,51 +206,28 @@ function calculateOfflineProgress() {
 
 // --- ADSGRAM ---
 function initAdsgram() {
-    console.log("🔄 Adsgram başlatılıyor...");
     const BLOCK_ID = "22343";
-    
     const checkAdsgram = setInterval(() => {
         if (typeof window.Adsgram !== 'undefined') {
             clearInterval(checkAdsgram);
             try {
-                adsgramController = window.Adsgram.init({
-                    blockId: BLOCK_ID,
-                    debug: false
-                });
-                console.log(`✅ Adsgram başarıyla başlatıldı`);
+                adsgramController = window.Adsgram.init({ blockId: BLOCK_ID });
+                console.log("✅ Adsgram ready");
             } catch (error) {
-                console.error("❌ Adsgram başlatma hatası:", error);
+                console.error("❌ Adsgram error:", error);
             }
         }
     }, 100);
     
-    setTimeout(() => {
-        if (!adsgramController) {
-            clearInterval(checkAdsgram);
-            console.error("❌ Adsgram yüklenemedi");
-        }
-    }, 5000);
+    setTimeout(() => clearInterval(checkAdsgram), 5000);
 }
 
 // --- TON CONNECT ---
 function setupTonConnect() {
     tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://tonmining.vercel.app/tonconnect-manifest.json',
-        buttonRootId: 'connectBtn',
-        uiPreferences: { theme: TON_CONNECT_UI.THEME.DARK },
-        walletsListConfiguration: {
-            includeWallets: [
-                {
-                    appName: "tonkeeper",
-                    name: "Tonkeeper",
-                    imageUrl: "https://tonkeeper.com/assets/tonconnect-icon.png",
-                    aboutUrl: "https://tonkeeper.com",
-                    universalLink: "https://app.tonkeeper.com/ton-connect",
-                    bridgeUrl: "https://bridge.tonapi.io/bridge",
-                    platforms: ["ios", "android", "chrome", "firefox"]
-                }
-            ]
-        }
+        buttonRootId: null,
+        uiPreferences: { theme: TON_CONNECT_UI.THEME.DARK }
     });
 
     tonConnectUI.onStatusChange((wallet) => {
@@ -214,14 +238,18 @@ function setupTonConnect() {
             state.wallet = wallet.account.address;
             btn.innerHTML = '<i class="fas fa-wallet"></i> ' + state.wallet.slice(0,6) + '...';
             if (addrInput) addrInput.value = state.wallet;
-            
             loadServerData(state.wallet);
-            console.log("✅ Wallet Connected:", state.wallet);
+            console.log("✅ Wallet:", state.wallet);
         } else {
             state.wallet = null;
             btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
             if (addrInput) addrInput.value = "";
-            console.log("❌ Wallet Disconnected");
+            
+            // Clear referral fields
+            const refCode = document.getElementById('ref-code');
+            const refLink = document.getElementById('ref-link');
+            if (refCode) refCode.value = "";
+            if (refLink) refLink.value = "";
         }
     });
 }
@@ -234,7 +262,7 @@ function toggleWallet() {
     }
 }
 
-// --- MINING LOOP ---
+// --- MINING ---
 function loop() {
     if (state.hashrate === 0) return;
     state.balance += state.hashrate * CFG.rate * (CFG.tick / 1000);
@@ -251,12 +279,11 @@ function updateUI() {
 
 // --- FREE REWARD ---
 function checkFree() {
-    const card = document.getElementById('freeCard');
     const adArea = document.getElementById('adBtnArea');
     const timerArea = document.getElementById('timerArea');
     const timerEl = document.getElementById('freeTimer');
     
-    if (!card || !adArea || !timerArea || !timerEl) return;
+    if (!adArea || !timerArea || !timerEl) return;
     
     if (state.freeEnd > 0 && Date.now() < state.freeEnd) {
         adArea.style.display = 'none';
@@ -267,18 +294,15 @@ function checkFree() {
         timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
     } else {
         if (state.freeEnd > 0) {
-            const freeItem = state.inv.find(i => i.mid === 999);
-            if (freeItem) {
-                state.inv = state.inv.filter(i => i.mid !== 999);
-                const freeMachine = machines.find(m => m.id === 999);
-                state.hashrate -= freeMachine.rate;
-                state.freeEnd = 0;
-                saveLocalData();
-                syncToServer();
-                updateUI();
-                drawChart();
-                renderInv();
-            }
+            state.inv = state.inv.filter(i => i.mid !== 999);
+            const freeMachine = machines.find(m => m.id === 999);
+            state.hashrate -= freeMachine.rate;
+            state.freeEnd = 0;
+            saveLocalData();
+            syncToServer();
+            updateUI();
+            drawChart();
+            renderInv();
         }
         adArea.style.display = 'block';
         timerArea.style.display = 'none';
@@ -294,13 +318,12 @@ async function watchAd() {
     const now = Date.now();
     if (state.lastAdTime && (now - state.lastAdTime) < 60000) {
         const waitTime = Math.ceil((60000 - (now - state.lastAdTime)) / 1000);
-        showToast(`Wait ${waitTime}s before next ad`, true);
+        showToast(`Wait ${waitTime}s`, true);
         return;
     }
     
     try {
         showToast("Loading ad...", false);
-        
         await adsgramController.show().then(() => {
             state.lastAdTime = Date.now();
             grantMachine(999);
@@ -308,21 +331,15 @@ async function watchAd() {
             saveLocalData();
             syncToServer();
         }).catch((error) => {
-            if (error.code === 'AdNotReady') {
-                showToast("Ad not ready, try again", true);
-            } else {
-                showToast("Ad cancelled", true);
-            }
-            console.error("Ad error:", error);
+            showToast("Ad cancelled", true);
         });
     } catch (err) {
-        console.error("Watch ad error:", err);
         showToast("Ad failed", true);
     }
 }
 
 // --- PURCHASE ---
-async function buy(id, paymentMethod = 'ton') {
+window.buy = async function(id, paymentMethod = 'ton') {
     if (!tonConnectUI || !tonConnectUI.connected) {
         showToast("Connect Wallet First!", true);
         return;
@@ -330,11 +347,6 @@ async function buy(id, paymentMethod = 'ton') {
 
     const m = machines.find(x => x.id === id);
     if (!m) return;
-
-    if (m.price === 0) {
-        grantMachine(id);
-        return;
-    }
 
     if (paymentMethod === 'star') {
         buyWithStars(id);
@@ -346,7 +358,7 @@ async function buy(id, paymentMethod = 'ton') {
         };
 
         try {
-            showToast("Sending Transaction...", false);
+            showToast("Sending...", false);
             const result = await tonConnectUI.sendTransaction(transaction);
             
             if (result) {
@@ -355,59 +367,45 @@ async function buy(id, paymentMethod = 'ton') {
             }
         } catch (err) {
             console.error(err);
-            showToast("Transaction Cancelled", true);
+            showToast("Cancelled", true);
         }
     }
 }
 
 async function buyWithStars(id) {
     const m = machines.find(x => x.id === id);
-    if (!m) return;
-
-    if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
-        showToast("Bu özellik sadece Telegram içinde çalışır", true);
+    if (!m || !tg) {
+        showToast("Telegram required", true);
         return;
     }
-
-    const tg = window.Telegram.WebApp;
     
     try {
-        showToast("Telegram Stars ile ödeme başlatılıyor...", false);
+        showToast("Opening payment...", false);
         const invoiceLink = await createStarsInvoice(id, m.starPrice);
         
         tg.openInvoice(invoiceLink, (status) => {
             if (status === 'paid') {
                 grantMachine(id);
-                showToast(`✅ ${m.name} Star ile satın alındı!`, false);
-            } else if (status === 'cancelled') {
-                showToast("Ödeme iptal edildi", true);
+                showToast(`✅ ${m.name} Purchased!`, false);
             } else {
-                showToast("Ödeme başarısız", true);
+                showToast("Payment cancelled", true);
             }
         });
     } catch (err) {
         console.error(err);
-        showToast("Star ödemesi başarısız", true);
+        showToast("Payment failed", true);
     }
 }
 
 async function createStarsInvoice(machineId, starAmount) {
     const API_URL = window.location.origin + '/api/create-invoice';
-    
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            machineId: machineId,
-            starAmount: starAmount,
-            walletAddress: state.wallet
-        })
+        body: JSON.stringify({ machineId, starAmount, walletAddress: state.wallet })
     });
 
-    if (!response.ok) {
-        throw new Error('Invoice oluşturulamadı');
-    }
-
+    if (!response.ok) throw new Error('Invoice failed');
     const data = await response.json();
     return data.invoiceLink;
 }
@@ -426,7 +424,7 @@ function grantMachine(mid) {
     if (m.price > 0 && state.wallet) {
         addReferralCommission(state.wallet, m.price).then(success => {
             if (success) {
-                console.log(`✅ Referans komisyonu eklendi: ${m.price * 0.4} TON`);
+                console.log(`✅ Commission: ${m.price * 0.4} TON`);
             }
         });
     }
@@ -441,26 +439,17 @@ function grantMachine(mid) {
 // --- WITHDRAW ---
 async function withdraw() {
     if (!state.wallet) {
-        showToast("Cüzdan bağlı değil!", true);
+        showToast("Connect wallet!", true);
         return;
     }
 
     const inputElement = document.getElementById('w-amt');
-    if (!inputElement) {
-        showToast("Miktar giriş alanı bulunamadı!", true);
-        return;
-    }
+    if (!inputElement) return;
 
-    const amountStr = inputElement.value.trim();
-    if (!amountStr) {
-        showToast("Lütfen miktar girin!", true);
-        return;
-    }
-
-    const amount = parseFloat(amountStr);
+    const amount = parseFloat(inputElement.value.trim());
 
     if (isNaN(amount) || amount <= 0) {
-        showToast("Geçerli bir miktar girin!", true);
+        showToast("Invalid amount!", true);
         return;
     }
 
@@ -470,13 +459,12 @@ async function withdraw() {
     }
 
     if (amount > state.balance) {
-        showToast("Yetersiz bakiye!", true);
+        showToast("Insufficient balance!", true);
         return;
     }
 
     try {
-        showToast("İşleniyor...", false);
-        
+        showToast("Processing...", false);
         const success = await saveWithdrawalRequest(state.wallet, amount);
         
         if (success) {
@@ -485,14 +473,14 @@ async function withdraw() {
             await syncToServer();
             updateUI();
             inputElement.value = '';
-            showToast("✅ Çekim talebi oluşturuldu!", false);
+            showToast("✅ Withdrawal requested!", false);
             setTimeout(() => renderHistory(), 500);
         } else {
-            showToast("Çekim talebi başarısız!", true);
+            showToast("Failed!", true);
         }
     } catch (error) {
-        console.error("Withdraw error:", error);
-        showToast("Bir hata oluştu!", true);
+        console.error(error);
+        showToast("Error!", true);
     }
 }
 
@@ -619,7 +607,7 @@ function renderInv() {
         l.innerHTML += `
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
-            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited Time':'Unlimited'}</p></div>
+            <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited':'Unlimited'}</p></div>
             <div class="ci-action" style="color:${isFree?'var(--danger)':'var(--success)'}; font-weight:bold; font-size:0.8rem;">${isFree?'FREE':'ACTIVE'}</div>
         </div>`;
     });
@@ -630,7 +618,7 @@ async function renderHistory() {
     if (!listEl) return;
 
     if (!state.wallet) {
-        listEl.innerHTML = "<p style='color:#666'>Please connect wallet.</p>";
+        listEl.innerHTML = "<p style='color:#666'>Connect wallet</p>";
         return;
     }
 
@@ -638,24 +626,24 @@ async function renderHistory() {
     const history = await getHistoryFromFire(state.wallet);
 
     if (history.length === 0) {
-        listEl.innerHTML = "<p style='color:#666'>No transactions yet.</p>";
+        listEl.innerHTML = "<p style='color:#666'>No transactions</p>";
         return;
     }
 
     let html = "";
     history.forEach(tx => {
         const date = new Date(tx.requestDate).toLocaleString();
-        const color = tx.status === 'pending' ? 'orange' : (tx.status === 'paid' ? '#10b981' : 'rejected');
+        const color = tx.status === 'pending' ? 'orange' : (tx.status === 'paid' ? '#10b981' : '#ff453a');
         const statusText = tx.status === 'pending' ? 'pending' : (tx.status === 'paid' ? 'paid' : 'rejected');
 
         html += `
-        <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between;">
             <div>
                 <div style="font-weight: bold; color: #fff;">-${tx.amount} TON</div>
                 <div style="font-size: 0.75rem; color: #888;">${date}</div>
             </div>
             <div style="color: ${color}; font-size: 0.85rem; font-weight: bold;">
-                ${statusText} <i class="fas fa-circle" style="font-size: 6px; vertical-align: middle;"></i>
+                ${statusText}
             </div>
         </div>`;
     });
@@ -663,10 +651,10 @@ async function renderHistory() {
     listEl.innerHTML = html;
 }
 
-// --- REFERRAL SYSTEM ---
+// --- REFERRAL ---
 async function initReferralCode(walletAddress) {
     if (!walletAddress) return;
-    const code = 'REF' + walletAddress.substring(0, 8).toUpperCase();
+    const code = 'REF' + walletAddress.substring(2, 10).toUpperCase();
     state.referralCode = code;
     await saveReferralCode(walletAddress, code);
     updateReferralUI();
@@ -675,14 +663,26 @@ async function initReferralCode(walletAddress) {
 async function checkReferralParam(walletAddress) {
     if (!walletAddress || state.referredBy) return;
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
+    // Check Telegram start parameter
+    let refCode = null;
+    
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+        refCode = tg.initDataUnsafe.start_param;
+        console.log("Referral from Telegram:", refCode);
+    }
+    
+    // Fallback to URL parameter
+    if (!refCode) {
+        const urlParams = new URLSearchParams(window.location.search);
+        refCode = urlParams.get('ref');
+    }
     
     if (refCode && refCode !== state.referralCode) {
         const success = await registerReferral(walletAddress, refCode);
         if (success) {
-            showToast("✅ Referral bonus activated!", false);
+            showToast("✅ Referral activated!", false);
             state.referredBy = refCode;
+            syncToServer();
         }
     }
 }
@@ -698,8 +698,9 @@ function updateReferralUI() {
     }
     
     if (refLinkInput && state.referralCode) {
-        const baseUrl = window.location.origin + window.location.pathname;
-        refLinkInput.value = `${baseUrl}?ref=${state.referralCode}`;
+        // Use Telegram bot link for sharing
+        const botUsername = 'YourBotUsername'; // BURAYA BOT USERNAME GİRİN
+        refLinkInput.value = `https://t.me/${botUsername}?start=${state.referralCode}`;
     }
     
     if (refCountEl) {
@@ -723,18 +724,23 @@ async function renderReferralHistory() {
     updateReferralUI();
     
     if (stats.history.length === 0) {
-        listEl.innerHTML = "<p style='color:#666'>No referrals yet. Share your link!</p>";
+        listEl.innerHTML = "<p style='color:#666'>No referrals yet</p>";
         return;
     }
     
     let html = "";
     stats.history.forEach(ref => {
-        const date = new Date(ref.date).toLocaleString();
+        const date = new Date(ref.date).toLocaleString('tr-TR', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
         const buyerShort = ref.buyerWallet.substring(0, 6) + '...' + ref.buyerWallet.substring(ref.buyerWallet.length - 4);
         
         html += `
         <div style="background: rgba(16,185,129,0.1); padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.3);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                 <div style="font-weight: bold; color: var(--success);">+${ref.commission.toFixed(2)} TON</div>
                 <div style="font-size: 0.75rem; color: #888;">${date}</div>
             </div>
@@ -748,28 +754,70 @@ async function renderReferralHistory() {
 }
 
 function copyReferralCode() {
+    if (!state.referralCode) {
+        showToast("Connect wallet first!", true);
+        return;
+    }
+    
     const refCodeInput = document.getElementById('ref-code');
     if (refCodeInput) {
-        refCodeInput.select();
-        document.execCommand('copy');
-        showToast("✅ Referral code copied!", false);
+        // Modern clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(refCodeInput.value).then(() => {
+                showToast("✅ Code copied!", false);
+                
+                // Telegram haptic feedback
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            }).catch(() => {
+                // Fallback
+                refCodeInput.select();
+                document.execCommand('copy');
+                showToast("✅ Code copied!", false);
+            });
+        } else {
+            // Fallback for older browsers
+            refCodeInput.select();
+            refCodeInput.setSelectionRange(0, 99999); // Mobile
+            document.execCommand('copy');
+            showToast("✅ Code copied!", false);
+        }
     }
 }
 
 function shareReferralLink() {
-    const refLinkInput = document.getElementById('ref-link');
-    if (!refLinkInput) return;
+    if (!state.referralCode) {
+        showToast("Connect wallet first!", true);
+        return;
+    }
     
-    const link = refLinkInput.value;
+    const botUsername = 'YourBotUsername'; // BURAYA BOT USERNAME GİRİN
+    const shareUrl = `https://t.me/${botUsername}?start=${state.referralCode}`;
+    const shareText = `🚀 Join TON Pro Miner!\n\n💰 Earn crypto by mining\n🎁 Use my code: ${state.referralCode}\n\n${shareUrl}`;
     
-    if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        const message = `🚀 Join TON Pro Miner and earn crypto!\n\n💰 Get FREE mining power\n🎁 Use my referral code: ${state.referralCode}\n\n${link}`;
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`);
+    if (tg) {
+        // Telegram WebApp share
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+        
+        // Haptic feedback
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('medium');
+        }
     } else {
-        refLinkInput.select();
-        document.execCommand('copy');
-        showToast("✅ Link copied! Share with friends", false);
+        // Fallback: Copy link
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("✅ Link copied!", false);
+            });
+        } else {
+            const refLinkInput = document.getElementById('ref-link');
+            if (refLinkInput) {
+                refLinkInput.select();
+                document.execCommand('copy');
+                showToast("✅ Link copied!", false);
+            }
+        }
     }
 }
 
@@ -781,25 +829,16 @@ function showToast(msg, err=false) {
     t.style.border = err ? "1px solid #ff453a" : "1px solid #10b981";
     t.style.color = err ? "#ff453a" : "#10b981";
     setTimeout(()=>t.style.display="none", 2000);
+    
+    // Telegram haptic
+    if (tg && tg.HapticFeedback) {
+        if (err) {
+            tg.HapticFeedback.notificationOccurred('error');
+        } else {
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+    }
 }
 
-// --- GLOBAL BINDINGS ---
-window.toggleWallet = toggleWallet;
-window.watchAd = watchAd;
-window.buy = buy;
-window.withdraw = withdraw;
-window.go = go;
-window.copyReferralCode = copyReferralCode;
-window.shareReferralLink = shareReferralLink;
-
-// --- DEBUG ---
-console.log("=== SCRIPT LOADED ===");
-console.log("toggleWallet:", typeof window.toggleWallet);
-console.log("buy:", typeof window.buy);
-console.log("watchAd:", typeof window.watchAd);
-console.log("withdraw:", typeof window.withdraw);
-console.log("go:", typeof window.go);
-console.log("====================");
-
-// --- INIT ---
+// Init
 init();
