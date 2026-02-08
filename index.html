@@ -10,6 +10,24 @@
 </head>
 <body>
 
+    <!-- REFERRAL CODE POPUP (İlk açılışta gösterilecek) -->
+    <div id="refPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:var(--bg-secondary); border-radius:20px; padding:30px; max-width:90%; width:400px; text-align:center;">
+            <i class="fas fa-gift fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
+            <h2 style="margin-bottom:10px;">Got a Referral Code?</h2>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:20px;">Enter your friend's code to get bonus rewards!</p>
+            
+            <input type="text" id="refInput" class="w-input" placeholder="Enter referral code (e.g., REFUQB12345)" style="margin-bottom:15px; text-transform:uppercase;">
+            
+            <div style="display:flex; gap:10px;">
+                <button class="w-btn" onclick="skipReferral()" style="flex:1; background:#555;">Skip</button>
+                <button class="w-btn" onclick="applyReferral()" style="flex:1;">Apply Code</button>
+            </div>
+            
+            <p style="color:#666; font-size:0.75rem; margin-top:15px;">You can only use a referral code once!</p>
+        </div>
+    </div>
+
     <div class="header">
         <div class="bal-box">
             <span class="bal-lbl">TOTAL BALANCE</span>
@@ -103,6 +121,12 @@
             <h3>Referral System</h3>
             <p style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Earn 40% commission from your referrals' purchases!</p>
             
+            <!-- Referral Status Badge -->
+            <div id="refStatusBadge" style="display:none; background:rgba(16,185,129,0.2); border:1px solid var(--success); border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">
+                <i class="fas fa-check-circle" style="color:var(--success); margin-right:8px;"></i>
+                <span style="color:var(--success); font-weight:bold;">Referred by: <span id="refByCode">---</span></span>
+            </div>
+
             <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 10px;">Your Referral Code</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
