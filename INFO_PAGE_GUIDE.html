@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info Sayfası - Özellikler Rehberi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a5f 0%, #152844 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #40e0d0;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        h2 {
+            color: #40e0d0;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #40e0d0;
+        }
+
+        h3 {
+            color: #00d9ff;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        p, li {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            margin-left: 20px;
+        }
+
+        .feature-box {
+            background: rgba(30, 58, 95, 0.4);
+            border: 1px solid #40e0d0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .section-card {
+            background: rgba(21, 40, 68, 0.6);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .section-card h4 {
+            color: #40e0d0;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #0f1e33;
+            border: 1px solid #40e0d0;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 TON Pro Miner - Info Sayfası (info.html)</h1>
+
+        <div class="info">
+            <strong>ℹ️ Bilgi:</strong> Bu dokümantasyon, yeni eklenen info.html sayfasının özelliklerini ve kullanımını açıklamaktadır.
+        </div>
+
+        <h2>📋 Sayfanın İçeriği</h2>
+
+        <h3>1. Başlık & Tanıtım</h3>
+        <div class="feature-box">
+            <p><strong>Başlık:</strong> "How It Works"</p>
+            <p><strong>Açıklama:</strong> "Learn about TON Pro Miner and start earning today"</p>
+            <p>Sayfanın en üst kısmında dikkat çekici başlık ve altyazı bulunmaktadır.</p>
+        </div>
+
+        <h3>2. Geri Dönüş Butonu</h3>
+        <div class="feature-box">
+            <p>Sayfanın sağ üst köşesinde sabit bir geri butonu bulunmaktadır.</p>
+            <p><strong>İşlevi:</strong> Tıklandığında önceki sayfaya geri döner</p>
+            <p><strong>Stil:</strong> Dairesel, cyan renkli, hover efektli</p>
+        </div>
+
+        <h2>📚 Ana Bölümler</h2>
+
+        <div class="section-grid">
+            <div class="section-card">
+                <h4>🚀 Başlangıç (Getting Started)</h4>
+                <p>4 adımlı basit rehber:</p>
+                <ul>
+                    <li>Cüzdan Bağlantısı</li>
+                    <li>İşlemci Satın Alma</li>
+                    <li>Madencilik Başlatma</li>
+                    <li>Para Çekme</li>
+                </ul>
+            </div>
+
+            <div class="section-card">
+                <h4>💰 Ödül Kazanma (How to Earn)</h4>
+                <p>Kazanç yöntemleri:</p>
+                <ul>
+                    <li>Madencilik Ödülleri</li>
+                    <li>Video Reklam Bonusu</li>
+                    <li>Cihaz Yükseltme</li>
+                    <li>Aktif Madencilik</li>
+                </ul>
+            </div>
+
+            <div class="section-card">
+                <h4>🤝 Referans Sistemi</h4>
+                <p>Paylaşım ve komisyon:</p>
+                <ul>
+                    <li>%40 Komisyon Oranı</li>
+                    <li>Arkadaş Davet</li>
+                    <li>Leaderboard Ödülleri</li>
+                    <li>Kolay Paylaşım</li>
+                </ul>
+            </div>
+
+            <div class="section-card">
+                <h4>🏢 Hakkımızda (About Us)</h4>
+                <p>Şirket bilgisi:</p>
+                <ul>
+                    <li>Kurumsal Altyapı</li>
+                    <li>Güvenlik</li>
+                    <li>Global Ağ</li>
+                    <li>24/7 Destek</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>✨ Tasarım Özellikleri</h2>
+
+        <div class="feature-box">
+            <h3>Renkler & Tema</h3>
+            <ul>
+                <li><span class="success">✓</span> Cyan (#40e0d0) - Birincil renk</li>
+                <li><span class="success">✓</span> Mavi (#3b82f6) - Vurgu rengi</li>
+                <li><span class="success">✓</span> Yeşil (#10b981) - Başarı göstergesi</li>
+                <li><span class="success">✓</span> Mor (#d946ef) - Özel öğeler</li>
+            </ul>
+
+            <h3 style="margin-top: 15px;">Bileşenler</h3>
+            <ul>
+                <li><span class="success">✓</span> <strong>Makale Kartları</strong> - İkonlu, başlıklı, açıklama metinli</li>
+                <li><span class="success">✓</span> <strong>Adım Kutuları</strong> - Numaralı, renkli geçiş efekti</li>
+                <li><span class="success">✓</span> <strong>Özellik Kutuları</strong> - 2 sütunlu grid, compact tasarım</li>
+                <li><span class="success">✓</span> <strong>Hakkında Kutusu</strong> - Gradient arka plan, badge</li>
+                <li><span class="success">✓</span> <strong>Support Bölümü</strong> - Vurgulu, CTA butonu</li>
+            </ul>
+
+            <h3 style="margin-top: 15px;">Animasyonlar</h3>
+            <ul>
+                <li><span class="success">✓</span> Kart hover - 0.3s scale animasyonu</li>
+                <li><span class="success">✓</span> Buton tıklaması - 0.2s efekti</li>
+                <li><span class="success">✓</span> Sayfa yükleme - Smooth fade in</li>
+            </ul>
+        </div>
+
+        <h2>📱 Responsive Tasarım</h2>
+
+        <div class="feature-box">
+            <ul>
+                <li><span class="success">✓</span> <strong>Desktop:</strong> 480px max-width, centered</li>
+                <li><span class="success">✓</span> <strong>Tablet:</strong> Full width, padding</li>
+                <li><span class="success">✓</span> <strong>Mobile:</strong> Optimize edilmiş, dokunma-friendly</li>
+                <li><span class="success">✓</span> <strong>Breakpoint:</strong> 380px altında ek ayarlamalar</li>
+            </ul>
+        </div>
+
+        <h2>📧 Support Fonksiyonalitesi</h2>
+
+        <div class="code-block">
+function openSupport() {
+    const email = "support@tonprominer.com";
+    const subject = "TON Pro Miner Support Request";
+    window.location.href = `mailto:${email}?subject=${subject}`;
+}
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Önemli:</strong> Email adresini kendi adresinizle değiştirmeniz gerekmektedir.
+            <p style="margin-top: 10px;"><strong>Neresi değiştirilmeli:</strong> info.html dosyasında 542. satırında <code>support@tonprominer.com</code> yerine kendi email adresinizi yazın.</p>
+        </div>
+
+        <h2>🔗 Navigasyon Entegrasyonu</h2>
+
+        <div class="feature-box">
+            <p><strong>index.html'de yapılan değişiklikler:</strong></p>
+            <p>Navigation barına yeni bir ikon eklendi:</p>
+            
+            <div class="code-block">
+&lt;div class="nav-item" onclick="window.location.href='info.html'" title="How It Works"&gt;
+    &lt;i class="fas fa-circle-info"&gt;&lt;/i&gt;
+&lt;/div&gt;
+            </div>
+
+            <p style="margin-top: 15px;"><strong>Sonuç:</strong> Artık navigation barında 6 buton olacaktır (eskiden 5 idi).</p>
+        </div>
+
+        <h2>📚 İçerik Detayları</h2>
+
+        <h3>Makale Kartları İçeriği</h3>
+
+        <div class="feature-box">
+            <h4>💻 Madencilik Ödülleri</h4>
+            <p>"Earn TON tokens by mining continuously. Your daily earnings depend on your total hash power (GH/s) and network difficulty."</p>
+
+            <h4>🎬 Video Reklam Bonusu</h4>
+            <p>"Get a free Dark Matter Node by watching short video ads. This gives +300 GH/s for 30 minutes - watch multiple times daily!"</p>
+
+            <h4>⚙️ Cihaz Yükseltme</h4>
+            <p>"Purchase more powerful mining devices to increase your daily TON earnings. Better devices = faster rewards!"</p>
+
+            <h4>⚡ Aktif Madencilik</h4>
+            <p>"Your devices work 24/7. The longer you stay active and upgrade your rig, the more TON you'll accumulate over time."</p>
+        </div>
+
+        <h2>🎯 Referans Sistemi Detayları</h2>
+
+        <div class="feature-box">
+            <p><strong>Özellik Kutuları:</strong></p>
+            <ul>
+                <li>40% - Komisyon Oranı</li>
+                <li>∞ - Sınırsız Referans</li>
+                <li>⚡ - Anında Kredi</li>
+                <li>🏅 - Top 50 Ödüller</li>
+            </ul>
+        </div>
+
+        <h2>🏢 Hakkımızda Bölümü</h2>
+
+        <div class="feature-box">
+            <p><strong>Başlık:</strong> "Enterprise Server Infrastructure"</p>
+            <p><strong>Açıklama:</strong> "TON Pro Miner is built on enterprise-grade server infrastructure with multiple redundant data centers located worldwide. We ensure 99.9% uptime and maximum security for your mining operations."</p>
+            <p><strong>Badge:</strong> "Enterprise Grade" - Yeşil vurgulu</p>
+
+            <h4 style="margin-top: 15px;">Alt Kartlar:</h4>
+            <ul>
+                <li>🔒 Güvenli & Güvenilir</li>
+                <li>🌍 Küresel Ağ</li>
+                <li>🎧 24/7 Destek</li>
+                <li>🔄 Otomatik Güncellemeler</li>
+            </ul>
+        </div>
+
+        <h2>⚙️ Teknik Bilgiler</h2>
+
+        <div class="feature-box">
+            <h3>Dosya Boyutu</h3>
+            <p>info.html: ~20 KB (CSS inline, Font Awesome CDN)</p>
+
+            <h3>Bağımlılıklar</h3>
+            <ul>
+                <li>Font Awesome 6.4.0 (CDN)</li>
+                <li>style.css (ortak stil dosyası)</li>
+                <li>Telegramm Web App API (opsiyonel)</li>
+            </ul>
+
+            <h3>Browser Uyumluluğu</h3>
+            <ul>
+                <li>Chrome 90+</li>
+                <li>Firefox 88+</li>
+                <li>Safari 14+</li>
+                <li>Edge 90+</li>
+                <li>Telegram WebApp</li>
+            </ul>
+        </div>
+
+        <h2>✅ Kontrol Listesi</h2>
+
+        <div class="feature-box">
+            <ul>
+                <li><span class="success">✓</span> Sayfanın yapısı tamamlanmış</li>
+                <li><span class="success">✓</span> Tüm bölümler doldurulmuş</li>
+                <li><span class="success">✓</span> Tasarım tutarlı ve profesyonel</li>
+                <li><span class="success">✓</span> Support butonu fonksiyonel</li>
+                <li><span class="success">✓</span> Responsive tasarım uygulanmış</li>
+                <li><span class="success">✓</span> İkonlar ve animasyonlar eklendi</li>
+                <li><span class="success">✓</span> Navigation entegrasyonu yapılmış</li>
+            </ul>
+        </div>
+
+        <h2>📝 Sonraki Adımlar (Opsiyonel)</h2>
+
+        <div class="info">
+            <h3>Geliştirme Önerileri:</h3>
+            <ul>
+                <li>📧 Email backend'i entegre edin (Node.js, SendGrid, etc.)</li>
+                <li>🔍 SEO optimizasyonu yapın</li>
+                <li>💬 Canlı sohbet (Live Chat) ekleyin</li>
+                <li>📊 Analytics takibi ayarlayın</li>
+                <li>🌍 Çoklu dil desteği ekleyin</li>
+                <li>📱 PWA olarak yapılandırın</li>
+            </ul>
+        </div>
+
+    </div>
+</body>
+</html>
