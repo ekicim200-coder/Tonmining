@@ -102,7 +102,7 @@
             <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
             <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
             
-            <button class="w-btn">WITHDRAW</button>
+            <button class="w-btn" id="withdraw-btn">WITHDRAW</button>
 
             <div class="history-section" style="margin-top: 20px; text-align: left;">
                 <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
@@ -111,16 +111,6 @@
                 <div id="tx-history-list">
                     <p style="color:#666; font-size: 0.9rem;">Loading...</p>
                 </div>
-            </div>
-
-            <!-- CONTACT SECTION -->
-            <div style="margin-top: 30px; padding: 20px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); border-radius: 12px; text-align: center;">
-                <i class="fas fa-envelope fa-2x" style="color: var(--primary); margin-bottom: 10px;"></i>
-                <h4 style="margin-bottom: 10px;">Need Help?</h4>
-                <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 15px;">Contact us for support, questions, or feedback</p>
-                <a href="mailto:support@tonprominer.com" style="display: inline-block; padding: 12px 30px; background: var(--primary); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
-                    <i class="fas fa-paper-plane"></i> support@tonprominer.com
-                </a>
             </div>
         </div>
     </div>
@@ -176,16 +166,6 @@
                     <p style="color:#666; font-size: 0.9rem;">Loading...</p>
                 </div>
             </div>
-
-            <!-- CONTACT SECTION -->
-            <div style="margin-top: 30px; padding: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; text-align: center;">
-                <i class="fas fa-headset fa-2x" style="color: var(--success); margin-bottom: 10px;"></i>
-                <h4 style="margin-bottom: 10px;">Questions about Referrals?</h4>
-                <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 15px;">We're here to help with your referral program</p>
-                <a href="mailto:support@tonprominer.com" style="display: inline-block; padding: 12px 30px; background: var(--success); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
-                    <i class="fas fa-envelope"></i> Contact Support
-                </a>
-            </div>
         </div>
     </div>
 
@@ -199,8 +179,4 @@
 
     <div id="toast">Message</div>
 
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js"></script>
-</body>
-</html>
+    <script data-cfasync="false" src="
