@@ -1,22 +1,24 @@
 // --- IMPORT ---
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
 
-// --- TELEGRAM WEBAPP INIT ---
+// --- TELEGRAM WEBAPP ---
 let tg = null;
 if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    console.log("✅ Telegram WebApp başlatıldı");
+    console.log("✅ Telegram WebApp ready");
 }
 
-// --- AYARLAR ---
+// --- CONFIG ---
 const CFG = { rate: 0.000001, tick: 100 };
 const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; 
+const BOT_USERNAME = "YourBotUsername"; // ⚠️ BURAYA BOT USERNAME GİRİN!
 
 let tonConnectUI;
 let currentUserUid = null;
 let adsgramController;
+let referralCodePending = null;
 
 let state = { 
     balance: 1.00, 
@@ -29,7 +31,9 @@ let state = {
     referralCode: null,
     referredBy: null,
     referralCount: 0,
-    referralEarnings: 0
+    referralEarnings: 0,
+    referralLocked: false,
+    referralBonusReceived: false
 };
 
 const machines = [
@@ -62,47 +66,92 @@ function init() {
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
     
-    // Event listeners
     setupEventListeners();
+    checkReferralPopup();
 }
 
 function setupEventListeners() {
-    // Connect button
     const connectBtn = document.getElementById('connectBtn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', () => toggleWallet());
-    }
+    if (connectBtn) connectBtn.addEventListener('click', () => toggleWallet());
     
-    // Ad button
     const adBtn = document.querySelector('.ad-btn');
-    if (adBtn) {
-        adBtn.addEventListener('click', () => watchAd());
-    }
+    if (adBtn) adBtn.addEventListener('click', () => watchAd());
     
-    // Withdraw button
     const withdrawBtn = document.querySelector('.w-btn');
-    if (withdrawBtn) {
-        withdrawBtn.addEventListener('click', () => withdraw());
-    }
+    if (withdrawBtn) withdrawBtn.addEventListener('click', () => withdraw());
     
-    // Referral buttons
     const copyBtn = document.getElementById('copy-ref-btn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => copyReferralCode());
-    }
+    if (copyBtn) copyBtn.addEventListener('click', () => copyReferralCode());
     
     const shareBtn = document.getElementById('share-ref-btn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', () => shareReferralLink());
-    }
+    if (shareBtn) shareBtn.addEventListener('click', () => shareReferralLink());
     
-    // Navigation
     document.querySelectorAll('.nav-item').forEach((item, index) => {
         item.addEventListener('click', function() {
             const views = ['dash', 'market', 'inv', 'wallet', 'referral'];
             go(views[index], this);
         });
     });
+}
+
+// --- REFERRAL POPUP ---
+function checkReferralPopup() {
+    let refCode = null;
+    
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+        refCode = tg.initDataUnsafe.start_param;
+    }
+    
+    if (!refCode) {
+        const urlParams = new URLSearchParams(window.location.search);
+        refCode = urlParams.get('ref');
+    }
+    
+    const hasUsedRef = localStorage.getItem('hasUsedReferral');
+    
+    if (refCode && !hasUsedRef) {
+        referralCodePending = refCode;
+        const refInput = document.getElementById('refInput');
+        if (refInput) refInput.value = refCode;
+        showRefPopup();
+    }
+}
+
+function showRefPopup() {
+    const popup = document.getElementById('refPopup');
+    if (popup) popup.style.display = 'flex';
+}
+
+function hideRefPopup() {
+    const popup = document.getElementById('refPopup');
+    if (popup) popup.style.display = 'none';
+}
+
+window.skipReferral = function() {
+    hideRefPopup();
+    localStorage.setItem('hasUsedReferral', 'skipped');
+}
+
+window.applyReferral = async function() {
+    const refInput = document.getElementById('refInput');
+    if (!refInput) return;
+    
+    const code = refInput.value.trim().toUpperCase();
+    
+    if (!code) {
+        showToast("Please enter a code!", true);
+        return;
+    }
+    
+    if (!code.startsWith('REF') || code.length < 8) {
+        showToast("Invalid code format!", true);
+        return;
+    }
+    
+    referralCodePending = code;
+    hideRefPopup();
+    localStorage.setItem('hasUsedReferral', 'applied');
+    showToast("Code saved! Connect wallet to activate", false);
 }
 
 // --- DATA MANAGEMENT ---
@@ -138,13 +187,15 @@ async function syncToServer() {
         referralCode: state.referralCode,
         referredBy: state.referredBy,
         referralCount: state.referralCount,
-        referralEarnings: state.referralEarnings
+        referralEarnings: state.referralEarnings,
+        referralLocked: state.referralLocked,
+        referralBonusReceived: state.referralBonusReceived
     };
     await saveUserToFire(state.wallet, dataToSave);
 }
 
 async function loadServerData(walletAddress) {
-    showToast("Syncing data...", false);
+    showToast("Syncing...", false);
     
     let attempts = 0;
     while (!currentUserUid && attempts < 50) {
@@ -170,23 +221,76 @@ async function loadServerData(walletAddress) {
         state.referredBy = serverData.referredBy || null;
         state.referralCount = serverData.referralCount || 0;
         state.referralEarnings = serverData.referralEarnings || 0;
+        state.referralLocked = serverData.referralLocked || false;
+        state.referralBonusReceived = serverData.referralBonusReceived || false;
         
         if (!state.referralCode) {
             await initReferralCode(walletAddress);
         }
         
-        await checkReferralParam(walletAddress);
+        if (referralCodePending && !state.referredBy) {
+            await applyPendingReferral(walletAddress);
+        }
         
         calculateOfflineProgress();
         updateUI();
+        updateReferralUI();
         drawChart();
         saveLocalData();
-        showToast("Data Synced ✅");
+        showToast("Synced ✅");
     } else {
         await initReferralCode(walletAddress);
-        await checkReferralParam(walletAddress);
+        if (referralCodePending && !state.referredBy) {
+            await applyPendingReferral(walletAddress);
+        }
         syncToServer();
     }
+}
+
+async function applyPendingReferral(walletAddress) {
+    if (!referralCodePending) return;
+    
+    showToast("Activating referral...", false);
+    const success = await registerReferral(walletAddress, referralCodePending);
+    
+    if (success) {
+        state.referredBy = referralCodePending;
+        state.referralLocked = true;
+        
+        // 🎁 HEDİYE: Basic Chip v1
+        if (!state.referralBonusReceived) {
+            grantReferralBonus();
+        }
+        
+        showToast("✅ Referral + FREE machine!", false);
+        updateReferralUI();
+        syncToServer();
+    } else {
+        showToast("❌ Invalid or used code!", true);
+    }
+    
+    referralCodePending = null;
+}
+
+// 🎁 REFERANS HEDİYESİ FONKSİYONU
+function grantReferralBonus() {
+    const basicChip = machines.find(m => m.id === 1);
+    
+    state.inv.push({ mid: 1, uid: Date.now(), bonus: true });
+    state.hashrate += basicChip.rate;
+    state.referralBonusReceived = true;
+    
+    saveLocalData();
+    syncToServer();
+    updateUI();
+    drawChart();
+    renderInv();
+    
+    console.log("🎁 Bonus: Basic Chip v1!");
+    
+    setTimeout(() => {
+        showToast("🎁 +5 GH/s Basic Chip!", false);
+    }, 1000);
 }
 
 function calculateOfflineProgress() {
@@ -207,19 +311,18 @@ function calculateOfflineProgress() {
 // --- ADSGRAM ---
 function initAdsgram() {
     const BLOCK_ID = "22343";
-    const checkAdsgram = setInterval(() => {
+    const check = setInterval(() => {
         if (typeof window.Adsgram !== 'undefined') {
-            clearInterval(checkAdsgram);
+            clearInterval(check);
             try {
                 adsgramController = window.Adsgram.init({ blockId: BLOCK_ID });
                 console.log("✅ Adsgram ready");
             } catch (error) {
-                console.error("❌ Adsgram error:", error);
+                console.error("❌ Adsgram:", error);
             }
         }
     }, 100);
-    
-    setTimeout(() => clearInterval(checkAdsgram), 5000);
+    setTimeout(() => clearInterval(check), 5000);
 }
 
 // --- TON CONNECT ---
@@ -239,13 +342,10 @@ function setupTonConnect() {
             btn.innerHTML = '<i class="fas fa-wallet"></i> ' + state.wallet.slice(0,6) + '...';
             if (addrInput) addrInput.value = state.wallet;
             loadServerData(state.wallet);
-            console.log("✅ Wallet:", state.wallet);
         } else {
             state.wallet = null;
             btn.innerHTML = '<i class="fas fa-wallet"></i> Connect';
             if (addrInput) addrInput.value = "";
-            
-            // Clear referral fields
             const refCode = document.getElementById('ref-code');
             const refLink = document.getElementById('ref-link');
             if (refCode) refCode.value = "";
@@ -255,11 +355,8 @@ function setupTonConnect() {
 }
 
 function toggleWallet() {
-    if (tonConnectUI.connected) {
-        tonConnectUI.disconnect();
-    } else {
-        tonConnectUI.openModal();
-    }
+    if (tonConnectUI.connected) tonConnectUI.disconnect();
+    else tonConnectUI.openModal();
 }
 
 // --- MINING ---
@@ -311,7 +408,7 @@ function checkFree() {
 
 async function watchAd() {
     if (!adsgramController) {
-        showToast("Ad system not ready", true);
+        showToast("Ad not ready", true);
         return;
     }
     
@@ -327,10 +424,10 @@ async function watchAd() {
         await adsgramController.show().then(() => {
             state.lastAdTime = Date.now();
             grantMachine(999);
-            showToast("✅ FREE Device Granted!", false);
+            showToast("✅ FREE Device!", false);
             saveLocalData();
             syncToServer();
-        }).catch((error) => {
+        }).catch(() => {
             showToast("Ad cancelled", true);
         });
     } catch (err) {
@@ -341,7 +438,7 @@ async function watchAd() {
 // --- PURCHASE ---
 window.buy = async function(id, paymentMethod = 'ton') {
     if (!tonConnectUI || !tonConnectUI.connected) {
-        showToast("Connect Wallet First!", true);
+        showToast("Connect Wallet!", true);
         return;
     }
 
@@ -363,7 +460,7 @@ window.buy = async function(id, paymentMethod = 'ton') {
             
             if (result) {
                 grantMachine(id);
-                showToast(`✅ ${m.name} Purchased!`, false);
+                showToast(`✅ ${m.name}!`, false);
             }
         } catch (err) {
             console.error(err);
@@ -380,20 +477,20 @@ async function buyWithStars(id) {
     }
     
     try {
-        showToast("Opening payment...", false);
+        showToast("Opening...", false);
         const invoiceLink = await createStarsInvoice(id, m.starPrice);
         
         tg.openInvoice(invoiceLink, (status) => {
             if (status === 'paid') {
                 grantMachine(id);
-                showToast(`✅ ${m.name} Purchased!`, false);
+                showToast(`✅ ${m.name}!`, false);
             } else {
-                showToast("Payment cancelled", true);
+                showToast("Cancelled", true);
             }
         });
     } catch (err) {
         console.error(err);
-        showToast("Payment failed", true);
+        showToast("Failed", true);
     }
 }
 
@@ -423,9 +520,7 @@ function grantMachine(mid) {
     
     if (m.price > 0 && state.wallet) {
         addReferralCommission(state.wallet, m.price).then(success => {
-            if (success) {
-                console.log(`✅ Commission: ${m.price * 0.4} TON`);
-            }
+            if (success) console.log(`✅ Commission: ${m.price * 0.4} TON`);
         });
     }
     
@@ -454,12 +549,12 @@ async function withdraw() {
     }
 
     if (amount < 100) {
-        showToast("Minimum 100 TON!", true);
+        showToast("Min 100 TON!", true);
         return;
     }
 
     if (amount > state.balance) {
-        showToast("Insufficient balance!", true);
+        showToast("Insufficient!", true);
         return;
     }
 
@@ -473,7 +568,7 @@ async function withdraw() {
             await syncToServer();
             updateUI();
             inputElement.value = '';
-            showToast("✅ Withdrawal requested!", false);
+            showToast("✅ Requested!", false);
             setTimeout(() => renderHistory(), 500);
         } else {
             showToast("Failed!", true);
@@ -551,7 +646,7 @@ function graphLoop() {
 
 function termLoop() {
     if(state.hashrate > 0) {
-        const msgs = ["Hash Verified", "Block Sync OK", "Fan: 65%", "Share Accepted"];
+        const msgs = ["Hash Verified", "Block Sync", "Fan: 65%", "Share OK"];
         log(msgs[Math.floor(Math.random()*msgs.length)]);
     }
 }
@@ -604,11 +699,16 @@ function renderInv() {
     state.inv.slice().reverse().forEach(i => {
         let m = machines.find(x => x.id === i.mid);
         let isFree = m.id===999;
+        let isBonus = i.bonus === true;
+        
+        let badge = isFree ? 'FREE' : (isBonus ? '🎁 BONUS' : 'ACTIVE');
+        let color = isFree ? 'var(--danger)' : (isBonus ? 'var(--success)' : 'var(--success)');
+        
         l.innerHTML += `
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
             <div class="ci-info"><h4>${m.name}</h4><p>${isFree?'Limited':'Unlimited'}</p></div>
-            <div class="ci-action" style="color:${isFree?'var(--danger)':'var(--success)'}; font-weight:bold; font-size:0.8rem;">${isFree?'FREE':'ACTIVE'}</div>
+            <div class="ci-action" style="color:${color}; font-weight:bold; font-size:0.8rem;">${badge}</div>
         </div>`;
     });
 }
@@ -660,47 +760,20 @@ async function initReferralCode(walletAddress) {
     updateReferralUI();
 }
 
-async function checkReferralParam(walletAddress) {
-    if (!walletAddress || state.referredBy) return;
-    
-    // Check Telegram start parameter
-    let refCode = null;
-    
-    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
-        refCode = tg.initDataUnsafe.start_param;
-        console.log("Referral from Telegram:", refCode);
-    }
-    
-    // Fallback to URL parameter
-    if (!refCode) {
-        const urlParams = new URLSearchParams(window.location.search);
-        refCode = urlParams.get('ref');
-    }
-    
-    if (refCode && refCode !== state.referralCode) {
-        const success = await registerReferral(walletAddress, refCode);
-        if (success) {
-            showToast("✅ Referral activated!", false);
-            state.referredBy = refCode;
-            syncToServer();
-        }
-    }
-}
-
 function updateReferralUI() {
     const refCodeInput = document.getElementById('ref-code');
     const refLinkInput = document.getElementById('ref-link');
     const refCountEl = document.getElementById('ref-count');
     const refEarningsEl = document.getElementById('ref-earnings');
+    const refStatusBadge = document.getElementById('refStatusBadge');
+    const refByCode = document.getElementById('refByCode');
     
     if (refCodeInput && state.referralCode) {
         refCodeInput.value = state.referralCode;
     }
     
     if (refLinkInput && state.referralCode) {
-        // Use Telegram bot link for sharing
-        const botUsername = 'YourBotUsername'; // BURAYA BOT USERNAME GİRİN
-        refLinkInput.value = `https://t.me/${botUsername}?start=${state.referralCode}`;
+        refLinkInput.value = `https://t.me/${BOT_USERNAME}?start=${state.referralCode}`;
     }
     
     if (refCountEl) {
@@ -709,6 +782,11 @@ function updateReferralUI() {
     
     if (refEarningsEl) {
         refEarningsEl.textContent = (state.referralEarnings || 0).toFixed(2);
+    }
+    
+    if (refStatusBadge && refByCode && state.referredBy) {
+        refStatusBadge.style.display = 'block';
+        refByCode.textContent = state.referredBy.substring(0, 12) + '...';
     }
 }
 
@@ -755,31 +833,24 @@ async function renderReferralHistory() {
 
 function copyReferralCode() {
     if (!state.referralCode) {
-        showToast("Connect wallet first!", true);
+        showToast("Connect wallet!", true);
         return;
     }
     
     const refCodeInput = document.getElementById('ref-code');
     if (refCodeInput) {
-        // Modern clipboard API
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(refCodeInput.value).then(() => {
                 showToast("✅ Code copied!", false);
-                
-                // Telegram haptic feedback
-                if (tg && tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }).catch(() => {
-                // Fallback
                 refCodeInput.select();
                 document.execCommand('copy');
                 showToast("✅ Code copied!", false);
             });
         } else {
-            // Fallback for older browsers
             refCodeInput.select();
-            refCodeInput.setSelectionRange(0, 99999); // Mobile
+            refCodeInput.setSelectionRange(0, 99999);
             document.execCommand('copy');
             showToast("✅ Code copied!", false);
         }
@@ -788,28 +859,19 @@ function copyReferralCode() {
 
 function shareReferralLink() {
     if (!state.referralCode) {
-        showToast("Connect wallet first!", true);
+        showToast("Connect wallet!", true);
         return;
     }
     
-    const botUsername = 'YourBotUsername'; // BURAYA BOT USERNAME GİRİN
-    const shareUrl = `https://t.me/${botUsername}?start=${state.referralCode}`;
-    const shareText = `🚀 Join TON Pro Miner!\n\n💰 Earn crypto by mining\n🎁 Use my code: ${state.referralCode}\n\n${shareUrl}`;
+    const shareUrl = `https://t.me/${BOT_USERNAME}?start=${state.referralCode}`;
+    const shareText = `🚀 Join TON Pro Miner!\n\n💰 Earn crypto mining\n🎁 Code: ${state.referralCode}\n🎁 Get FREE Basic Chip!\n\n${shareUrl}`;
     
     if (tg) {
-        // Telegram WebApp share
         tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
-        
-        // Haptic feedback
-        if (tg.HapticFeedback) {
-            tg.HapticFeedback.impactOccurred('medium');
-        }
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     } else {
-        // Fallback: Copy link
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast("✅ Link copied!", false);
-            });
+            navigator.clipboard.writeText(shareUrl).then(() => showToast("✅ Link copied!", false));
         } else {
             const refLinkInput = document.getElementById('ref-link');
             if (refLinkInput) {
@@ -830,15 +892,9 @@ function showToast(msg, err=false) {
     t.style.color = err ? "#ff453a" : "#10b981";
     setTimeout(()=>t.style.display="none", 2000);
     
-    // Telegram haptic
     if (tg && tg.HapticFeedback) {
-        if (err) {
-            tg.HapticFeedback.notificationOccurred('error');
-        } else {
-            tg.HapticFeedback.notificationOccurred('success');
-        }
+        tg.HapticFeedback.notificationOccurred(err ? 'error' : 'success');
     }
 }
 
-// Init
 init();
