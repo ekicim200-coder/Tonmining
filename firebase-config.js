@@ -189,7 +189,16 @@ export async function registerReferral(newUserWallet, referrerCode) {
     if (!currentUser) return false;
 
     try {
-        // Referans kodu ile kullanıcıyı bul
+        // 1. ÖNCELİKLE: Kullanıcının daha önce referans kullanıp kullanmadığını kontrol et
+        const newUserRef = doc(db, "users", newUserWallet);
+        const newUserDoc = await getDoc(newUserRef);
+        
+        if (newUserDoc.exists() && newUserDoc.data().referredBy) {
+            console.log("⚠️ Bu kullanıcı zaten bir referans kodu kullanmış!");
+            return false;
+        }
+
+        // 2. Referans kodunun geçerli olup olmadığını kontrol et
         const q = query(
             collection(db, "users"),
             where("referralCode", "==", referrerCode)
@@ -202,22 +211,28 @@ export async function registerReferral(newUserWallet, referrerCode) {
             return false;
         }
 
-        // Referans sahibinin cüzdan adresini al
+        // 3. Referans sahibinin cüzdan adresini al
         let referrerWallet = null;
         querySnapshot.forEach((doc) => {
             referrerWallet = doc.id;
         });
 
+        // 4. HİLE ÖNLEMESİ: Kendi kendine referans olamaz!
+        if (referrerWallet === newUserWallet) {
+            console.log("❌ Kendi kendine referans kullanamazsınız!");
+            return false;
+        }
+
         if (referrerWallet) {
-            // Yeni kullanıcının kaydına referans sahibini ekle
-            const newUserRef = doc(db, "users", newUserWallet);
+            // 5. Yeni kullanıcının kaydına referans sahibini ekle
             await setDoc(newUserRef, {
                 referredBy: referrerWallet,
                 referredByCode: referrerCode,
-                referralDate: Date.now()
+                referralDate: Date.now(),
+                referralLocked: true // Bir daha değiştirilemez
             }, { merge: true });
 
-            // Referans sahibinin sayacını artır
+            // 6. Referans sahibinin sayacını artır
             const referrerRef = doc(db, "users", referrerWallet);
             const referrerDoc = await getDoc(referrerRef);
             
@@ -243,7 +258,7 @@ export async function addReferralCommission(buyerWallet, machinePrice) {
     if (!currentUser) return false;
 
     try {
-        // Alıcının kaydını kontrol et
+        // 1. Alıcının kaydını kontrol et
         const buyerRef = doc(db, "users", buyerWallet);
         const buyerDoc = await getDoc(buyerRef);
         
@@ -252,10 +267,33 @@ export async function addReferralCommission(buyerWallet, machinePrice) {
             return false;
         }
 
+        // 2. HİLE ÖNLEMESİ: referralLocked kontrolü
+        if (!buyerDoc.data().referralLocked) {
+            console.log("⚠️ Referans kilidi yok - hile olabilir!");
+            return false;
+        }
+
         const referrerWallet = buyerDoc.data().referredBy;
+        
+        // 3. HİLE ÖNLEMESİ: Kendi kendine komisyon alamaz
+        if (referrerWallet === buyerWallet) {
+            console.log("❌ Kendi kendine komisyon hilesi engellendi!");
+            return false;
+        }
+
+        // 4. HİLE ÖNLEMESİ: Aynı satın alma için birden fazla komisyon önleme
+        const purchaseId = `${buyerWallet}_${Date.now()}`;
+        const commissionCheckRef = doc(db, "commissionCheck", purchaseId);
+        const commissionCheckDoc = await getDoc(commissionCheckRef);
+        
+        if (commissionCheckDoc.exists()) {
+            console.log("❌ Bu satın alma için zaten komisyon verilmiş!");
+            return false;
+        }
+
         const commission = machinePrice * 0.4; // %40 komisyon
 
-        // Referans sahibinin bakiyesine ekle
+        // 5. Referans sahibinin bakiyesine ekle
         const referrerRef = doc(db, "users", referrerWallet);
         const referrerDoc = await getDoc(referrerRef);
         
@@ -265,10 +303,17 @@ export async function addReferralCommission(buyerWallet, machinePrice) {
             
             await setDoc(referrerRef, {
                 balance: currentBalance + commission,
-                referralEarnings: currentEarnings + commission
+                referralEarnings: currentEarnings + commission,
+                lastCommissionDate: Date.now()
             }, { merge: true });
 
-            // Referans geçmişi kaydet
+            // 6. Komisyon kontrolü kaydet (tekrar önleme için)
+            await setDoc(commissionCheckRef, {
+                processed: true,
+                timestamp: Date.now()
+            });
+
+            // 7. Referans geçmişi kaydet
             const historyId = `REF_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const historyRef = doc(db, "referralHistory", historyId);
             
@@ -277,7 +322,8 @@ export async function addReferralCommission(buyerWallet, machinePrice) {
                 buyerWallet: buyerWallet,
                 commission: commission,
                 machinePrice: machinePrice,
-                date: Date.now()
+                date: Date.now(),
+                verified: true
             });
 
             console.log(`✅ Referans komisyonu eklendi: ${commission} TON -> ${referrerWallet}`);
