@@ -78,7 +78,10 @@ function setupEventListeners() {
     if (adBtn) adBtn.addEventListener('click', () => watchAd());
     
     const withdrawBtn = document.getElementById('withdraw-btn');
-    if (withdrawBtn) withdrawBtn.addEventListener('click', () => withdraw());
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', () => withdraw());
+        console.log('✅ Withdraw button listener attached');
+    }
     
     const copyBtn = document.getElementById('copy-ref-btn');
     if (copyBtn) copyBtn.addEventListener('click', () => copyReferralCode());
