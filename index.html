@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TON Pro Miner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <div class="bal-box">
+            <span class="bal-lbl">TOTAL BALANCE</span>
+            <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
+        </div>
+        <button class="wallet-btn" id="connectBtn">
+            <i class="fas fa-wallet"></i> Connect
+        </button>
+    </div>
+
+    <div id="v-dash" class="view active">
+        <div class="dashboard">
+            <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 100 100"><circle class="c-bg" cx="50" cy="50" r="40"></circle><g id="chartSegments"></g></svg>
+                <div class="chart-info"><div class="chart-val" id="d-hash">0</div><div class="chart-lbl">GH/s</div></div>
+            </div>
+
+            <div class="live-graph">
+                <div class="lg-header"><span>Network Status</span><span style="color:var(--success)">Stable ●</span></div>
+                <svg class="lg-svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline class="lg-line" id="liveLine" points="0,10 100,10"></polyline></svg>
+            </div>
+
+            <div class="terminal">
+                <div class="term-content" id="termLogs">
+                    <div class="log-line">> System initialized...</div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <span class="ib-val" id="d-count">0</span>
+                    <span class="ib-lbl">Active Devices</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="d-daily">0.00</span>
+                    <span class="ib-lbl">Daily TON</span>
+                </div>
+            </div>
+
+            <div class="free-card" id="freeCard">
+                <div style="font-size:1.8rem; color:var(--danger); margin-right:15px;"><i class="fas fa-server"></i></div>
+                <div class="fc-info" style="flex:1">
+                    <h4>FREE Dark Matter Node</h4>
+                    <p>+300 GH/s (30 Minutes)</p>
+                </div>
+                <div id="adBtnArea">
+                    <button class="ad-btn">WATCH & CLAIM</button>
+                </div>
+                <div id="timerArea" style="display:none;">
+                    <div class="timer-badge" id="freeTimer">30:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-market" class="view">
+        <h3 style="padding:20px 20px 0;">Hardware Store</h3>
+        <div class="list-grid" id="marketList"></div>
+    </div>
+
+    <div id="v-inv" class="view">
+        <h3 style="padding:20px 20px 0;">My Devices</h3>
+        <div class="list-grid" id="invList"></div>
+    </div>
+
+    <div id="v-wallet" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-wallet fa-4x" style="color:var(--primary); margin-bottom:20px;"></i>
+            <h3>Wallet Management</h3>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Minimum withdrawal is 100 TON.</p>
+            
+            <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
+            <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
+            
+            <button class="w-btn" id="withdraw-btn" onclick="withdraw()">WITHDRAW</button>
+            
+            <!-- Processing Info Section (Çekim sonrası gösterilecek) -->
+            <div id="processing-section" style="display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); border: 1.5px solid #10b981; border-radius: 12px;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="fas fa-clock" style="color: #10b981; font-size: 2.5rem; margin-bottom: 10px;"></i>
+                    <h4 style="color: #10b981; margin: 0 0 10px 0;">Withdrawal Submitted</h4>
+                    <p style="color: #aaa; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+                        Your withdrawal request has been received
+                    </p>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+                    <span style="color: #888; font-size: 0.8rem; display: block; margin-bottom: 5px;">Withdrawal Amount</span>
+                    <div style="color: #fff; font-size: 1.5rem; font-weight: bold;">
+                        <span id="withdrawal-ton-amount">0</span> TON
+                    </div>
+                </div>
+                
+                <div style="padding: 15px; background: rgba(16,185,129,0.1); border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <i class="fas fa-info-circle" style="color: #10b981;"></i>
+                        <span style="color: #10b981; font-weight: bold; font-size: 0.9rem;">Processing Time</span>
+                    </div>
+                    <p style="color: #aaa; font-size: 0.85rem; margin: 0; line-height: 1.6;">
+                        Your withdrawal will be processed within <strong style="color: #10b981;">15-30 days</strong>. You will receive a notification once the payment is completed.
+                    </p>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <p style="color: #888; font-size: 0.75rem; margin: 0; line-height: 1.5; text-align: center;">
+                        <i class="fas fa-shield-alt"></i> All withdrawals are manually reviewed for security. Thank you for your patience.
+                    </p>
+                </div>
+            </div>
+
+            <div class="history-section" style="margin-top: 20px; text-align: left;">
+                <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-history"></i> Payment History
+                </h3>
+                <div id="tx-history-list">
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-referral" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-users fa-4x" style="color:var(--success); margin-bottom:20px;"></i>
+            <h3>Referral System</h3>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:20px;">Earn 40% commission from your referrals' purchases!</p>
+            
+            <!-- Have a referral code? Input (EN ÜSTTE) -->
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.5); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <i class="fas fa-gift" style="color: #FFC107;"></i>
+                    <p style="color: #FFC107; font-size: 0.9rem; font-weight: bold; margin: 0;">Have a referral code? Enter it to get bonus rewards!</p>
+                </div>
+                <input type="text" id="refInput" class="w-input" placeholder="ENTER REFERRAL CODE" style="margin-bottom: 12px; text-transform: uppercase;">
+                <button class="w-btn" onclick="applyReferralCode()" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); font-weight: bold;">
+                    <i class="fas fa-check"></i> Apply
+                </button>
+            </div>
+
+            <!-- Leaderboard Button -->
+            <div style="margin-bottom: 20px;">
+                <button class="w-btn" onclick="window.location.href='leaderboard.html'" style="width: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px;">
+                    <i class="fas fa-trophy"></i>
+                    <span>VIEW LEADERBOARD & PRIZES</span>
+                    <span style="background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 5px; font-size: 0.75rem;">TOP 50</span>
+                </button>
+            </div>
+            
+            <!-- Referral Status Badge -->
+            <div id="refStatusBadge" style="display:none; background:rgba(16,185,129,0.2); border:1px solid var(--success); border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">
+                <i class="fas fa-check-circle" style="color:var(--success); margin-right:8px;"></i>
+                <span style="color:var(--success); font-weight:bold;">Referred by: <span id="refByCode">---</span></span>
+            </div>
+
+            <!-- Your Referral Code -->
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border: 1.5px solid var(--success); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #fff; font-size: 0.9rem; margin-bottom: 15px; text-align: center; font-weight: bold; letter-spacing: 1px;">YOUR REFERRAL CODE</p>
+                <input type="text" id="ref-code" class="w-input" readonly style="width: 100%; font-weight: bold; color: var(--success); text-align: center; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(16,185,129,0.3);" placeholder="Connect wallet first">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="w-btn" id="copy-ref-btn" style="padding: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--success); font-weight: 600;">
+                        <i class="fas fa-copy"></i> Copy Code
+                    </button>
+                    <button class="w-btn" id="share-ref-btn" style="padding: 12px; background: linear-gradient(135deg, #10b981, #059669); font-weight: 600;">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                </div>
+            </div>
+
+            <div class="info-grid" style="margin-bottom: 20px;">
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-count">0</span>
+                    <span class="ib-lbl">Referrals</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-earnings">0.00</span>
+                    <span class="ib-lbl">Total Earned (TON)</span>
+                </div>
+            </div>
+
+            <div class="history-section" style="margin-top: 20px; text-align: left;">
+                <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-chart-line"></i> Referral History
+                </h3>
+                <div id="ref-history-list">
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active"><i class="fas fa-chart-pie"></i></div>
+        <div class="nav-item"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-item"><i class="fas fa-server"></i></div>
+        <div class="nav-item"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item"><i class="fas fa-users"></i></div>
+        <div class="nav-item" onclick="window.location.href='info.html'" title="How It Works"><i class="fas fa-circle-info"></i></div>
+    </div>
+
+    <div id="toast">Message</div>
+
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
