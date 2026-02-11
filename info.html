@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>How It Works - TON Pro Miner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .info-page {
+            padding: 20px;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .info-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .info-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .info-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(64, 224, 208, 0.3);
+        }
+
+        .section-title i {
+            font-size: 1.5rem;
+        }
+
+        .article-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .article-card {
+            background: rgba(30, 58, 95, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(64, 224, 208, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .article-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .article-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .article-content {
+            flex: 1;
+        }
+
+        .article-content h3 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .article-content p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .step-box {
+            background: linear-gradient(135deg, rgba(64, 224, 208, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--bg-dark);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(64, 224, 208, 0.3);
+        }
+
+        .step-content h3 {
+            margin: 0 0 6px 0;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .step-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .feature-box {
+            background: rgba(30, 58, 95, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(64, 224, 208, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .feature-box i {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .feature-box strong {
+            display: block;
+            color: #fff;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .feature-box p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .about-box {
+            background: linear-gradient(135deg, rgba(217, 70, 239, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border: 1.5px solid rgba(217, 70, 239, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .about-box h2 {
+            color: var(--primary);
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+        }
+
+        .about-box p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 8px 0 0 0;
+        }
+
+        .support-section {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(64, 224, 208, 0.1) 100%);
+            border: 1.5px solid var(--primary);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .support-section h3 {
+            color: var(--primary);
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .support-section p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .support-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 12px;
+            color: var(--bg-dark);
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 20px rgba(64, 224, 208, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .support-btn:active {
+            transform: scale(0.98);
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(30, 58, 95, 0.8);
+            border: 1.5px solid var(--primary);
+            border-radius: 50%;
+            color: var(--primary);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 380px) {
+            .info-page {
+                padding: 15px;
+            }
+
+            .info-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .article-card {
+                flex-direction: column;
+            }
+
+            .article-icon {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+
+    <div class="info-page">
+        <!-- Header -->
+        <div class="info-header">
+            <h1>How It Works</h1>
+            <p>Learn about TON Pro Miner and start earning today</p>
+        </div>
+
+        <!-- Section 1: Getting Started -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-rocket"></i>
+                Getting Started
+            </div>
+            
+            <div class="step-box">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Connect Your Wallet</h3>
+                    <p>Use TonConnect to securely link your TON wallet to the platform</p>
+                </div>
+            </div>
+
+            <div class="step-box">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Purchase Hardware</h3>
+                    <p>Buy mining devices from our store to increase your hash power</p>
+                </div>
+            </div>
+
+            <div class="step-box">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Start Mining</h3>
+                    <p>Your devices automatically mine TON tokens 24/7</p>
+                </div>
+            </div>
+
+            <div class="step-box">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Withdraw Earnings</h3>
+                    <p>Withdraw your TON coins when you reach 100 TON minimum</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: How to Earn Rewards -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-coins"></i>
+                How to Earn Rewards
+            </div>
+
+            <div class="article-container">
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Mining Rewards</h3>
+                        <p>Earn TON tokens by mining continuously. Your daily earnings depend on your total hash power (GH/s) and network difficulty.</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Watch Ads Bonus</h3>
+                        <p>Get a free Dark Matter Node by watching short video ads. This gives +300 GH/s for 30 minutes - watch multiple times daily!</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Upgrade Devices</h3>
+                        <p>Purchase more powerful mining devices to increase your daily TON earnings. Better devices = faster rewards!</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Active Mining</h3>
+                        <p>Your devices work 24/7. The longer you stay active and upgrade your rig, the more TON you'll accumulate over time.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-box">
+                    <i class="fas fa-percent"></i>
+                    <strong>Daily Income</strong>
+                    <p>Varies by hardware</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-clock"></i>
+                    <strong>Passive</strong>
+                    <p>24/7 Automatic</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-lock"></i>
+                    <strong>Secure</strong>
+                    <p>Blockchain Based</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-arrow-up"></i>
+                    <strong>Scalable</strong>
+                    <p>Upgrade Anytime</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Referral System -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-share-nodes"></i>
+                Referral System
+            </div>
+
+            <div class="article-container">
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Invite Friends</h3>
+                        <p>Share your unique referral code or link with friends. Each successful signup earns you commission!</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>40% Commission</h3>
+                        <p>Earn 40% commission from all purchases made by your referrals - that's a huge passive income!</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Leaderboard Prizes</h3>
+                        <p>Top referrers win prizes! Join the leaderboard and get rewards for bringing the most active members.</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Easy Sharing</h3>
+                        <p>Copy your referral code or share your personalized link. One click sharing to social media and messaging apps!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-box">
+                    <i class="fas fa-gift"></i>
+                    <strong>40%</strong>
+                    <p>Commission Rate</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-infinity"></i>
+                    <strong>Unlimited</strong>
+                    <p>Referrals</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-zap"></i>
+                    <strong>Instant</strong>
+                    <p>Credit</p>
+                </div>
+                <div class="feature-box">
+                    <i class="fas fa-medal"></i>
+                    <strong>Top 50</strong>
+                    <p>Prizes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: About Us -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-info-circle"></i>
+                About Us
+            </div>
+
+            <div class="about-box">
+                <i class="fas fa-building fa-3x" style="color: var(--primary); margin-bottom: 15px;"></i>
+                <h2>Enterprise Server Infrastructure</h2>
+                <p>TON Pro Miner is built on <strong>enterprise-grade server infrastructure</strong> with multiple redundant data centers located worldwide. We ensure 99.9% uptime and maximum security for your mining operations.</p>
+                <div class="badge">
+                    <i class="fas fa-check-circle"></i> Enterprise Grade
+                </div>
+            </div>
+
+            <div class="article-container">
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Secure & Reliable</h3>
+                        <p>Built on blockchain technology with military-grade encryption. Your TON is always safe.</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Global Network</h3>
+                        <p>Multiple server locations worldwide for optimal performance and minimal latency.</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>24/7 Support</h3>
+                        <p>Our dedicated support team is always ready to help with any questions or issues.</p>
+                    </div>
+                </div>
+
+                <div class="article-card">
+                    <div class="article-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="article-content">
+                        <h3>Automatic Updates</h3>
+                        <p>Regular updates and maintenance ensure you always have the best experience without downtime.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Section -->
+        <div class="support-section">
+            <h3>Need Help?</h3>
+            <p>Have questions or issues? Contact our support team - we're here to help 24/7</p>
+            <button class="support-btn" onclick="openSupport()">
+                <i class="fas fa-envelope"></i>
+                Contact Support
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            // Direct navigate to index.html instead of history
+            window.location.href = 'index.html';
+        }
+
+        function openSupport() {
+            // Mail gönderme işlemi
+            const subject = "TON Pro Miner Support Request";
+            const body = "Hello Support Team,%0D%0A%0D%0AI need help with:%0D%0A(Please describe your issue)%0D%0A%0D%0AThank you!";
+            
+            // Email adresi (kendi mail adresinizi güncelleyin)
+            const email = "support@tonprominer.com";
+            
+            // Desktop için mailto, mobil için fallback
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+            
+            // Eğer mail uygulaması açılmazsa toast göster
+            setTimeout(() => {
+                showToast("Please send an email to: support@tonprominer.com");
+            }, 1000);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+
+    <div id="toast">Message</div>
+</body>
+</html>
