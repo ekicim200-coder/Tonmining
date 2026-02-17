@@ -1,0 +1,27 @@
+{
+  "name": "ton-pro-miner",
+  "version": "1.0.0",
+  "description": "TON Pro Miner - Telegram Mining Game with Notifications",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "setup": "bash install.sh"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.x"
+  },
+  "keywords": [
+    "ton",
+    "telegram",
+    "mining",
+    "web3",
+    "notifications"
+  ],
+  "author": "TON Pro Miner Team",
+  "license": "MIT"
+}
