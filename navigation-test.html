@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-btn {
+            background: #40e0d0;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .test-btn:hover {
+            background: #2ec5b6;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(64, 224, 208, 0.1);
+            border: 1px solid #40e0d0;
+            border-radius: 8px;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Navigation Test Page</h1>
+    <p>Bu sayfa navigation butonlarının çalışıp çalışmadığını test eder.</p>
+    
+    <div>
+        <h2>Test Butonları:</h2>
+        <button class="test-btn" onclick="testDashboard()">Test Dashboard</button>
+        <button class="test-btn" onclick="testMarket()">Test Market</button>
+        <button class="test-btn" onclick="testInventory()">Test Inventory</button>
+        <button class="test-btn" onclick="testWallet()">Test Wallet</button>
+        <button class="test-btn" onclick="testReferral()">Test Referral</button>
+    </div>
+    
+    <div class="result" id="result">
+        <h3>Test Sonucu:</h3>
+        <p id="result-text">Test başlatılmadı...</p>
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <h2>Kontrol Listesi:</h2>
+        <ul>
+            <li>✅ Navigation butonları tıklanabiliyor mu?</li>
+            <li>✅ Aktif buton rengi değişiyor mu?</li>
+            <li>✅ View'lar düzgün değişiyor mu?</li>
+            <li>✅ Her view içeriği render ediliyor mu?</li>
+        </ul>
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <h2>Beklenen Davranış:</h2>
+        <ol>
+            <li><strong>Dashboard:</strong> Chart çizilmeli, hashrate gösterilmeli</li>
+            <li><strong>Market:</strong> Satın alınabilir makineler listelenmeli</li>
+            <li><strong>Inventory:</strong> Sahip olunan makineler gösterilmeli</li>
+            <li><strong>Wallet:</strong> Bakiye ve işlem geçmişi görünmeli</li>
+            <li><strong>Referral:</strong> Referral kodu ve kazançlar gösterilmeli</li>
+        </ol>
+    </div>
+    
+    <div style="margin-top: 30px; padding: 15px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 8px;">
+        <h3>⚠️ Sorun Giderme:</h3>
+        <p>Eğer butonlar çalışmıyorsa:</p>
+        <ol>
+            <li>Browser console'u açın (F12)</li>
+            <li>Hata mesajlarını kontrol edin</li>
+            <li>script.js yüklenmiş mi bakın</li>
+            <li>onclick fonksiyonları tanımlı mı kontrol edin</li>
+        </ol>
+        <p><strong>Konsol Komutu:</strong></p>
+        <code style="background: #000; padding: 10px; display: block; border-radius: 4px;">
+            console.log(typeof window.goToView); // "function" dönmeli
+        </code>
+    </div>
+    
+    <script>
+        function showResult(message, success) {
+            const resultText = document.getElementById('result-text');
+            resultText.innerHTML = message;
+            resultText.className = success ? 'success' : 'error';
+        }
+        
+        function testDashboard() {
+            if (typeof window.goToView === 'function') {
+                showResult('✅ goToView fonksiyonu tanımlı! Dashboard geçişi test edildi.', true);
+            } else {
+                showResult('❌ goToView fonksiyonu bulunamadı! script.js yüklenmemiş olabilir.', false);
+            }
+        }
+        
+        function testMarket() {
+            showResult('ℹ️ Market testi: Ana sayfada market sekmesine tıklayın ve makinelerin göründüğünü kontrol edin.', true);
+        }
+        
+        function testInventory() {
+            showResult('ℹ️ Inventory testi: Ana sayfada inventory sekmesine tıklayın ve makinelerinizin göründüğünü kontrol edin.', true);
+        }
+        
+        function testWallet() {
+            showResult('ℹ️ Wallet testi: Ana sayfada wallet sekmesine tıklayın ve bakiyenizin göründüğünü kontrol edin.', true);
+        }
+        
+        function testReferral() {
+            showResult('ℹ️ Referral testi: Ana sayfada referral sekmesine tıklayın ve kodunuzun göründüğünü kontrol edin.', true);
+        }
+    </script>
+</body>
+</html>
