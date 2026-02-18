@@ -8,11 +8,9 @@ try {
         tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        // Telegram tema rengini uygula
         if (tg.themeParams && tg.themeParams.bg_color) {
             document.body.style.backgroundColor = tg.themeParams.bg_color;
         }
-        // Geri butonunu kapat
         if (tg.BackButton) {
             tg.BackButton.hide();
         }
@@ -85,8 +83,6 @@ function init() {
 }
 
 function setupEventListeners() {
-    // ✅ Connect butonu - TonConnect buttonRootId KULLANMIYORUZ
-    // Manuel olarak tıklama dinliyoruz
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn) {
         connectBtn.addEventListener('click', (e) => {
@@ -96,29 +92,20 @@ function setupEventListeners() {
         });
     }
     
-    // Ad butonu
     const adBtn = document.querySelector('.ad-btn');
     if (adBtn) adBtn.addEventListener('click', () => watchAd());
     
-    // ✅ DÜZELTME: withdraw için çift handler YOK
-    // HTML'deki onclick="withdraw()" zaten window.withdraw'u çağırıyor
-    
-    // Copy ve share butonları
     const copyBtn = document.getElementById('copy-ref-btn');
     if (copyBtn) copyBtn.addEventListener('click', () => copyReferralCode());
     
     const shareBtn = document.getElementById('share-ref-btn');
     if (shareBtn) shareBtn.addEventListener('click', () => shareReferralLink());
-    
-    // ✅ DÜZELTME: Nav item'lara ek listener EKLENMEZ
-    // HTML'deki onclick="window.goTo(...)" yeterli
 }
 
 // --- REFERRAL POPUP ---
 function checkReferralPopup() {
     let refCode = null;
     
-    // Telegram start_param'dan referral kodu al
     try {
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
             refCode = tg.initDataUnsafe.start_param;
@@ -127,7 +114,6 @@ function checkReferralPopup() {
         console.warn("start_param okunamadı:", e);
     }
     
-    // URL parametresinden referral kodu al
     if (!refCode) {
         try {
             const urlParams = new URLSearchParams(window.location.search);
@@ -153,7 +139,6 @@ function showRefPopup() {}
 function hideRefPopup() {}
 window.skipReferral = function() {}
 
-// Manuel referral kod uygulama
 window.applyReferralCode = async function() {
     const refInput = document.getElementById('refInput');
     if (!refInput) return;
@@ -340,8 +325,6 @@ function grantReferralBonus() {
     drawChart();
     renderInv();
     
-    console.log("🎁 Bonus: Basic Chip v1!");
-    
     setTimeout(() => {
         showToast("🎁 +5 GH/s Basic Chip!", false);
     }, 1000);
@@ -372,7 +355,7 @@ function initAdsgram() {
         retries++;
         if (retries > maxRetries) {
             clearInterval(check);
-            console.warn("⚠️ Adsgram yüklenemedi - timeout");
+            console.warn("⚠️ Adsgram yüklenemedi");
             return;
         }
         if (typeof window.Adsgram !== 'undefined') {
@@ -388,10 +371,6 @@ function initAdsgram() {
 }
 
 // --- TON CONNECT ---
-// ✅ KRİTİK DÜZELTME: buttonRootId KULLANILMIYOR
-// Eski kodda buttonRootId:'connectBtn' vardı. Bu, TonConnect SDK'nın
-// butonu tamamen devralmasına neden oluyordu ve mevcut click handler'larla
-// çakışıyordu. Sonuç: buton çalışmaz veya modal açılıp hemen kapanırdı.
 async function setupTonConnect() {
     let retries = 0;
     const maxRetries = 100;
@@ -400,7 +379,7 @@ async function setupTonConnect() {
         retries++;
         if (retries > maxRetries) {
             clearInterval(check);
-            console.error("❌ TonConnect SDK yüklenemedi - timeout");
+            console.error("❌ TonConnect SDK yüklenemedi");
             return;
         }
         
@@ -409,7 +388,6 @@ async function setupTonConnect() {
             try {
                 tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
                     manifestUrl: window.location.origin + '/tonconnect-manifest.json'
-                    // ❌ buttonRootId KALDIRILDI - çakışma düzeltildi
                 });
 
                 tonConnectUI.onStatusChange(async (walletInfo) => {
@@ -486,7 +464,7 @@ function updateUI() {
     const dCount = document.getElementById('d-count');
     const dDaily = document.getElementById('d-daily');
     
-    if (totalBal) totalBal.textContent = state.balance.toFixed(2);
+    if (totalBal) totalBal.textContent = state.balance.toFixed(6);
     if (dHash) dHash.textContent = state.hashrate;
     if (dCount) dCount.textContent = state.inv.length;
     
@@ -637,8 +615,6 @@ async function createStarsInvoice(machineId, starAmount) {
         userId = tg.initDataUnsafe.user.id.toString();
     }
     
-    console.log('📤 Creating Stars invoice - Machine:', machineId, 'User ID:', userId);
-    
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -658,8 +634,6 @@ async function createStarsInvoice(machineId, starAmount) {
     }
 
     const data = await response.json();
-    console.log('✅ Invoice created:', data.invoiceLink);
-    
     return data.invoiceLink;
 }
 
@@ -728,9 +702,7 @@ window.withdraw = async function() {
             updateUI();
             inputElement.value = '';
             showToast("✅ Requested!", false);
-            
             showProcessingSection(amount);
-            
             setTimeout(() => renderHistory(), 500);
         } else {
             showToast("Failed!", true);
@@ -1115,7 +1087,6 @@ function shareReferralLink() {
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         } catch (e) {
-            console.error("Share error:", e);
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(shareUrl).then(() => showToast("✅ Link copied!", false));
             }
@@ -1123,8 +1094,6 @@ function shareReferralLink() {
     } else {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(shareUrl).then(() => showToast("✅ Link copied!", false));
-        } else {
-            showToast("Please copy the link manually", true);
         }
     }
 }
