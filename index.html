@@ -15,7 +15,6 @@
             <span class="bal-lbl">TOTAL BALANCE</span>
             <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
         </div>
-        <!-- ✅ DÜZELTME: onclick kaldırıldı - event listener JS'de -->
         <button class="wallet-btn" id="connectBtn">
             <i class="fas fa-wallet"></i> Connect
         </button>
@@ -29,7 +28,7 @@
             </div>
 
             <div class="live-graph">
-                <div class="lg-header"><span>Network Status</span><span style="color:var(--success)">Stable ●</span></div>
+                <div class="lg-header"><span>Network Status</span><span style="color:var(--success)">Stable &#9679;</span></div>
                 <svg class="lg-svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline class="lg-line" id="liveLine" points="0,10 100,10"></polyline></svg>
             </div>
 
@@ -57,13 +56,23 @@
                     <p>+300 GH/s (30 Minutes)</p>
                 </div>
                 <div id="adBtnArea">
-                    <!-- ✅ DÜZELTME: onclick kaldırıldı - event listener JS'de -->
                     <button class="ad-btn">WATCH & CLAIM</button>
                 </div>
                 <div id="timerArea" style="display:none;">
                     <div class="timer-badge" id="freeTimer">30:00</div>
                 </div>
             </div>
+
+            <a href="https://t.me/TonProMiner_Channel" target="_blank" style="text-decoration:none; display:block;">
+                <div style="background: linear-gradient(135deg, rgba(0, 136, 204, 0.15), rgba(0, 136, 204, 0.05)); border: 1.5px solid #0088cc; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="font-size:1.8rem; color:#0088cc;"><i class="fab fa-telegram"></i></div>
+                    <div style="flex:1">
+                        <h4 style="margin:0; color:#0088cc; font-size:0.95rem; font-weight:700;">Join Our Channel</h4>
+                        <p style="margin:4px 0 0; font-size:0.7rem; color:var(--text-muted);">News, updates & giveaways</p>
+                    </div>
+                    <div style="color:#0088cc; font-size:1.2rem;"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -86,10 +95,8 @@
             <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
             <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
             
-            <!-- ✅ DÜZELTME: onclick window.withdraw() kullanır -->
             <button class="w-btn" id="withdraw-btn" onclick="withdraw()">WITHDRAW</button>
             
-            <!-- Processing Info Section -->
             <div id="processing-section" style="display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); border: 1.5px solid #10b981; border-radius: 12px;">
                 <div style="text-align: center; margin-bottom: 15px;">
                     <i class="fas fa-clock" style="color: #10b981; font-size: 2.5rem; margin-bottom: 10px;"></i>
@@ -140,7 +147,6 @@
             <h3>Referral System</h3>
             <p style="color:var(--muted); font-size:0.9rem; margin-bottom:20px;">Earn 40% commission from your referrals' purchases!</p>
             
-            <!-- Have a referral code? -->
             <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.5); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
                     <i class="fas fa-gift" style="color: #FFC107;"></i>
@@ -152,7 +158,6 @@
                 </button>
             </div>
 
-            <!-- Leaderboard Button -->
             <div style="margin-bottom: 20px;">
                 <button class="w-btn" onclick="window.location.href='leaderboard.html'" style="width: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px;">
                     <i class="fas fa-trophy"></i>
@@ -161,18 +166,15 @@
                 </button>
             </div>
             
-            <!-- Referral Status Badge -->
             <div id="refStatusBadge" style="display:none; background:rgba(16,185,129,0.2); border:1px solid var(--success); border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">
                 <i class="fas fa-check-circle" style="color:var(--success); margin-right:8px;"></i>
                 <span style="color:var(--success); font-weight:bold;">Referred by: <span id="refByCode">---</span></span>
             </div>
 
-            <!-- Your Referral Code -->
             <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border: 1.5px solid var(--success); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
                 <p style="color: #fff; font-size: 0.9rem; margin-bottom: 15px; text-align: center; font-weight: bold; letter-spacing: 1px;">YOUR REFERRAL CODE</p>
                 <input type="text" id="ref-code" class="w-input" readonly style="width: 100%; font-weight: bold; color: var(--success); text-align: center; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(16,185,129,0.3);" placeholder="Connect wallet first">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <!-- ✅ DÜZELTME: onclick kaldırıldı - event listener JS'de -->
                     <button class="w-btn" id="copy-ref-btn" style="padding: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--success); font-weight: 600;">
                         <i class="fas fa-copy"></i> Copy Code
                     </button>
@@ -204,7 +206,6 @@
         </div>
     </div>
 
-    <!-- ✅ DÜZELTME: Nav item'lar sadece window.goTo kullanır, çift handler yok -->
     <div class="nav">
         <div class="nav-item active" onclick="window.goTo('dash', this)"><i class="fas fa-chart-pie"></i></div>
         <div class="nav-item" onclick="window.goTo('market', this)"><i class="fas fa-shopping-bag"></i></div>
