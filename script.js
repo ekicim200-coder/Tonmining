@@ -27,7 +27,7 @@ try {
 // --- CONFIG ---
 const CFG = { rate: 0.000001, tick: 100 };
 const ADMIN_WALLET = "UQBfQpD5TFm0DlMkqZBymxBh9Uiyj1sqvdzkEvpgrgwS6gCc"; 
-const BOT_USERNAME = "YourBotUsername"; // ⚠️ BURAYA BOT USERNAME GİRİN!
+const BOT_USERNAME = "@TonProMiner_Bot"; // ⚠️ BURAYA BOT USERNAME GİRİN!
 
 let tonConnectUI = null;
 let currentUserUid = null;
