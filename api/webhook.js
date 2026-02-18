@@ -8,140 +8,134 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
+    }
+
+    // GET ile webhook durumunu test et
+    if (req.method === 'GET') {
+        return res.status(200).json({ status: 'Webhook aktif', timestamp: Date.now() });
     }
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (!TELEGRAM_BOT_TOKEN) {
+        console.error('❌ TELEGRAM_BOT_TOKEN tanımlı değil!');
+        return res.status(200).json({ error: 'Token missing' });
+    }
+
     try {
         const update = req.body;
-        console.log('📨 Webhook alındı:', JSON.stringify(update, null, 2));
+        console.log('📨 Webhook:', JSON.stringify(update).substring(0, 500));
 
-        // Pre-checkout query onayı
+        // ✅ PRE-CHECKOUT - HIZLI YANIT VERMELİ (10 saniye limiti var)
         if (update.pre_checkout_query) {
             const preCheckout = update.pre_checkout_query;
-            console.log('✅ Pre-checkout onaylanıyor...');
+            console.log('💳 Pre-checkout:', preCheckout.id, 'Amount:', preCheckout.total_amount, 'Payload:', preCheckout.invoice_payload);
             
-            const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-            if (!TELEGRAM_BOT_TOKEN) {
-                console.error('❌ Bot token bulunamadı!');
-                return res.status(500).json({ error: 'Bot token missing' });
+            try {
+                const response = await fetch(
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pre_checkout_query_id: preCheckout.id,
+                            ok: true
+                        })
+                    }
+                );
+                
+                const data = await response.json();
+                console.log('✅ Pre-checkout onaylandı:', data.ok);
+                
+                if (!data.ok) {
+                    console.error('❌ Pre-checkout onay hatası:', data);
+                }
+            } catch (preErr) {
+                console.error('❌ Pre-checkout fetch hatası:', preErr.message);
             }
             
-            const response = await fetch(
-                `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pre_checkout_query_id: preCheckout.id,
-                        ok: true
-                    })
-                }
-            );
-            
-            const data = await response.json();
-            console.log('Pre-checkout yanıtı:', data);
+            // Pre-checkout için HEMEN 200 dön
+            return res.status(200).json({ ok: true });
         }
 
-        // Başarılı ödeme işlemi
+        // ✅ BAŞARILI ÖDEME
         if (update.message && update.message.successful_payment) {
             const payment = update.message.successful_payment;
             const rawPayload = payment.invoice_payload;
             
-            // ✅ DÜZELTME: Payload artık "machineId_userId" formatında düz string
-            // Eski kod JSON.parse() yapıyordu ve çöküyordu
             let machineId = null;
             let userId = null;
-            let wallet = null;
             
             try {
-                // Önce yeni format dene: "3_123456789"
-                if (rawPayload && rawPayload.includes('_')) {
+                if (rawPayload && rawPayload.includes('_') && !rawPayload.startsWith('{')) {
                     const parts = rawPayload.split('_');
                     machineId = parseInt(parts[0]);
                     userId = parts[1];
                 } else {
-                    // Eski JSON formatı desteği (geriye uyumluluk)
                     const parsed = JSON.parse(rawPayload);
                     machineId = parsed.machineId;
                     userId = parsed.userId;
-                    wallet = parsed.wallet;
                 }
-            } catch (parseError) {
-                console.error('⚠️ Payload parse edilemedi:', rawPayload);
-                // Parse edilemese bile ödemeyi kaydet
-                machineId = rawPayload;
+            } catch (e) {
+                console.error('⚠️ Payload parse hatası:', rawPayload);
             }
             
-            console.log('💰 Ödeme başarılı!', {
-                machineId: machineId,
-                userId: userId,
-                wallet: wallet,
-                amount: payment.total_amount,
-                telegramUserId: update.message.from.id,
-                rawPayload: rawPayload
-            });
+            console.log('💰 Ödeme başarılı!', { machineId, userId, amount: payment.total_amount, from: update.message.from.id });
 
-            // Kullanıcıya onay mesajı gönder
-            const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-            if (TELEGRAM_BOT_TOKEN) {
-                try {
-                    await fetch(
-                        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: update.message.chat.id,
-                                text: `✅ Ödeme başarılı! Mining makineniz hesabınıza eklendi.`
-                            })
-                        }
-                    );
-                } catch (msgError) {
-                    console.error('⚠️ Mesaj gönderilemedi:', msgError);
-                }
+            try {
+                await fetch(
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: update.message.chat.id,
+                            text: '✅ Ödeme başarılı! Mining makineniz hesabınıza eklendi.\n\n⚡ Uygulamayı açarak kontrol edebilirsiniz.'
+                        })
+                    }
+                );
+            } catch (e) {
+                console.error('⚠️ Mesaj gönderilemedi:', e.message);
             }
+            
+            return res.status(200).json({ ok: true });
         }
 
-        // /start komutu işleme
+        // ✅ /start KOMUTU
         if (update.message && update.message.text && update.message.text.startsWith('/start')) {
-            const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-            if (TELEGRAM_BOT_TOKEN) {
-                try {
-                    await fetch(
-                        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: update.message.chat.id,
-                                text: '🚀 TON Pro Miner\'a hoş geldiniz! Uygulamayı açmak için aşağıdaki butona tıklayın.',
-                                reply_markup: {
-                                    inline_keyboard: [[
-                                        {
-                                            text: '⛏ Madenciliğe Başla',
-                                            web_app: { url: 'https://tonmining.vercel.app' }
-                                        }
-                                    ]]
-                                }
-                            })
-                        }
-                    );
-                } catch (msgError) {
-                    console.error('⚠️ Start mesajı gönderilemedi:', msgError);
-                }
+            try {
+                await fetch(
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: update.message.chat.id,
+                            text: '🚀 TON Pro Miner\'a hoş geldiniz!\n\n⛏ Madenciliğe başlamak için aşağıdaki butona tıklayın.',
+                            reply_markup: {
+                                inline_keyboard: [[
+                                    {
+                                        text: '⛏ Madenciliğe Başla',
+                                        web_app: { url: 'https://tonmining.vercel.app' }
+                                    }
+                                ]]
+                            }
+                        })
+                    }
+                );
+            } catch (e) {
+                console.error('⚠️ Start mesajı hatası:', e.message);
             }
         }
 
-        res.status(200).json({ success: true });
+        return res.status(200).json({ ok: true });
 
     } catch (error) {
-        console.error('❌ Webhook hatası:', error);
-        // Webhook'lar her zaman 200 döndürmeli, yoksa Telegram tekrar dener
-        res.status(200).json({ error: error.message });
+        console.error('❌ Webhook genel hata:', error.message);
+        return res.status(200).json({ error: error.message });
     }
 };
