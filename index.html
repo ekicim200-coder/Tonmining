@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TON Pro Miner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=4">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -27,9 +27,31 @@
                 <div class="chart-info"><div class="chart-val" id="d-hash">0</div><div class="chart-lbl">GH/s</div></div>
             </div>
 
-            <div class="live-graph">
-                <div class="lg-header"><span>Network Status</span><span style="color:var(--success)">Stable &#9679;</span></div>
-                <svg class="lg-svg" viewBox="0 0 100 20" preserveAspectRatio="none"><polyline class="lg-line" id="liveLine" points="0,10 100,10"></polyline></svg>
+            <div class="live-graph" id="liveGraphCard">
+                <div class="lg-header">
+                    <span>Network Status</span>
+                    <span id="networkStatus" style="color:var(--text-muted)">Offline ○</span>
+                </div>
+                <svg class="lg-svg" viewBox="0 0 100 25" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="50%" stop-color="#40e0d0" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                        <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="rgba(64,224,208,0.3)" />
+                            <stop offset="100%" stop-color="rgba(64,224,208,0)" />
+                        </linearGradient>
+                    </defs>
+                    <polygon class="lg-fill" id="liveFill" points="0,25 100,25" />
+                    <polyline class="lg-line" id="liveLine" points="0,12 100,12"></polyline>
+                    <circle class="lg-dot" id="liveDot" cx="100" cy="12" r="1.5" />
+                </svg>
+                <div class="lg-stats" id="lgStats" style="display:none;">
+                    <span><i class="fas fa-bolt"></i> <span id="lgHash">0</span> GH/s</span>
+                    <span><i class="fas fa-signal"></i> <span id="lgPing">--</span>ms</span>
+                </div>
             </div>
 
             <div class="terminal">
@@ -219,6 +241,6 @@
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=3"></script>
+    <script type="module" src="script.js?v=4"></script>
 </body>
 </html>
