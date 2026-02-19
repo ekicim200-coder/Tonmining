@@ -57,7 +57,7 @@ const machines = [
     { id: 999, name: "FREE Dark Matter Node", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
 ];
 
-let graphData = new Array(20).fill(10);
+let graphData = new Array(40).fill(12.5);
 
 function init() {
     initAuth((uid) => {
@@ -74,7 +74,7 @@ function init() {
 
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 10000); 
-    setInterval(graphLoop, 1000);
+    setInterval(graphLoop, 300);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
     
@@ -796,21 +796,72 @@ function drawChart() {
 }
 
 // --- GRAPH ---
+let graphPhase = 0;
+
 function graphLoop() {
-    const val = 10 + Math.random() * 8;
-    graphData.shift();
-    graphData.push(val);
-
+    const card = document.getElementById('liveGraphCard');
     const line = document.getElementById('liveLine');
-    if (!line) return;
+    const fill = document.getElementById('liveFill');
+    const dot = document.getElementById('liveDot');
+    const statusEl = document.getElementById('networkStatus');
+    const statsEl = document.getElementById('lgStats');
+    const lgHash = document.getElementById('lgHash');
+    const lgPing = document.getElementById('lgPing');
 
+    if (!line || !card) return;
+
+    const isActive = state.hashrate > 0;
+
+    // Toggle active state
+    if (isActive) {
+        card.classList.add('active');
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--success)">Mining ●</span>';
+        if (statsEl) statsEl.style.display = 'flex';
+        if (lgHash) lgHash.textContent = state.hashrate;
+        if (lgPing) lgPing.textContent = Math.floor(8 + Math.random() * 12);
+    } else {
+        card.classList.remove('active');
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--text-muted)">Offline ○</span>';
+        if (statsEl) statsEl.style.display = 'none';
+    }
+
+    // Generate smooth data point
+    if (isActive) {
+        graphPhase += 0.15;
+        const base = 12 + Math.sin(graphPhase) * 3;
+        const noise = (Math.random() - 0.5) * 2;
+        const prev = graphData[graphData.length - 1];
+        const val = prev * 0.6 + (base + noise) * 0.4; // smooth blend
+        graphData.shift();
+        graphData.push(Math.max(2, Math.min(23, val)));
+    } else {
+        // Flatline when offline
+        const prev = graphData[graphData.length - 1];
+        const val = prev * 0.95 + 12.5 * 0.05;
+        graphData.shift();
+        graphData.push(val);
+    }
+
+    // Draw smooth line
     const points = graphData.map((v, i) => {
         const x = (i / (graphData.length - 1)) * 100;
-        const y = 20 - (v / 20) * 20;
-        return `${x},${y}`;
+        const y = 25 - v;
+        return `${x},${y.toFixed(1)}`;
     }).join(' ');
 
     line.setAttribute('points', points);
+
+    // Draw fill polygon
+    if (fill) {
+        const fillPoints = `0,25 ${points} 100,25`;
+        fill.setAttribute('points', fillPoints);
+    }
+
+    // Move dot to last point
+    if (dot) {
+        const lastVal = graphData[graphData.length - 1];
+        dot.setAttribute('cy', (25 - lastVal).toFixed(1));
+    }
 }
 
 // --- TERMINAL ---
