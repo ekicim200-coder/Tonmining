@@ -27,10 +27,12 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    padding-bottom: var(--nav-h);
+    padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
     user-select: none;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Subtle gradient overlay */
@@ -118,22 +120,23 @@ body::before {
 
 /* --- DASHBOARD --- */
 .dashboard {
-    padding: 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     position: relative;
     z-index: 1;
     max-width: 480px;
     margin: 0 auto;
+    width: 100%;
 }
 
 /* Donut Chart - Compact */
 .chart-wrapper {
     position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 10px auto 15px;
+    width: min(120px, 25vw);
+    height: min(120px, 25vw);
+    margin: 8px auto 10px;
 }
 
 .chart-svg {
@@ -190,7 +193,7 @@ body::before {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(64, 224, 208, 0.15);
     border-radius: 16px;
-    padding: 14px;
+    padding: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     transition: border-color 0.5s ease, box-shadow 0.5s ease;
 }
@@ -220,7 +223,7 @@ body::before {
 
 .lg-svg {
     width: 100%;
-    height: 55px;
+    height: 45px;
     overflow: visible;
 }
 
@@ -294,7 +297,8 @@ body::before {
 }
 
 .term-content {
-    height: 65px;
+    max-height: 65px;
+    min-height: 40px;
     overflow: hidden;
     font-size: 0.7rem;
     color: var(--primary);
@@ -588,13 +592,15 @@ body::before {
     bottom: 0;
     left: 0;
     right: 0;
-    height: var(--nav-h);
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: rgba(21, 40, 68, 0.95);
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(64, 224, 208, 0.15);
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
+    padding-top: 8px;
     z-index: 100;
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
 }
@@ -701,8 +707,100 @@ body::before {
     box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
-/* Responsive adjustments for Telegram WebView */
-@media (max-width: 380px) {
+/* Responsive adjustments for all devices */
+
+/* Very small phones (iPhone SE, Galaxy A series, etc) */
+@media (max-width: 360px) {
+    .header {
+        padding: 10px 12px;
+    }
+    
+    .bal-val {
+        font-size: 1.1rem;
+    }
+
+    .bal-lbl {
+        font-size: 0.6rem;
+    }
+
+    .wallet-btn {
+        padding: 6px 12px;
+        font-size: 0.7rem;
+    }
+    
+    .dashboard {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .chart-wrapper {
+        width: 90px;
+        height: 90px;
+        margin: 5px auto 8px;
+    }
+
+    .chart-val {
+        font-size: 0.9rem;
+    }
+
+    .chart-lbl {
+        font-size: 0.5rem;
+    }
+
+    .live-graph {
+        padding: 10px;
+    }
+
+    .lg-svg {
+        height: 35px;
+    }
+
+    .terminal {
+        padding: 8px;
+    }
+
+    .term-content {
+        height: 50px;
+        font-size: 0.6rem;
+    }
+    
+    .info-grid {
+        gap: 6px;
+    }
+    
+    .info-box {
+        padding: 10px;
+    }
+
+    .ib-val {
+        font-size: 0.95rem;
+    }
+
+    .ib-lbl {
+        font-size: 0.55rem;
+    }
+    
+    .free-card {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .fc-info h4 {
+        font-size: 0.8rem;
+    }
+
+    .fc-info p {
+        font-size: 0.6rem;
+    }
+
+    .nav-item {
+        font-size: 1.1rem;
+        padding: 6px;
+    }
+}
+
+/* Small phones (iPhone 8/X/12 mini, most Android) */
+@media (min-width: 361px) and (max-width: 414px) {
     .header {
         padding: 12px 15px;
     }
@@ -712,32 +810,113 @@ body::before {
     }
     
     .dashboard {
-        padding: 16px;
-        gap: 14px;
+        padding: 12px;
+        gap: 10px;
     }
     
     .chart-wrapper {
-        width: 120px;
-        height: 120px;
+        width: 105px;
+        height: 105px;
+        margin: 6px auto 10px;
     }
-    
-    .info-grid {
-        gap: 10px;
+
+    .term-content {
+        height: 55px;
+        font-size: 0.65rem;
     }
-    
-    .info-box {
+
+    .nav-item {
+        font-size: 1.2rem;
+        padding: 8px;
+    }
+}
+
+/* Medium phones (iPhone Pro Max, Samsung S series, Pixel) */
+@media (min-width: 415px) and (max-width: 480px) {
+    .dashboard {
         padding: 14px;
-    }
-    
-    .free-card {
-        padding: 16px;
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .list-grid {
-        padding: 16px;
         gap: 10px;
+    }
+
+    .chart-wrapper {
+        width: 115px;
+        height: 115px;
+    }
+}
+
+/* Short screens - squeeze more content in */
+@media (max-height: 667px) {
+    .chart-wrapper {
+        width: 85px;
+        height: 85px;
+        margin: 4px auto 6px;
+    }
+
+    .chart-val {
+        font-size: 0.85rem;
+    }
+
+    .dashboard {
+        gap: 7px;
+    }
+
+    .terminal {
+        padding: 8px;
+    }
+
+    .term-content {
+        height: 45px;
+        font-size: 0.6rem;
+    }
+
+    .terminal::before {
+        margin-bottom: 4px;
+    }
+
+    .live-graph {
+        padding: 10px;
+    }
+
+    .lg-svg {
+        height: 35px;
+    }
+
+    .lg-header {
+        margin-bottom: 6px;
+    }
+
+    .free-card {
+        padding: 12px;
+    }
+
+    .info-box {
+        padding: 10px;
+    }
+}
+
+/* Very short screens (iPhone SE 1st gen, small webview) */
+@media (max-height: 568px) {
+    .chart-wrapper {
+        width: 75px;
+        height: 75px;
+        margin: 2px auto 4px;
+    }
+
+    .dashboard {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .lg-svg {
+        height: 30px;
+    }
+
+    .term-content {
+        height: 38px;
+    }
+
+    .header {
+        padding: 8px 12px;
     }
 }
 
@@ -754,7 +933,7 @@ body {
     margin: 0 auto;
 }
 
-/* Navigation icon fix - click eventi parent a gitsin */
+/* Navigation icon fix */
 .nav-item i {
     pointer-events: none;
 }
