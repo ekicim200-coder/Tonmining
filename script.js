@@ -806,7 +806,6 @@ function graphLoop() {
     const statusEl = document.getElementById('networkStatus');
     const statsEl = document.getElementById('lgStats');
     const lgHash = document.getElementById('lgHash');
-    const lgPing = document.getElementById('lgPing');
 
     if (!line || !card) return;
 
@@ -818,7 +817,6 @@ function graphLoop() {
         if (statusEl) statusEl.innerHTML = '<span style="color:var(--success)">Mining ●</span>';
         if (statsEl) statsEl.style.display = 'flex';
         if (lgHash) lgHash.textContent = state.hashrate;
-        if (lgPing) lgPing.textContent = Math.floor(8 + Math.random() * 12);
     } else {
         card.classList.remove('active');
         if (statusEl) statusEl.innerHTML = '<span style="color:var(--text-muted)">Offline ○</span>';
