@@ -13,7 +13,7 @@
     --danger: #ef4444;
     --text: #ffffff;
     --text-muted: #94a3b8;
-    --nav-h: 65px;
+    --nav-h: 55px;
 }
 
 * {
@@ -49,7 +49,7 @@ body::before {
 
 /* --- HEADER --- */
 .header {
-    padding: 15px 20px;
+    padding: 10px 16px;
     background: rgba(21, 40, 68, 0.9);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(64, 224, 208, 0.15);
@@ -77,7 +77,7 @@ body::before {
 }
 
 .bal-val {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--primary);
     letter-spacing: -0.5px;
@@ -119,22 +119,24 @@ body::before {
 
 /* --- DASHBOARD --- */
 .dashboard {
-    padding: 16px;
+    padding: 8px 12px 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
     position: relative;
     z-index: 1;
     max-width: 480px;
     margin: 0 auto;
+    width: 100%;
 }
 
 /* Donut Chart - Compact */
 .chart-wrapper {
     position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 10px auto 15px;
+    width: 90px;
+    height: 90px;
+    margin: 2px auto 2px;
+    flex-shrink: 0;
 }
 
 .chart-svg {
@@ -171,14 +173,14 @@ body::before {
 }
 
 .chart-val {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: var(--primary);
     line-height: 1;
 }
 
 .chart-lbl {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     color: var(--text-muted);
     margin-top: 3px;
     text-transform: uppercase;
@@ -191,9 +193,10 @@ body::before {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(64, 224, 208, 0.2);
     border-radius: 16px;
-    padding: 14px;
+    padding: 10px 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     transition: border-color 0.5s ease;
+    flex-shrink: 0;
 }
 
 .live-graph.active {
@@ -204,8 +207,8 @@ body::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    font-size: 0.8rem;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
 }
 
 .lg-header .label {
@@ -220,7 +223,7 @@ body::before {
 
 .lg-svg {
     width: 100%;
-    height: 50px;
+    height: 40px;
     overflow: visible;
 }
 
@@ -277,25 +280,26 @@ body::before {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(64, 224, 208, 0.2);
     border-left: 3px solid var(--primary);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 10px;
+    padding: 8px 10px;
     font-family: 'Courier New', monospace;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
 }
 
 .terminal::before {
     content: '◉ ◉ ◉';
     display: block;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     color: rgba(64, 224, 208, 0.3);
     letter-spacing: 3px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .term-content {
-    height: 65px;
+    height: 48px;
     overflow: hidden;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--primary);
     display: flex;
     flex-direction: column;
@@ -317,15 +321,15 @@ body::before {
 .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 6px;
 }
 
 .info-box {
     background: rgba(30, 58, 95, 0.4);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(64, 224, 208, 0.2);
-    border-radius: 16px;
-    padding: 12px;
+    border-radius: 10px;
+    padding: 8px;
     text-align: center;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
@@ -337,15 +341,15 @@ body::before {
 }
 
 .ib-val {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--primary);
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 1px;
 }
 
 .ib-lbl {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -356,12 +360,12 @@ body::before {
 .free-card {
     background: linear-gradient(135deg, rgba(217, 70, 239, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
     border: 1.5px solid rgba(217, 70, 239, 0.4);
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 10px 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     box-shadow: 0 4px 20px rgba(217, 70, 239, 0.2);
     position: relative;
     overflow: hidden;
@@ -385,13 +389,13 @@ body::before {
 .fc-info h4 {
     margin: 0;
     color: var(--purple);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 700;
 }
 
 .fc-info p {
-    margin: 4px 0 0;
-    font-size: 0.7rem;
+    margin: 2px 0 0;
+    font-size: 0.65rem;
     color: var(--text-muted);
 }
 
@@ -399,11 +403,11 @@ body::before {
     background: linear-gradient(135deg, var(--purple) 0%, #c026d3 100%);
     color: #fff;
     border: none;
-    padding: 9px 18px;
-    border-radius: 10px;
+    padding: 7px 14px;
+    border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     box-shadow: 0 4px 15px rgba(217, 70, 239, 0.3);
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -705,21 +709,22 @@ body::before {
 .rank-card {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: rgba(30, 58, 95, 0.4);
     border: 1px solid rgba(64, 224, 208, 0.2);
-    border-radius: 14px;
-    padding: 12px 14px;
+    border-radius: 12px;
+    padding: 8px 12px;
+    flex-shrink: 0;
 }
 
 .rank-icon {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
     flex-shrink: 0;
     background: rgba(205, 127, 50, 0.15);
     border: 1.5px solid #cd7f32;
@@ -732,10 +737,10 @@ body::before {
 }
 
 .rank-name {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: #cd7f32;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .rank-progress-bar {
@@ -763,11 +768,11 @@ body::before {
 .spin-card {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.05));
     border: 1.5px solid rgba(255, 215, 0, 0.35);
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
@@ -1066,70 +1071,148 @@ body::before {
 /* Responsive adjustments for Telegram WebView */
 @media (max-width: 380px) {
     .header {
-        padding: 12px 15px;
+        padding: 8px 12px;
     }
     
     .bal-val {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
+    }
+
+    .wallet-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
     }
     
     .dashboard {
-        padding: 12px;
-        gap: 10px;
+        padding: 6px 10px 10px;
+        gap: 5px;
     }
     
     .chart-wrapper {
-        width: 100px;
-        height: 100px;
-        margin: 6px auto 10px;
+        width: 75px;
+        height: 75px;
+    }
+
+    .chart-val {
+        font-size: 0.9rem;
     }
     
     .info-grid {
-        gap: 8px;
+        gap: 5px;
     }
     
     .info-box {
-        padding: 10px;
+        padding: 6px;
     }
+
+    .ib-val { font-size: 0.9rem; }
+    .ib-lbl { font-size: 0.55rem; }
     
     .free-card {
-        padding: 14px;
+        padding: 8px 10px;
     }
     
     .fc-info h4 {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .nav-item {
-        font-size: 1.2rem;
-        padding: 8px;
+        font-size: 1.1rem;
+        padding: 6px;
     }
     
     .list-grid {
-        padding: 16px;
-        gap: 10px;
-    }
-}
-
-/* Short screens (iPhone SE etc) */
-@media (max-height: 667px) {
-    .chart-wrapper {
-        width: 90px;
-        height: 90px;
-        margin: 4px auto 8px;
-    }
-
-    .dashboard {
+        padding: 12px;
         gap: 8px;
     }
 
-    .term-content {
-        height: 50px;
+    .rank-card {
+        padding: 6px 10px;
     }
 
-    .lg-svg {
-        height: 40px;
+    .rank-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
     }
+
+    .rank-name { font-size: 0.75rem; }
+    .rank-sub { font-size: 0.5rem; }
+}
+
+/* Very small width (iPhone SE 1st gen) */
+@media (max-width: 340px) {
+    .chart-wrapper {
+        width: 65px;
+        height: 65px;
+    }
+
+    .dashboard {
+        gap: 4px;
+        padding: 5px 8px 8px;
+    }
+
+    .lg-svg { height: 30px; }
+    .term-content { height: 36px; font-size: 0.55rem; }
+}
+
+/* Short screens (iPhone SE, small Android) */
+@media (max-height: 680px) {
+    .chart-wrapper {
+        width: 70px;
+        height: 70px;
+    }
+
+    .chart-val { font-size: 0.85rem; }
+    .chart-lbl { font-size: 0.5rem; }
+
+    .dashboard {
+        gap: 5px;
+    }
+
+    .term-content {
+        height: 38px;
+        font-size: 0.6rem;
+    }
+
+    .terminal::before {
+        margin-bottom: 2px;
+        font-size: 0.45rem;
+    }
+
+    .lg-svg { height: 32px; }
+    .lg-header { margin-bottom: 4px; font-size: 0.7rem; }
+    .lg-stats { margin-top: 4px; font-size: 0.6rem; }
+
+    .rank-card { padding: 5px 10px; }
+    .rank-icon { width: 26px; height: 26px; font-size: 0.8rem; }
+    .rank-progress-bar { height: 4px; }
+    .rank-name { font-size: 0.7rem; margin-bottom: 3px; }
+    .rank-sub { font-size: 0.5rem; }
+
+    .free-card { padding: 8px 10px; }
+    .fc-info h4 { font-size: 0.8rem; }
+    .fc-info p { font-size: 0.6rem; }
+}
+
+/* Very short screens */
+@media (max-height: 580px) {
+    .header { padding: 6px 10px; }
+    .bal-val { font-size: 1.1rem; }
+
+    .chart-wrapper {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto;
+    }
+
+    .dashboard { gap: 4px; padding: 4px 8px 8px; }
+    .terminal { padding: 5px 8px; }
+    .terminal::before { display: none; }
+    .term-content { height: 30px; font-size: 0.55rem; }
+    .lg-svg { height: 28px; }
+    .info-box { padding: 5px; }
+    .ib-val { font-size: 0.85rem; }
 }
 
 /* Smooth scrolling */
