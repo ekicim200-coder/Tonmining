@@ -45,7 +45,9 @@ let state = {
     referralCount: 0,
     referralEarnings: 0,
     referralLocked: false,
-    referralBonusReceived: false
+    referralBonusReceived: false,
+    totalEarned: 0,
+    lastSpinTime: 0
 };
 
 const machines = [
@@ -77,9 +79,12 @@ function init() {
     setInterval(graphLoop, 300);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
+    setInterval(updateSpinStatus, 1000);
     
     setupEventListeners();
     checkReferralPopup();
+    initSpinWheel();
+    updateSpinStatus();
 }
 
 function setupEventListeners() {
@@ -215,7 +220,9 @@ async function syncToServer() {
             referralCount: state.referralCount,
             referralEarnings: state.referralEarnings,
             referralLocked: state.referralLocked,
-            referralBonusReceived: state.referralBonusReceived
+            referralBonusReceived: state.referralBonusReceived,
+            totalEarned: state.totalEarned,
+            lastSpinTime: state.lastSpinTime
         };
         await saveUserToFire(state.wallet, dataToSave);
     } catch (e) {
@@ -253,6 +260,8 @@ async function loadServerData(walletAddress) {
             state.referralEarnings = serverData.referralEarnings || 0;
             state.referralLocked = serverData.referralLocked || false;
             state.referralBonusReceived = serverData.referralBonusReceived || false;
+            state.totalEarned = serverData.totalEarned || 0;
+            state.lastSpinTime = serverData.lastSpinTime || 0;
             
             if (!state.referralCode) {
                 await initReferralCode(walletAddress);
@@ -339,6 +348,7 @@ function calculateOfflineProgress() {
         const earned = secondsPassed * state.hashrate * CFG.rate;
         if (earned > 0) {
             state.balance += earned;
+            state.totalEarned += earned;
             showToast(`Offline: +${earned.toFixed(4)} TON`);
             syncToServer();
         }
@@ -453,7 +463,9 @@ async function toggleWallet() {
 // --- GAME LOOP ---
 function loop() {
     if (state.hashrate > 0) {
-        state.balance += state.hashrate * CFG.rate * (CFG.tick/1000);
+        const earned = state.hashrate * CFG.rate * (CFG.tick/1000);
+        state.balance += earned;
+        state.totalEarned += earned;
         updateUI();
     }
 }
@@ -470,6 +482,8 @@ function updateUI() {
     
     const daily = (state.hashrate * CFG.rate * 86400).toFixed(2);
     if (dDaily) dDaily.textContent = daily;
+    
+    updateRankBadge();
 }
 
 // --- FREE REWARD ---
@@ -1161,6 +1175,295 @@ function showToast(msg, err=false) {
             tg.HapticFeedback.notificationOccurred(err ? 'error' : 'success');
         }
     } catch (e) {}
+}
+
+// --- RANK SYSTEM ---
+const RANKS = [
+    { name: 'Bronze', min: 0, max: 50, color: '#cd7f32', icon: 'fa-medal', bg: 'rgba(205,127,50,0.15)' },
+    { name: 'Silver', min: 50, max: 200, color: '#C0C0C0', icon: 'fa-medal', bg: 'rgba(192,192,192,0.15)' },
+    { name: 'Gold', min: 200, max: 1000, color: '#FFD700', icon: 'fa-crown', bg: 'rgba(255,215,0,0.15)' },
+    { name: 'Diamond', min: 1000, max: 5000, color: '#00BFFF', icon: 'fa-gem', bg: 'rgba(0,191,255,0.15)' },
+    { name: 'Legendary', min: 5000, max: Infinity, color: '#d946ef', icon: 'fa-star', bg: 'rgba(217,70,239,0.15)' }
+];
+
+function getRank(totalEarned) {
+    for (let i = RANKS.length - 1; i >= 0; i--) {
+        if (totalEarned >= RANKS[i].min) return { ...RANKS[i], index: i };
+    }
+    return { ...RANKS[0], index: 0 };
+}
+
+function updateRankBadge() {
+    const rank = getRank(state.totalEarned);
+    const iconEl = document.getElementById('rankIcon');
+    const nameEl = document.getElementById('rankName');
+    const fillEl = document.getElementById('rankFill');
+    const subEl = document.getElementById('rankSub');
+    
+    if (!iconEl || !nameEl) return;
+    
+    iconEl.innerHTML = `<i class="fas ${rank.icon}"></i>`;
+    iconEl.style.color = rank.color;
+    iconEl.style.borderColor = rank.color;
+    iconEl.style.background = rank.bg;
+    
+    nameEl.textContent = rank.name;
+    nameEl.style.color = rank.color;
+    
+    if (fillEl) {
+        fillEl.style.background = `linear-gradient(90deg, ${rank.color}, ${rank.color}88)`;
+        if (rank.max === Infinity) {
+            fillEl.style.width = '100%';
+        } else {
+            const progress = ((state.totalEarned - rank.min) / (rank.max - rank.min)) * 100;
+            fillEl.style.width = Math.min(100, Math.max(0, progress)) + '%';
+        }
+    }
+    
+    if (subEl) {
+        if (rank.max === Infinity) {
+            subEl.textContent = `${state.totalEarned.toFixed(1)} TON earned — MAX RANK`;
+        } else {
+            const nextRank = RANKS[rank.index + 1];
+            subEl.textContent = `${state.totalEarned.toFixed(1)} / ${rank.max} TON to ${nextRank.name}`;
+        }
+    }
+}
+
+// --- SPIN WHEEL ---
+const SPIN_SEGMENTS = [
+    { label: '0.01', value: 0.01, color: '#3b82f6' },
+    { label: '0.05', value: 0.05, color: '#10b981' },
+    { label: '0.10', value: 0.10, color: '#8b5cf6' },
+    { label: '0.50', value: 0.50, color: '#f59e0b' },
+    { label: '0.02', value: 0.02, color: '#06b6d4' },
+    { label: '0.25', value: 0.25, color: '#ef4444' },
+    { label: '0.03', value: 0.03, color: '#40e0d0' },
+    { label: '1.00', value: 1.00, color: '#FFD700' }
+];
+
+const SPIN_WEIGHTS = [30, 20, 15, 5, 20, 6, 12, 2]; // weighted probability
+
+let spinAngle = 0;
+let isSpinning = false;
+
+function initSpinWheel() {
+    drawWheel(0);
+}
+
+function drawWheel(rotation) {
+    const canvas = document.getElementById('spinCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r = cx - 10;
+    const segAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+    
+    SPIN_SEGMENTS.forEach((seg, i) => {
+        const startAngle = i * segAngle;
+        const endAngle = startAngle + segAngle;
+        
+        // Segment
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = seg.color;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Text
+        ctx.save();
+        ctx.rotate(startAngle + segAngle / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 3;
+        ctx.fillText(seg.label, r * 0.65, 0);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    });
+    
+    ctx.restore();
+    
+    // Center circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+    ctx.fillStyle = '#152844';
+    ctx.fill();
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TON', cx, cy);
+}
+
+function getWeightedSegment() {
+    const totalWeight = SPIN_WEIGHTS.reduce((a, b) => a + b, 0);
+    let rand = Math.random() * totalWeight;
+    for (let i = 0; i < SPIN_WEIGHTS.length; i++) {
+        rand -= SPIN_WEIGHTS[i];
+        if (rand <= 0) return i;
+    }
+    return 0;
+}
+
+window.openSpinWheel = function() {
+    const modal = document.getElementById('spinModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        drawWheel(spinAngle);
+        updateSpinButton();
+    }
+}
+
+window.closeSpinWheel = function() {
+    const modal = document.getElementById('spinModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function canSpin() {
+    if (!state.lastSpinTime) return true;
+    return (Date.now() - state.lastSpinTime) >= 24 * 60 * 60 * 1000;
+}
+
+function updateSpinButton() {
+    const btn = document.getElementById('spinBtn');
+    const timer = document.getElementById('spinTimer');
+    const result = document.getElementById('spinResult');
+    
+    if (!btn) return;
+    
+    if (canSpin() && !isSpinning) {
+        btn.style.display = 'flex';
+        btn.disabled = false;
+        if (timer) timer.style.display = 'none';
+        if (result) result.style.display = 'none';
+    } else if (isSpinning) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Spinning...';
+    } else {
+        btn.style.display = 'none';
+        if (timer) timer.style.display = 'flex';
+    }
+}
+
+function updateSpinStatus() {
+    const statusEl = document.getElementById('spinStatus');
+    const badgeEl = document.getElementById('spinBadge');
+    const countdownEl = document.getElementById('spinCountdown');
+    
+    if (canSpin()) {
+        if (statusEl) statusEl.textContent = 'Spin to win free TON!';
+        if (badgeEl) {
+            badgeEl.textContent = 'FREE';
+            badgeEl.style.color = '#FFD700';
+            badgeEl.style.borderColor = '#FFD700';
+            badgeEl.style.background = 'rgba(255,215,0,0.2)';
+        }
+    } else {
+        const remaining = 24 * 60 * 60 * 1000 - (Date.now() - state.lastSpinTime);
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        const timeStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        
+        if (statusEl) statusEl.textContent = `Next spin in ${timeStr}`;
+        if (badgeEl) {
+            badgeEl.textContent = timeStr;
+            badgeEl.style.color = 'var(--text-muted)';
+            badgeEl.style.borderColor = 'rgba(255,255,255,0.2)';
+            badgeEl.style.background = 'rgba(255,255,255,0.05)';
+        }
+        if (countdownEl) countdownEl.textContent = timeStr;
+    }
+    
+    updateSpinButton();
+}
+
+window.doSpin = function() {
+    if (!canSpin() || isSpinning) return;
+    
+    isSpinning = true;
+    updateSpinButton();
+    
+    const winIndex = getWeightedSegment();
+    const segAngle = 360 / SPIN_SEGMENTS.length;
+    
+    // Calculate target angle: spin multiple rounds + land on winning segment
+    // Pointer is at top (270 degrees), segment 0 starts at 0 degrees (right)
+    const segCenter = winIndex * segAngle + segAngle / 2;
+    const targetAngle = 360 * 6 + (360 - segCenter + 270) % 360; // 6 full spins + offset
+    
+    const startAngle = spinAngle;
+    const totalRotation = targetAngle * (Math.PI / 180);
+    const startTime = Date.now();
+    const duration = 4000;
+    
+    function easeOut(t) {
+        return 1 - Math.pow(1 - t, 3);
+    }
+    
+    function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeOut(progress);
+        
+        spinAngle = startAngle + totalRotation * eased;
+        drawWheel(spinAngle);
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Spin complete
+            isSpinning = false;
+            state.lastSpinTime = Date.now();
+            
+            const prize = SPIN_SEGMENTS[winIndex].value;
+            state.balance += prize;
+            state.totalEarned += prize;
+            
+            saveLocalData();
+            syncToServer();
+            updateUI();
+            
+            // Show result
+            const resultEl = document.getElementById('spinResult');
+            const prizeEl = document.getElementById('spinPrize');
+            if (resultEl) resultEl.style.display = 'block';
+            if (prizeEl) prizeEl.textContent = `+${prize.toFixed(2)} TON`;
+            
+            updateSpinButton();
+            updateSpinStatus();
+            
+            showToast(`🎉 +${prize.toFixed(2)} TON!`, false);
+            
+            try {
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } catch(e) {}
+        }
+    }
+    
+    try {
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    } catch(e) {}
+    
+    requestAnimationFrame(animate);
 }
 
 init();
