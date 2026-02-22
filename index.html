@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TON Pro Miner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -25,6 +25,18 @@
             <div class="chart-wrapper">
                 <svg class="chart-svg" viewBox="0 0 100 100"><circle class="c-bg" cx="50" cy="50" r="40"></circle><g id="chartSegments"></g></svg>
                 <div class="chart-info"><div class="chart-val" id="d-hash">0</div><div class="chart-lbl">GH/s</div></div>
+            </div>
+
+            <!-- Rank Badge -->
+            <div class="rank-card" id="rankCard">
+                <div class="rank-icon" id="rankIcon"><i class="fas fa-medal"></i></div>
+                <div class="rank-info">
+                    <div class="rank-name" id="rankName">Bronze</div>
+                    <div class="rank-progress-bar">
+                        <div class="rank-progress-fill" id="rankFill" style="width: 0%"></div>
+                    </div>
+                    <div class="rank-sub" id="rankSub">0 / 50 TON to Silver</div>
+                </div>
             </div>
 
             <div class="live-graph" id="liveGraphCard">
@@ -95,6 +107,16 @@
                     <div style="color:#0088cc; font-size:1.2rem;"><i class="fas fa-chevron-right"></i></div>
                 </div>
             </a>
+
+            <!-- Daily Spin Wheel Card -->
+            <div class="spin-card" id="spinCard" onclick="openSpinWheel()">
+                <div style="font-size:1.8rem; color:#FFD700; margin-right:15px;"><i class="fas fa-dharmachakra fa-spin" style="animation-duration:4s;"></i></div>
+                <div style="flex:1">
+                    <h4 style="margin:0; color:#FFD700; font-size:0.95rem; font-weight:700;">Daily Spin Wheel</h4>
+                    <p style="margin:4px 0 0; font-size:0.7rem; color:var(--text-muted);" id="spinStatus">Spin to win free TON!</p>
+                </div>
+                <div id="spinBadge" style="background:rgba(255,215,0,0.2); color:#FFD700; border:1px solid #FFD700; padding:5px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">FREE</div>
+            </div>
         </div>
     </div>
 
@@ -237,10 +259,34 @@
         <div class="nav-item" onclick="window.open('info.html', '_blank')" title="How It Works"><i class="fas fa-circle-info"></i></div>
     </div>
 
+    <!-- Spin Wheel Modal -->
+    <div id="spinModal" class="spin-modal" style="display:none;">
+        <div class="spin-modal-content">
+            <div class="spin-modal-header">
+                <h3><i class="fas fa-dharmachakra"></i> Daily Spin</h3>
+                <button class="spin-close" onclick="closeSpinWheel()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="spin-wheel-container">
+                <div class="spin-pointer"><i class="fas fa-caret-down"></i></div>
+                <canvas id="spinCanvas" width="300" height="300"></canvas>
+            </div>
+            <div id="spinResult" style="display:none; text-align:center; margin:15px 0;">
+                <div style="font-size:1.5rem; font-weight:800; color:#FFD700;" id="spinPrize">+0.10 TON</div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Added to your balance!</div>
+            </div>
+            <button class="spin-btn" id="spinBtn" onclick="doSpin()">
+                <i class="fas fa-play"></i> SPIN!
+            </button>
+            <div class="spin-timer" id="spinTimer" style="display:none;">
+                <i class="fas fa-clock"></i> Next spin in: <span id="spinCountdown">23:59:59</span>
+            </div>
+        </div>
+    </div>
+
     <div id="toast">Message</div>
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=6"></script>
+    <script type="module" src="script.js?v=7"></script>
 </body>
 </html>
