@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TON Pro Miner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -263,19 +263,21 @@
     <div id="spinModal" class="spin-modal" style="display:none;">
         <div class="spin-modal-content">
             <div class="spin-modal-header">
-                <h3><i class="fas fa-dharmachakra"></i> Daily Spin</h3>
+                <h3><i class="fas fa-dharmachakra"></i> Daily Fortune</h3>
                 <button class="spin-close" onclick="closeSpinWheel()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="spin-wheel-container">
-                <div class="spin-pointer"><i class="fas fa-caret-down"></i></div>
-                <canvas id="spinCanvas" width="300" height="300"></canvas>
+            <div class="spin-wheel-wrapper">
+                <div class="spin-wheel-inner">
+                    <div class="spin-pointer"></div>
+                    <canvas id="spinCanvas" width="300" height="300"></canvas>
+                </div>
             </div>
-            <div id="spinResult" style="display:none; text-align:center; margin:15px 0;">
-                <div style="font-size:1.5rem; font-weight:800; color:#FFD700;" id="spinPrize">+0.10 TON</div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Added to your balance!</div>
+            <div id="spinResult" class="spin-result-box" style="display:none;">
+                <div class="spin-result-amount" id="spinPrize">+0.10 TON</div>
+                <div class="spin-result-label">Added to your balance!</div>
             </div>
             <button class="spin-btn" id="spinBtn" onclick="doSpin()">
-                <i class="fas fa-play"></i> SPIN!
+                <i class="fas fa-play"></i> SPIN TO WIN
             </button>
             <div class="spin-timer" id="spinTimer" style="display:none;">
                 <i class="fas fa-clock"></i> Next spin in: <span id="spinCountdown">23:59:59</span>
@@ -287,6 +289,6 @@
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=7"></script>
+    <script type="module" src="script.js?v=8"></script>
 </body>
 </html>
