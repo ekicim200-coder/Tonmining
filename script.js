@@ -1232,14 +1232,14 @@ function updateRankBadge() {
 
 // --- SPIN WHEEL ---
 const SPIN_SEGMENTS = [
-    { label: '0.01', value: 0.01, color: '#3b82f6' },
-    { label: '0.05', value: 0.05, color: '#10b981' },
-    { label: '0.10', value: 0.10, color: '#8b5cf6' },
-    { label: '0.50', value: 0.50, color: '#f59e0b' },
-    { label: '0.02', value: 0.02, color: '#06b6d4' },
-    { label: '0.25', value: 0.25, color: '#ef4444' },
-    { label: '0.03', value: 0.03, color: '#40e0d0' },
-    { label: '1.00', value: 1.00, color: '#FFD700' }
+    { label: '0.01', value: 0.01, color: '#2563eb' },
+    { label: '0.05', value: 0.05, color: '#059669' },
+    { label: '0.10', value: 0.10, color: '#7c3aed' },
+    { label: '0.50', value: 0.50, color: '#dc2626' },
+    { label: '0.02', value: 0.02, color: '#0891b2' },
+    { label: '0.25', value: 0.25, color: '#d97706' },
+    { label: '0.03', value: 0.03, color: '#0d9488' },
+    { label: '1.00', value: 1.00, color: '#ca8a04' }
 ];
 
 const SPIN_WEIGHTS = [30, 20, 15, 5, 20, 6, 12, 2]; // weighted probability
@@ -1256,61 +1256,148 @@ function drawWheel(rotation) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const r = cx - 10;
-    const segAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
+    const size = canvas.width;
+    const cx = size / 2;
+    const cy = size / 2;
+    const outerR = cx - 8;
+    const innerR = 32;
+    const segCount = SPIN_SEGMENTS.length;
+    const segAngle = (2 * Math.PI) / segCount;
     
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, size, size);
+    
+    // --- Draw segments ---
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(rotation);
     
     SPIN_SEGMENTS.forEach((seg, i) => {
-        const startAngle = i * segAngle;
-        const endAngle = startAngle + segAngle;
+        const startA = i * segAngle;
+        const endA = startA + segAngle;
         
-        // Segment
+        // Segment fill with gradient
+        const grad = ctx.createRadialGradient(0, 0, innerR, 0, 0, outerR);
+        grad.addColorStop(0, lightenColor(seg.color, 30));
+        grad.addColorStop(0.7, seg.color);
+        grad.addColorStop(1, darkenColor(seg.color, 20));
+        
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.arc(0, 0, r, startAngle, endAngle);
+        ctx.arc(0, 0, outerR, startA, endA);
         ctx.closePath();
-        ctx.fillStyle = seg.color;
+        ctx.fillStyle = grad;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-        ctx.lineWidth = 2;
+        
+        // Segment border
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
         
-        // Text
+        // Inner highlight line
+        ctx.beginPath();
+        ctx.moveTo(
+            Math.cos(startA) * (innerR + 5),
+            Math.sin(startA) * (innerR + 5)
+        );
+        ctx.lineTo(
+            Math.cos(startA) * (outerR - 3),
+            Math.sin(startA) * (outerR - 3)
+        );
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // --- Prize text ---
         ctx.save();
-        ctx.rotate(startAngle + segAngle / 2);
+        ctx.rotate(startA + segAngle / 2);
+        
+        // TON amount
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 3;
-        ctx.fillText(seg.label, r * 0.65, 0);
+        ctx.font = 'bold 17px -apple-system, sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(seg.label, outerR * 0.62, -3);
+        
+        // Small "TON" label
+        ctx.font = '600 8px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.shadowBlur = 0;
+        ctx.fillText('TON', outerR * 0.62, 9);
+        
         ctx.restore();
     });
     
+    // --- Outer ring dots ---
+    for (let i = 0; i < segCount * 3; i++) {
+        const a = (i / (segCount * 3)) * Math.PI * 2;
+        const dotR = outerR - 6;
+        const dx = Math.cos(a) * dotR;
+        const dy = Math.sin(a) * dotR;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(255,215,0,0.6)' : 'rgba(255,255,255,0.15)';
+        ctx.fill();
+    }
+    
     ctx.restore();
     
-    // Center circle
+    // --- Center hub ---
+    // Shadow
     ctx.beginPath();
-    ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
-    ctx.fillStyle = '#152844';
+    ctx.arc(cx, cy, innerR + 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+    
+    // Outer ring
+    const hubGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+    hubGrad.addColorStop(0, '#2a3f5f');
+    hubGrad.addColorStop(0.8, '#152844');
+    hubGrad.addColorStop(1, '#0f1e33');
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = hubGrad;
     ctx.fill();
     ctx.strokeStyle = '#FFD700';
     ctx.lineWidth = 3;
     ctx.stroke();
     
+    // Inner gold ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR - 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Text
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('TON', cx, cy);
+    ctx.shadowColor = 'rgba(255,215,0,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.fillText('SPIN', cx, cy - 5);
+    ctx.font = '600 8px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,215,0,0.7)';
+    ctx.shadowBlur = 0;
+    ctx.fillText('& WIN', cx, cy + 7);
+}
+
+function lightenColor(hex, percent) {
+    const num = parseInt(hex.replace('#',''), 16);
+    const r = Math.min(255, (num >> 16) + Math.round(2.55 * percent));
+    const g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(2.55 * percent));
+    const b = Math.min(255, (num & 0x0000FF) + Math.round(2.55 * percent));
+    return `rgb(${r},${g},${b})`;
+}
+
+function darkenColor(hex, percent) {
+    const num = parseInt(hex.replace('#',''), 16);
+    const r = Math.max(0, (num >> 16) - Math.round(2.55 * percent));
+    const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(2.55 * percent));
+    const b = Math.max(0, (num & 0x0000FF) - Math.round(2.55 * percent));
+    return `rgb(${r},${g},${b})`;
 }
 
 function getWeightedSegment() {
@@ -1405,32 +1492,43 @@ window.doSpin = function() {
     const winIndex = getWeightedSegment();
     const segAngle = 360 / SPIN_SEGMENTS.length;
     
-    // Calculate target angle: spin multiple rounds + land on winning segment
-    // Pointer is at top (270 degrees), segment 0 starts at 0 degrees (right)
     const segCenter = winIndex * segAngle + segAngle / 2;
-    const targetAngle = 360 * 6 + (360 - segCenter + 270) % 360; // 6 full spins + offset
+    const targetAngle = 360 * 8 + (360 - segCenter + 270) % 360;
     
     const startAngle = spinAngle;
     const totalRotation = targetAngle * (Math.PI / 180);
     const startTime = Date.now();
-    const duration = 4000;
+    const duration = 5000;
     
-    function easeOut(t) {
-        return 1 - Math.pow(1 - t, 3);
+    // Ease out with slight bounce at end
+    function easeOutBack(t) {
+        const c1 = 1.2;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     }
+    
+    // Stop the ring animation during spin
+    const wrapper = document.querySelector('.spin-wheel-wrapper');
+    if (wrapper) wrapper.style.setProperty('--spin-active', '1');
     
     function animate() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const eased = easeOut(progress);
+        const eased = easeOutBack(progress);
         
         spinAngle = startAngle + totalRotation * eased;
         drawWheel(spinAngle);
         
+        // Tick sound via haptic
+        if (progress < 0.8 && Math.floor(elapsed / 60) !== Math.floor((elapsed - 16) / 60)) {
+            try {
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            } catch(e) {}
+        }
+        
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
-            // Spin complete
             isSpinning = false;
             state.lastSpinTime = Date.now();
             
@@ -1442,11 +1540,13 @@ window.doSpin = function() {
             syncToServer();
             updateUI();
             
-            // Show result
             const resultEl = document.getElementById('spinResult');
             const prizeEl = document.getElementById('spinPrize');
             if (resultEl) resultEl.style.display = 'block';
             if (prizeEl) prizeEl.textContent = `+${prize.toFixed(2)} TON`;
+            
+            const btn = document.getElementById('spinBtn');
+            if (btn) btn.style.display = 'none';
             
             updateSpinButton();
             updateSpinStatus();
@@ -1460,7 +1560,7 @@ window.doSpin = function() {
     }
     
     try {
-        if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
     } catch(e) {}
     
     requestAnimationFrame(animate);
