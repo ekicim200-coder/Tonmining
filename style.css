@@ -795,92 +795,218 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.85);
+    background: rgba(0,0,0,0.9);
     z-index: 3000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 15px;
+    animation: fadeIn 0.3s ease;
 }
 
 .spin-modal-content {
-    background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
-    border: 1.5px solid rgba(255, 215, 0, 0.3);
-    border-radius: 20px;
-    padding: 20px;
+    background: linear-gradient(180deg, #1a2d4a 0%, #0f1e33 100%);
+    border: 1.5px solid rgba(255, 215, 0, 0.25);
+    border-radius: 24px;
+    padding: 24px 20px;
     width: 100%;
-    max-width: 340px;
+    max-width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(255,215,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.spin-modal-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 0%, rgba(255,215,0,0.06) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .spin-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .spin-modal-header h3 {
     margin: 0;
     color: #FFD700;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    text-shadow: 0 0 20px rgba(255,215,0,0.3);
 }
 
 .spin-close {
-    background: rgba(255,255,255,0.1);
-    border: none;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
     color: var(--text-muted);
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
 }
 
-.spin-wheel-container {
+.spin-close:active {
+    background: rgba(255,255,255,0.15);
+    transform: scale(0.9);
+}
+
+.spin-wheel-wrapper {
     position: relative;
-    width: 260px;
-    height: 260px;
-    margin: 0 auto;
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 15px;
 }
 
-.spin-wheel-container canvas {
+/* Outer ring glow */
+.spin-wheel-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #FFD700, #FF8C00, #FFD700, #FFA500, #FFD700, #FF6B00, #FFD700, #FF8C00, #FFD700);
+    opacity: 0.7;
+    z-index: 0;
+    animation: ringRotate 8s linear infinite;
+}
+
+@keyframes ringRotate {
+    to { transform: rotate(360deg); }
+}
+
+/* Inner dark border */
+.spin-wheel-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    border-radius: 50%;
+    border: 3px solid #0f1e33;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.spin-wheel-inner {
+    position: relative;
     width: 100%;
     height: 100%;
+    z-index: 2;
+}
+
+.spin-wheel-inner canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
 }
 
 .spin-pointer {
     position: absolute;
-    top: -8px;
+    top: -2px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2rem;
-    color: #FFD700;
     z-index: 10;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    width: 30px;
+    height: 40px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.spin-pointer::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 28px solid #FFD700;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+}
+
+.spin-pointer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 22px solid #FFF3B0;
+    margin-top: 2px;
+}
+
+/* Decorative dots around wheel */
+.spin-dots {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.spin-result-box {
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06));
+    border: 1px solid rgba(255,215,0,0.25);
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
+
+.spin-result-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.4);
+}
+
+.spin-result-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
 }
 
 .spin-btn {
     width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #FFD700, #FFA500);
+    padding: 16px;
+    background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     color: #000;
     font-weight: 800;
-    font-size: 1rem;
+    font-size: 1.05rem;
     cursor: pointer;
-    margin-top: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(255,215,0,0.3);
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
 }
 
 .spin-btn:active {
@@ -891,23 +1017,50 @@ body::before {
     background: rgba(100,100,100,0.3);
     color: #666;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 .spin-timer {
     text-align: center;
-    margin-top: 12px;
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
     color: var(--text-muted);
     font-size: 0.8rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .spin-timer span {
     color: #FFD700;
     font-weight: 700;
     font-family: monospace;
+    font-size: 0.95rem;
+}
+
+/* History strip in modal */
+.spin-history {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.spin-history-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.1);
 }
 
 /* Responsive adjustments for Telegram WebView */
