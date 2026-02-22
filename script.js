@@ -51,11 +51,16 @@ let state = {
 };
 
 const machines = [
-    { id: 1, name: "Basic Chip v1", price: 10, starPrice: 50, rate: 5, color: "#94a3b8", icon: "fa-microchip" },
-    { id: 2, name: "Dual Core X", price: 30, starPrice: 150, rate: 15, color: "#2dd4bf", icon: "fa-memory" },
-    { id: 3, name: "Quantum Processor", price: 75, starPrice: 375, rate: 40, color: "#3b82f6", icon: "fa-gamepad" },
-    { id: 4, name: "Fusion Reactor", price: 150, starPrice: 750, rate: 90, color: "#8b5cf6", icon: "fa-rocket" },
-    { id: 5, name: "Dark Matter Node", price: 400, starPrice: 2000, rate: 250, color: "#f472b6", icon: "fa-server" },
+    { id: 1, name: "Nano Chip", price: 5, starPrice: 25, rate: 3, color: "#94a3b8", icon: "fa-microchip" },
+    { id: 2, name: "Micro Core", price: 15, starPrice: 75, rate: 7, color: "#60a5fa", icon: "fa-memory" },
+    { id: 3, name: "Basic Miner", price: 35, starPrice: 175, rate: 16, color: "#2dd4bf", icon: "fa-hammer" },
+    { id: 4, name: "Dual Processor", price: 75, starPrice: 375, rate: 35, color: "#34d399", icon: "fa-microchip" },
+    { id: 5, name: "Quad Engine", price: 150, starPrice: 750, rate: 69, color: "#3b82f6", icon: "fa-cogs" },
+    { id: 6, name: "Hexa Unit", price: 300, starPrice: 1500, rate: 139, color: "#8b5cf6", icon: "fa-server" },
+    { id: 7, name: "Quantum Node", price: 600, starPrice: 3000, rate: 278, color: "#a855f7", icon: "fa-atom" },
+    { id: 8, name: "Fusion Reactor", price: 1200, starPrice: 6000, rate: 556, color: "#ec4899", icon: "fa-rocket" },
+    { id: 9, name: "Dark Matter", price: 2500, starPrice: 12500, rate: 1157, color: "#f43f5e", icon: "fa-bolt" },
+    { id: 10, name: "Plasma Core", price: 5000, starPrice: 25000, rate: 2315, color: "#FFD700", icon: "fa-sun" },
     { id: 999, name: "FREE Dark Matter Node", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
 ];
 
@@ -776,6 +781,13 @@ function drawChart() {
     if (!container) return;
     container.innerHTML = '';
 
+    // Count machines by type
+    const machineCount = {};
+    state.inv.forEach(i => {
+        if (!machineCount[i.mid]) machineCount[i.mid] = 0;
+        machineCount[i.mid]++;
+    });
+
     const total = state.inv.reduce((sum, i) => {
         const m = machines.find(x => x.id === i.mid);
         return sum + (m?.rate || 0);
@@ -785,11 +797,18 @@ function drawChart() {
 
     let currentAngle = 0;
 
+    // Group by machine type
+    const grouped = {};
     state.inv.forEach(i => {
         const m = machines.find(x => x.id === i.mid);
         if (!m) return;
+        if (!grouped[m.id]) grouped[m.id] = { machine: m, count: 0, totalRate: 0 };
+        grouped[m.id].count++;
+        grouped[m.id].totalRate += m.rate;
+    });
 
-        const percentage = m.rate / total;
+    Object.values(grouped).forEach(g => {
+        const percentage = g.totalRate / total;
         const angle = percentage * 360;
 
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -801,12 +820,54 @@ function drawChart() {
         const endY = 50 + 40 * Math.sin((currentAngle + angle - 90) * Math.PI / 180);
 
         path.setAttribute("d", `M 50 50 L ${startX} ${startY} A 40 40 0 ${largeArcFlag} 1 ${endX} ${endY} Z`);
-        path.setAttribute("fill", m.color);
-        path.setAttribute("opacity", "0.8");
+        path.setAttribute("fill", g.machine.color);
+        path.setAttribute("opacity", "0.85");
+        path.setAttribute("style", "cursor:pointer;");
+        
+        path.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showMachinePopup(g.machine, g.count, g.totalRate);
+        });
 
         container.appendChild(path);
         currentAngle += angle;
     });
+}
+
+function showMachinePopup(machine, count, totalRate) {
+    // Remove existing popup
+    const old = document.getElementById('machinePopup');
+    if (old) old.remove();
+    
+    const daily = (totalRate * CFG.rate * 86400).toFixed(2);
+    
+    const popup = document.createElement('div');
+    popup.id = 'machinePopup';
+    popup.innerHTML = `
+        <div style="background:rgba(21,40,68,0.97); border:1.5px solid ${machine.color}; border-radius:16px; padding:16px; max-width:260px; margin:0 auto; box-shadow:0 10px 40px rgba(0,0,0,0.5); position:relative;">
+            <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer;">✕</button>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:${machine.color}22;border:1px solid ${machine.color};display:flex;align-items:center;justify-content:center;color:${machine.color};"><i class="fas ${machine.icon}"></i></div>
+                <div>
+                    <div style="font-weight:700;color:#fff;font-size:0.95rem;">${machine.name}</div>
+                    <div style="font-size:0.7rem;color:${machine.color};">${count}x Active</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px;text-align:center;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);">Total GH/s</div>
+                    <div style="font-weight:700;color:${machine.color};font-size:1rem;">${totalRate}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px;text-align:center;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);">Daily TON</div>
+                    <div style="font-weight:700;color:var(--success);font-size:1rem;">${daily}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    popup.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);padding:20px;animation:fadeIn 0.2s ease;';
+    popup.addEventListener('click', (e) => { if (e.target === popup) popup.remove(); });
+    document.body.appendChild(popup);
 }
 
 // --- GRAPH ---
@@ -910,12 +971,14 @@ function renderMarket() {
     
     machines.filter(m=>m.id!==999).forEach(m => {
         let daily = (m.rate * CFG.rate * 86400).toFixed(2);
+        let roi = (m.price / (m.rate * CFG.rate * 86400)).toFixed(0);
         l.innerHTML += `
         <div class="card-item">
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
             <div class="ci-info">
                 <h4>${m.name}</h4>
-                <p>+${m.rate} GH/s • Day: ${daily}</p>
+                <p>+${m.rate} GH/s • ${daily} TON/day</p>
+                <p style="color:${m.color};font-size:0.65rem;">ROI: ~${roi} days</p>
             </div>
             <div class="ci-action">
                 <div class="price-options">
