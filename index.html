@@ -7,10 +7,60 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <svg viewBox="0 0 64 64" width="80" height="80">
+                    <defs>
+                        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#40e0d0"/>
+                            <stop offset="100%" stop-color="#2ec5b6"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="32,8 50,28 42,56 22,56 14,28" fill="url(#sg)" opacity="0.9"/>
+                    <polygon points="32,8 42,28 32,20 22,28" fill="#fff" opacity="0.3"/>
+                </svg>
+            </div>
+            <div class="splash-title">TON Pro Miner</div>
+            <div class="splash-sub">Loading your mining rig...</div>
+            <div class="splash-bar">
+                <div class="splash-bar-fill" id="splashProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Earnings Popup -->
+    <div id="offlinePopup" class="offline-popup" style="display:none;">
+        <div class="offline-popup-content">
+            <div class="offline-icon">⛏️</div>
+            <div class="offline-title" id="offlineTitle">Welcome Back!</div>
+            <div class="offline-sub" id="offlineSub">Your miners worked while you were away</div>
+            <div class="offline-amount">+<span id="offlineAmount">0.0000</span> TON</div>
+            <div class="offline-time" id="offlineTime">Mining for 2h 15m</div>
+            <button class="offline-claim-btn" onclick="closeOfflinePopup()">COLLECT</button>
+        </div>
+    </div>
+
+    <!-- Daily Login Bonus Popup -->
+    <div id="dailyBonusPopup" class="daily-bonus-popup" style="display:none;">
+        <div class="daily-bonus-content">
+            <div class="daily-bonus-header">
+                <h3><i class="fas fa-calendar-check"></i> <span id="dbTitle">Daily Reward</span></h3>
+                <button class="spin-close" onclick="closeDailyBonus()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="daily-bonus-streak" id="dbStreak">Day 1</div>
+            <div class="daily-bonus-grid" id="dailyBonusGrid"></div>
+            <button class="daily-bonus-claim" id="dbClaimBtn" onclick="claimDailyBonus()">
+                <i class="fas fa-gift"></i> <span id="dbClaimText">CLAIM REWARD</span>
+            </button>
+        </div>
+    </div>
 
     <div class="header">
         <div class="bal-box">
@@ -300,6 +350,6 @@
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=11"></script>
+    <script type="module" src="script.js?v=12"></script>
 </body>
 </html>
