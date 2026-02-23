@@ -1,6 +1,6 @@
 // --- IMPORT ---
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
-import { t, currentLang, setLanguage } from './lang.js';
+import { t, currentLang, setLanguage, getAvailableLanguages } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
 let tg = null;
@@ -1913,7 +1913,7 @@ function applyLanguage() {
 
     // Language toggle state
     const langBtn = document.getElementById('langToggle');
-    if (langBtn) langBtn.textContent = currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR';
+    if (langBtn) langBtn.textContent = '🌐 ' + currentLang.toUpperCase();
 
     // Re-render dynamic content
     renderMarket();
@@ -1922,9 +1922,36 @@ function applyLanguage() {
 }
 
 window.toggleLanguage = function() {
-    const newLang = currentLang === 'en' ? 'tr' : 'en';
-    setLanguage(newLang);
-    // Update module-level reference
+    // Remove existing picker
+    const old = document.getElementById('langPicker');
+    if (old) { old.remove(); return; }
+    
+    const langs = getAvailableLanguages();
+    let html = '';
+    langs.forEach(l => {
+        const active = l.code === currentLang ? 'background:rgba(64,224,208,0.15);border-color:var(--primary);' : '';
+        const check = l.code === currentLang ? ' ✓' : '';
+        html += `<div onclick="selectLang('${l.code}')" style="padding:10px 14px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);${active}font-size:0.8rem;color:#fff;text-align:center;">${l.name}${check}</div>`;
+    });
+    
+    const picker = document.createElement('div');
+    picker.id = 'langPicker';
+    picker.innerHTML = `
+        <div style="background:rgba(21,40,68,0.97);border:1.5px solid rgba(64,224,208,0.25);border-radius:20px;padding:20px;max-width:320px;width:100%;max-height:70vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <span style="color:var(--primary);font-weight:700;font-size:1rem;">🌐 Language</span>
+                <button onclick="document.getElementById('langPicker').remove()" style="background:rgba(255,255,255,0.08);border:none;color:var(--text-muted);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:0.9rem;">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${html}</div>
+        </div>
+    `;
+    picker.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);padding:20px;animation:fadeIn 0.2s ease;';
+    picker.addEventListener('click', (e) => { if (e.target === picker) picker.remove(); });
+    document.body.appendChild(picker);
+}
+
+window.selectLang = function(code) {
+    setLanguage(code);
     window.location.reload();
 }
 
