@@ -1,5 +1,6 @@
 // --- IMPORT ---
 import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
+import { t, currentLang, setLanguage } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
 let tg = null;
@@ -90,6 +91,7 @@ function init() {
     checkReferralPopup();
     initSpinWheel();
     updateSpinStatus();
+    applyLanguage();
 }
 
 function setupEventListeners() {
@@ -889,12 +891,12 @@ function graphLoop() {
     // Toggle active state
     if (isActive) {
         card.classList.add('active');
-        if (statusEl) statusEl.innerHTML = '<span style="color:var(--success)">Mining ●</span>';
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--success)">${t('mining')}</span>`;
         if (statsEl) statsEl.style.display = 'flex';
         if (lgHash) lgHash.textContent = state.hashrate;
     } else {
         card.classList.remove('active');
-        if (statusEl) statusEl.innerHTML = '<span style="color:var(--text-muted)">Offline ○</span>';
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--text-muted)">${t('offline')}</span>`;
         if (statsEl) statsEl.style.display = 'none';
     }
 
@@ -977,8 +979,8 @@ function renderMarket() {
             <div class="ci-icon" style="color:${m.color}"><i class="fas ${m.icon}"></i></div>
             <div class="ci-info">
                 <h4>${m.name}</h4>
-                <p>+${m.rate} GH/s • ${daily} TON/day</p>
-                <p style="color:${m.color};font-size:0.65rem;">ROI: ~${roi} days</p>
+                <p>+${m.rate} GH/s • ${daily} ${t('tonDay')}</p>
+                <p style="color:${m.color};font-size:0.65rem;">${t('roi')}: ~${roi} ${t('days')}</p>
             </div>
             <div class="ci-action">
                 <div class="price-options">
@@ -999,7 +1001,7 @@ function renderInv() {
     if (!l) return;
     l.innerHTML = "";
     if(state.inv.length===0) {
-        l.innerHTML = "<div style='text-align:center; color:#666'>Empty</div>";
+        l.innerHTML = `<div style='text-align:center; color:#666'>${t('empty')}</div>`;
         return;
     }
     
@@ -1627,6 +1629,83 @@ window.doSpin = function() {
     } catch(e) {}
     
     requestAnimationFrame(animate);
+}
+
+// --- LANGUAGE ---
+function applyLanguage() {
+    // Header
+    const balLbl = document.querySelector('.bal-lbl');
+    if (balLbl) balLbl.textContent = t('totalBalance');
+
+    // Dashboard static texts
+    const dCount = document.querySelector('[data-lang="activeDevices"]');
+    const dDaily = document.querySelector('[data-lang="dailyTon"]');
+    if (dCount) dCount.textContent = t('activeDevices');
+    if (dDaily) dDaily.textContent = t('dailyTon');
+
+    // Network status
+    const netLabel = document.querySelector('.lg-header > span:first-child');
+    if (netLabel) netLabel.textContent = t('networkStatus');
+
+    // Free card
+    const fcTitle = document.querySelector('.fc-info h4');
+    const fcDesc = document.querySelector('.fc-info p');
+    if (fcTitle) fcTitle.textContent = t('freeNode');
+    if (fcDesc) fcDesc.textContent = t('freeNodeDesc');
+    const adBtn = document.querySelector('.ad-btn');
+    if (adBtn && !adBtn.disabled) adBtn.textContent = t('watch');
+
+    // Channel card
+    const chTitle = document.querySelector('[data-lang="joinChannel"]');
+    const chDesc = document.querySelector('[data-lang="channelDesc"]');
+    if (chTitle) chTitle.textContent = t('joinChannel');
+    if (chDesc) chDesc.textContent = t('channelDesc');
+
+    // Spin card
+    const spTitle = document.querySelector('[data-lang="dailySpin"]');
+    if (spTitle) spTitle.textContent = t('dailySpin');
+
+    // Market title
+    const marketTitle = document.getElementById('marketTitle');
+    if (marketTitle) marketTitle.textContent = t('hardwareStore');
+
+    // Inventory title
+    const invTitle = document.getElementById('invTitle');
+    if (invTitle) invTitle.textContent = t('myDevices');
+
+    // Wallet
+    const wTitle = document.getElementById('walletTitle');
+    if (wTitle) wTitle.textContent = t('withdraw');
+    const wPlaceholder = document.getElementById('w-amt');
+    if (wPlaceholder) wPlaceholder.placeholder = t('enterAmount');
+    const wMin = document.getElementById('wMinLabel');
+    if (wMin) wMin.textContent = t('minWithdraw');
+    const wBtn = document.getElementById('wBtn');
+    if (wBtn) wBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('withdrawBtn')}`;
+
+    // Referral
+    const refTitle = document.getElementById('refTitle');
+    if (refTitle) refTitle.textContent = t('referralTitle');
+
+    // Spin modal
+    const smTitle = document.querySelector('.spin-modal-header h3');
+    if (smTitle) smTitle.innerHTML = `<i class="fas fa-dharmachakra"></i> ${t('dailyFortune')}`;
+
+    // Language toggle state
+    const langBtn = document.getElementById('langToggle');
+    if (langBtn) langBtn.textContent = currentLang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR';
+
+    // Re-render dynamic content
+    renderMarket();
+    renderInv();
+    updateRankBadge();
+}
+
+window.toggleLanguage = function() {
+    const newLang = currentLang === 'en' ? 'tr' : 'en';
+    setLanguage(newLang);
+    // Update module-level reference
+    window.location.reload();
 }
 
 init();
