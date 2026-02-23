@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TON Pro Miner</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -15,9 +17,12 @@
             <span class="bal-lbl">TOTAL BALANCE</span>
             <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
         </div>
-        <button class="wallet-btn" id="connectBtn">
-            <i class="fas fa-wallet"></i> Connect
-        </button>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button id="langToggle" onclick="toggleLanguage()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:var(--text-muted); padding:5px 8px; border-radius:8px; font-size:0.65rem; font-weight:600; cursor:pointer;">🇹🇷 TR</button>
+            <button class="wallet-btn" id="connectBtn">
+                <i class="fas fa-wallet"></i> Connect
+            </button>
+        </div>
     </div>
 
     <div id="v-dash" class="view active">
@@ -75,11 +80,11 @@
             <div class="info-grid">
                 <div class="info-box">
                     <span class="ib-val" id="d-count">0</span>
-                    <span class="ib-lbl">Active Devices</span>
+                    <span class="ib-lbl" data-lang="activeDevices">Active Devices</span>
                 </div>
                 <div class="info-box">
                     <span class="ib-val" style="color:var(--success)" id="d-daily">0.00</span>
-                    <span class="ib-lbl">Daily TON</span>
+                    <span class="ib-lbl" data-lang="dailyTon">Daily TON</span>
                 </div>
             </div>
 
@@ -101,8 +106,8 @@
                 <div style="background: linear-gradient(135deg, rgba(0, 136, 204, 0.15), rgba(0, 136, 204, 0.05)); border: 1.5px solid #0088cc; border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
                     <div style="font-size:1.3rem; color:#0088cc;"><i class="fab fa-telegram"></i></div>
                     <div style="flex:1">
-                        <h4 style="margin:0; color:#0088cc; font-size:0.8rem; font-weight:700;">Join Our Channel</h4>
-                        <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);">News & giveaways</p>
+                        <h4 style="margin:0; color:#0088cc; font-size:0.8rem; font-weight:700;" data-lang="joinChannel">Join Our Channel</h4>
+                        <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);" data-lang="channelDesc">News & giveaways</p>
                     </div>
                     <div style="color:#0088cc; font-size:1rem;"><i class="fas fa-chevron-right"></i></div>
                 </div>
@@ -112,7 +117,7 @@
             <div class="spin-card" id="spinCard" onclick="openSpinWheel()">
                 <div style="font-size:1.3rem; color:#FFD700;"><i class="fas fa-dharmachakra fa-spin" style="animation-duration:4s;"></i></div>
                 <div style="flex:1">
-                    <h4 style="margin:0; color:#FFD700; font-size:0.8rem; font-weight:700;">Daily Spin</h4>
+                    <h4 style="margin:0; color:#FFD700; font-size:0.8rem; font-weight:700;" data-lang="dailySpin">Daily Spin</h4>
                     <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);" id="spinStatus">Spin to win free TON!</p>
                 </div>
                 <div id="spinBadge" style="background:rgba(255,215,0,0.2); color:#FFD700; border:1px solid #FFD700; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.7rem;">FREE</div>
@@ -121,25 +126,25 @@
     </div>
 
     <div id="v-market" class="view">
-        <h3 style="padding:20px 20px 0;">Hardware Store</h3>
+        <h3 id="marketTitle" style="padding:20px 20px 0;">Hardware Store</h3>
         <div class="list-grid" id="marketList"></div>
     </div>
 
     <div id="v-inv" class="view">
-        <h3 style="padding:20px 20px 0;">My Devices</h3>
+        <h3 id="invTitle" style="padding:20px 20px 0;">My Devices</h3>
         <div class="list-grid" id="invList"></div>
     </div>
 
     <div id="v-wallet" class="view">
         <div class="wallet-page">
             <i class="fas fa-wallet fa-4x" style="color:var(--primary); margin-bottom:20px;"></i>
-            <h3>Wallet Management</h3>
-            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Minimum withdrawal is 100 TON.</p>
+            <h3 id="walletTitle">Wallet Management</h3>
+            <p id="wMinLabel" style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Minimum withdrawal is 100 TON.</p>
             
             <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
             <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
             
-            <button class="w-btn" id="withdraw-btn" onclick="withdraw()">WITHDRAW</button>
+            <button class="w-btn" id="wBtn" onclick="withdraw()">WITHDRAW</button>
             
             <div id="processing-section" style="display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); border: 1.5px solid #10b981; border-radius: 12px;">
                 <div style="text-align: center; margin-bottom: 15px;">
@@ -259,6 +264,12 @@
         <div class="nav-item" onclick="window.open('info.html', '_blank')" title="How It Works"><i class="fas fa-circle-info"></i></div>
     </div>
 
+    <!-- Legal links footer -->
+    <div style="position:fixed; bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 2px); left:50%; transform:translateX(-50%); display:flex; gap:12px; z-index:99;">
+        <a href="terms.html" target="_blank" style="color:var(--text-muted); font-size:0.5rem; text-decoration:none; opacity:0.5;">Terms</a>
+        <a href="privacy.html" target="_blank" style="color:var(--text-muted); font-size:0.5rem; text-decoration:none; opacity:0.5;">Privacy</a>
+    </div>
+
     <!-- Spin Wheel Modal -->
     <div id="spinModal" class="spin-modal" style="display:none;">
         <div class="spin-modal-content">
@@ -289,6 +300,6 @@
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=10"></script>
+    <script type="module" src="script.js?v=11"></script>
 </body>
 </html>
