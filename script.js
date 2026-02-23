@@ -48,7 +48,9 @@ let state = {
     referralLocked: false,
     referralBonusReceived: false,
     totalEarned: 0,
-    lastSpinTime: 0
+    lastSpinTime: 0,
+    loginStreak: 0,
+    lastLoginDate: null
 };
 
 const machines = [
@@ -68,13 +70,19 @@ const machines = [
 let graphData = new Array(40).fill(12.5);
 
 function init() {
+    // Start splash progress
+    animateSplash();
+    
     initAuth((uid) => {
         currentUserUid = uid;
         console.log("✅ User:", uid);
     });
 
     loadLocalData();
-    calculateOfflineProgress();
+    
+    // Calculate offline but don't show toast — store result
+    const offlineResult = calculateOfflineProgress();
+    
     renderMarket();
     updateUI();
     setupTonConnect();
@@ -92,6 +100,19 @@ function init() {
     initSpinWheel();
     updateSpinStatus();
     applyLanguage();
+    
+    // Hide splash after a minimum display time, then show popups in sequence
+    setTimeout(() => {
+        hideSplash(() => {
+            // After splash hides, show offline popup if earned
+            if (offlineResult && offlineResult.earned > 0.001) {
+                showOfflinePopup(offlineResult.earned, offlineResult.seconds);
+            } else {
+                // No offline earnings, check daily bonus directly
+                checkDailyBonus();
+            }
+        });
+    }, 1800);
 }
 
 function setupEventListeners() {
@@ -229,7 +250,9 @@ async function syncToServer() {
             referralLocked: state.referralLocked,
             referralBonusReceived: state.referralBonusReceived,
             totalEarned: state.totalEarned,
-            lastSpinTime: state.lastSpinTime
+            lastSpinTime: state.lastSpinTime,
+            loginStreak: state.loginStreak,
+            lastLoginDate: state.lastLoginDate
         };
         await saveUserToFire(state.wallet, dataToSave);
     } catch (e) {
@@ -269,6 +292,8 @@ async function loadServerData(walletAddress) {
             state.referralBonusReceived = serverData.referralBonusReceived || false;
             state.totalEarned = serverData.totalEarned || 0;
             state.lastSpinTime = serverData.lastSpinTime || 0;
+            state.loginStreak = serverData.loginStreak || 0;
+            state.lastLoginDate = serverData.lastLoginDate || null;
             
             if (!state.referralCode) {
                 await initReferralCode(walletAddress);
@@ -347,19 +372,20 @@ function grantReferralBonus() {
 }
 
 function calculateOfflineProgress() {
-    if (!state.lastSave || state.hashrate === 0) return;
+    if (!state.lastSave || state.hashrate === 0) return null;
     const now = Date.now();
     const secondsPassed = (now - state.lastSave) / 1000;
     
-    if (secondsPassed > 5) {
+    if (secondsPassed > 30) {
         const earned = secondsPassed * state.hashrate * CFG.rate;
         if (earned > 0) {
             state.balance += earned;
             state.totalEarned += earned;
-            showToast(`Offline: +${earned.toFixed(4)} TON`);
             syncToServer();
+            return { earned, seconds: secondsPassed };
         }
     }
+    return null;
 }
 
 // --- ADSGRAM ---
@@ -1629,6 +1655,200 @@ window.doSpin = function() {
     } catch(e) {}
     
     requestAnimationFrame(animate);
+}
+
+// --- SPLASH SCREEN ---
+function animateSplash() {
+    const bar = document.getElementById('splashProgress');
+    if (!bar) return;
+    let progress = 0;
+    const steps = [
+        { to: 30, delay: 200 },
+        { to: 60, delay: 600 },
+        { to: 85, delay: 1000 },
+        { to: 100, delay: 1500 }
+    ];
+    steps.forEach(s => {
+        setTimeout(() => { bar.style.width = s.to + '%'; }, s.delay);
+    });
+}
+
+function hideSplash(callback) {
+    const splash = document.getElementById('splashScreen');
+    if (splash) {
+        splash.classList.add('hide');
+        setTimeout(() => {
+            splash.style.display = 'none';
+            if (callback) callback();
+        }, 500);
+    } else {
+        if (callback) callback();
+    }
+}
+
+// --- OFFLINE EARNINGS POPUP ---
+function showOfflinePopup(earned, seconds) {
+    const popup = document.getElementById('offlinePopup');
+    if (!popup) { checkDailyBonus(); return; }
+    
+    // Format time
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    let timeStr = '';
+    if (hrs > 0) timeStr += hrs + 'h ';
+    timeStr += mins + 'm';
+    
+    const titleEl = document.getElementById('offlineTitle');
+    const subEl = document.getElementById('offlineSub');
+    const amountEl = document.getElementById('offlineAmount');
+    const timeEl = document.getElementById('offlineTime');
+    
+    if (titleEl) titleEl.textContent = t('offlineTitle') || 'Welcome Back!';
+    if (subEl) subEl.textContent = t('offlineSub') || 'Your miners worked while you were away';
+    if (amountEl) amountEl.textContent = earned.toFixed(4);
+    if (timeEl) timeEl.textContent = `⏱ ${timeStr}`;
+    
+    popup.style.display = 'flex';
+    
+    try {
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch(e) {}
+}
+
+window.closeOfflinePopup = function() {
+    const popup = document.getElementById('offlinePopup');
+    if (popup) popup.style.display = 'none';
+    // After closing offline popup, check daily bonus
+    setTimeout(() => checkDailyBonus(), 300);
+}
+
+// --- DAILY LOGIN BONUS ---
+const DAILY_REWARDS = [
+    { day: 1, amount: 0.05, icon: '🎁' },
+    { day: 2, amount: 0.10, icon: '🎁' },
+    { day: 3, amount: 0.20, icon: '🎁' },
+    { day: 4, amount: 0.35, icon: '💎' },
+    { day: 5, amount: 0.50, icon: '💎' },
+    { day: 6, amount: 0.75, icon: '💎' },
+    { day: 7, amount: 1.00, icon: '👑' }
+];
+
+function getTodayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function checkDailyBonus() {
+    const today = getTodayStr();
+    
+    // Already claimed today
+    if (state.lastLoginDate === today) return;
+    
+    // Calculate streak
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
+    
+    let newStreak;
+    if (state.lastLoginDate === yesterdayStr) {
+        // Consecutive day
+        newStreak = Math.min((state.loginStreak || 0) + 1, 7);
+    } else {
+        // Streak broken or first time
+        newStreak = 1;
+    }
+    
+    showDailyBonusPopup(newStreak);
+}
+
+function showDailyBonusPopup(currentDay) {
+    const popup = document.getElementById('dailyBonusPopup');
+    if (!popup) return;
+    
+    const grid = document.getElementById('dailyBonusGrid');
+    const streakEl = document.getElementById('dbStreak');
+    const titleEl = document.getElementById('dbTitle');
+    const claimTextEl = document.getElementById('dbClaimText');
+    
+    if (titleEl) titleEl.textContent = t('dailyReward') || 'Daily Reward';
+    if (claimTextEl) claimTextEl.textContent = t('claimReward') || 'CLAIM REWARD';
+    
+    if (streakEl) {
+        const dayLabel = (t('day') || 'Day') + ' ' + currentDay + '/7';
+        streakEl.textContent = `🔥 ${dayLabel}`;
+    }
+    
+    if (grid) {
+        grid.innerHTML = '';
+        DAILY_REWARDS.forEach((r, i) => {
+            const dayNum = i + 1;
+            let cls = 'db-day';
+            
+            if (dayNum < currentDay) {
+                cls += ' claimed';
+            } else if (dayNum === currentDay) {
+                cls += ' today';
+            } else {
+                cls += ' locked';
+            }
+            
+            grid.innerHTML += `
+                <div class="${cls}">
+                    <div class="db-day-num">${(t('day') || 'Day').substring(0,1)}${dayNum}</div>
+                    <div class="db-day-icon">${dayNum < currentDay ? '✅' : r.icon}</div>
+                    <div class="db-day-val">${r.amount}</div>
+                </div>
+            `;
+        });
+    }
+    
+    // Store pending day for claim
+    popup.dataset.pendingDay = currentDay;
+    
+    const btn = document.getElementById('dbClaimBtn');
+    if (btn) btn.disabled = false;
+    
+    popup.style.display = 'flex';
+}
+
+window.claimDailyBonus = function() {
+    const popup = document.getElementById('dailyBonusPopup');
+    if (!popup) return;
+    
+    const currentDay = parseInt(popup.dataset.pendingDay) || 1;
+    const reward = DAILY_REWARDS[currentDay - 1];
+    if (!reward) return;
+    
+    // Grant reward
+    state.balance += reward.amount;
+    state.totalEarned += reward.amount;
+    state.loginStreak = currentDay;
+    state.lastLoginDate = getTodayStr();
+    
+    saveLocalData();
+    syncToServer();
+    updateUI();
+    
+    // Disable button
+    const btn = document.getElementById('dbClaimBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-check"></i> +${reward.amount} TON`;
+    }
+    
+    showToast(`🎁 +${reward.amount} TON!`, false);
+    
+    try {
+        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } catch(e) {}
+    
+    // Auto close after 1.5s
+    setTimeout(() => closeDailyBonus(), 1500);
+}
+
+window.closeDailyBonus = function() {
+    const popup = document.getElementById('dailyBonusPopup');
+    if (popup) popup.style.display = 'none';
 }
 
 // --- LANGUAGE ---
