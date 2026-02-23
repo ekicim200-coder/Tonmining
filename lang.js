@@ -96,6 +96,11 @@ const LANG = {
         
         // Toast
         offlineEarned: "Offline",
+        offlineTitle: "Welcome Back!",
+        offlineSub: "Your miners worked while you were away",
+        dailyReward: "Daily Reward",
+        claimReward: "CLAIM REWARD",
+        day: "Day",
         sent: "Sending...",
         cancelled: "Cancelled",
         opening: "Opening..."
@@ -196,6 +201,11 @@ const LANG = {
 
         // Toast
         offlineEarned: "Çevrimdışı",
+        offlineTitle: "Tekrar Hoşgeldin!",
+        offlineSub: "Madencilerin sen yokken çalıştı",
+        dailyReward: "Günlük Ödül",
+        claimReward: "ÖDÜLÜ AL",
+        day: "Gün",
         sent: "Gönderiliyor...",
         cancelled: "İptal Edildi",
         opening: "Açılıyor..."
