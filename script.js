@@ -260,15 +260,16 @@ async function syncToServer() {
         const maxDailyEarning = maxHashrate * CFG.rate * 86400;
         const lastSync = parseInt(localStorage.getItem('lastSyncTime')) || Date.now();
         const hoursSinceSync = (Date.now() - lastSync) / (1000 * 3600);
-        const maxEarningSinceSync = (maxDailyEarning / 24) * hoursSinceSync * 1.2; // 20% buffer
+        const maxEarningSinceSync = (maxDailyEarning / 24) * Math.max(hoursSinceSync, 0.01) * 1.1; // 10% buffer only
         
         const lastSyncedBalance = parseFloat(localStorage.getItem('lastSyncedBalance')) || state.balance;
         const balanceGrowth = state.balance - lastSyncedBalance;
         
-        if (balanceGrowth > maxEarningSinceSync + 10 && maxHashrate > 0) {
-            console.error(`⚠️ Balance growth suspicious! Growth: ${balanceGrowth.toFixed(2)}, Max expected: ${maxEarningSinceSync.toFixed(2)}`);
-            // Don't sync inflated balance, revert to last valid + max possible
-            state.balance = lastSyncedBalance + maxEarningSinceSync;
+        // Strict check: growth cannot exceed mining capacity + small buffer for spin/bonus
+        const maxAllowedGrowth = maxEarningSinceSync + 2; // +2 TON buffer for spin/daily bonus
+        if (balanceGrowth > maxAllowedGrowth && maxHashrate > 0 && hoursSinceSync < 2) {
+            console.error(`⚠️ Balance growth suspicious! Growth: ${balanceGrowth.toFixed(2)}, Max: ${maxAllowedGrowth.toFixed(2)}`);
+            state.balance = lastSyncedBalance + maxEarningSinceSync + 2;
         }
 
         const dataToSave = {
@@ -629,12 +630,42 @@ async function watchAd() {
     
     try {
         showToast("Loading ad...", false);
-        await adsgramController.show().then(() => {
-            state.lastAdTime = Date.now();
-            grantMachine(999);
-            showToast("✅ FREE Device!", false);
-            saveLocalData();
-            syncToServer();
+        await adsgramController.show().then(async () => {
+            // Ad watched successfully — validate on server
+            if (state.wallet && currentUserUid) {
+                try {
+                    const response = await fetch('/api/free-node', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        state.freeEnd = data.freeEnd;
+                        state.lastAdTime = Date.now();
+                        state.hashrate += 300;
+                        state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
+                        saveLocalData();
+                        updateUI();
+                        drawChart();
+                        renderInv();
+                        showToast("✅ FREE Device!", false);
+                    } else {
+                        showToast("❌ " + (data.error || "Failed"), true);
+                    }
+                } catch(e) {
+                    // Fallback for non-wallet users
+                    grantMachine(999);
+                    showToast("✅ FREE Device!", false);
+                }
+            } else {
+                // No wallet — grant locally
+                state.lastAdTime = Date.now();
+                grantMachine(999);
+                showToast("✅ FREE Device!", false);
+                saveLocalData();
+            }
         }).catch(() => {
             showToast("Ad cancelled", true);
         });
@@ -668,8 +699,44 @@ window.buy = async function(id, paymentMethod = 'ton') {
             const result = await tonConnectUI.sendTransaction(transaction);
             
             if (result) {
-                await grantMachine(id);
-                showToast(`✅ ${m.name}!`, false);
+                // Extract tx hash for replay protection
+                let txHash = null;
+                try {
+                    if (result.boc) txHash = result.boc.substring(0, 64);
+                } catch(e) {}
+                
+                // SERVER-SIDE VALIDATION — grant machine only after server confirms
+                showToast("Verifying...", false);
+                const response = await fetch('/api/validate-purchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        walletAddress: state.wallet,
+                        userId: currentUserUid,
+                        machineId: id,
+                        txHash: txHash || `TX_${Date.now()}`
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update local state from server
+                    state.inv.push({ mid: id, uid: Date.now(), bonus: false });
+                    state.hashrate = data.newHashrate;
+                    saveLocalData();
+                    updateUI();
+                    drawChart();
+                    renderInv();
+                    
+                    // Referral commission
+                    if (state.wallet && m.price > 0) {
+                        try { await addReferralCommission(state.wallet, m.price); } catch(e) {}
+                    }
+                    
+                    showToast(`✅ ${m.name}!`, false);
+                } else {
+                    showToast("❌ " + (data.error || "Verification failed"), true);
+                }
             }
         } catch (err) {
             console.error("Transaction error:", err);
@@ -701,8 +768,39 @@ async function buyWithStars(id) {
         
         tg.openInvoice(invoiceLink, async (status) => {
             if (status === 'paid') {
-                await grantMachine(id);
-                showToast(`✅ ${m.name}!`, false);
+                // Server-side validation for Stars too
+                try {
+                    const response = await fetch('/api/validate-purchase', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            walletAddress: state.wallet || 'stars_' + (tg.initDataUnsafe?.user?.id || Date.now()),
+                            userId: currentUserUid,
+                            machineId: id,
+                            txHash: `STARS_${Date.now()}_${id}`
+                        })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        state.inv.push({ mid: id, uid: Date.now(), bonus: false });
+                        state.hashrate = data.newHashrate;
+                        saveLocalData();
+                        updateUI();
+                        drawChart();
+                        renderInv();
+                        if (state.wallet && m.price > 0) {
+                            try { await addReferralCommission(state.wallet, m.price); } catch(e) {}
+                        }
+                        showToast(`✅ ${m.name}!`, false);
+                    } else {
+                        showToast("❌ " + (data.error || "Failed"), true);
+                    }
+                } catch(e) {
+                    // Fallback: grant locally if server unreachable
+                    await grantMachine(id);
+                    showToast(`✅ ${m.name}!`, false);
+                }
             } else if (status === 'cancelled') {
                 showToast("Cancelled", true);
             } else {
@@ -1647,87 +1745,100 @@ function updateSpinStatus() {
     updateSpinButton();
 }
 
-window.doSpin = function() {
+window.doSpin = async function() {
     if (!canSpin() || isSpinning) return;
+    if (!state.wallet || !currentUserUid) {
+        showToast(t('connectFirst'), true);
+        return;
+    }
     
     isSpinning = true;
     updateSpinButton();
     
-    const winIndex = getWeightedSegment();
-    const segAngle = 360 / SPIN_SEGMENTS.length;
-    
-    const segCenter = winIndex * segAngle + segAngle / 2;
-    const targetAngle = 360 * 8 + (360 - segCenter + 270) % 360;
-    
-    const startAngle = spinAngle;
-    const totalRotation = targetAngle * (Math.PI / 180);
-    const startTime = Date.now();
-    const duration = 5000;
-    
-    // Ease out with slight bounce at end
-    function easeOutBack(t) {
-        const c1 = 1.2;
-        const c3 = c1 + 1;
-        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    
-    // Stop the ring animation during spin
-    const wrapper = document.querySelector('.spin-wheel-wrapper');
-    if (wrapper) wrapper.style.setProperty('--spin-active', '1');
-    
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = easeOutBack(progress);
-        
-        spinAngle = startAngle + totalRotation * eased;
-        drawWheel(spinAngle);
-        
-        // Tick sound via haptic
-        if (progress < 0.8 && Math.floor(elapsed / 60) !== Math.floor((elapsed - 16) / 60)) {
-            try {
-                if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            } catch(e) {}
-        }
-        
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        } else {
-            isSpinning = false;
-            state.lastSpinTime = Date.now();
-            
-            const prize = SPIN_SEGMENTS[winIndex].value;
-            state.balance += prize;
-            state.totalEarned += prize;
-            
-            saveLocalData();
-            syncToServer();
-            updateUI();
-            
-            const resultEl = document.getElementById('spinResult');
-            const prizeEl = document.getElementById('spinPrize');
-            if (resultEl) resultEl.style.display = 'block';
-            if (prizeEl) prizeEl.textContent = `+${prize.toFixed(2)} TON`;
-            
-            const btn = document.getElementById('spinBtn');
-            if (btn) btn.style.display = 'none';
-            
-            updateSpinButton();
-            updateSpinStatus();
-            
-            showToast(`🎉 +${prize.toFixed(2)} TON!`, false);
-            
-            try {
-                if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            } catch(e) {}
-        }
-    }
-    
     try {
-        if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-    } catch(e) {}
-    
-    requestAnimationFrame(animate);
+        // Server determines prize — client CANNOT choose
+        const response = await fetch('/api/spin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+        });
+        const data = await response.json();
+        
+        if (!data.success) {
+            isSpinning = false;
+            updateSpinButton();
+            showToast('❌ ' + (data.error || 'Spin failed'), true);
+            return;
+        }
+        
+        // Animate to server-decided index
+        const winIndex = data.winIndex;
+        const segAngle = 360 / SPIN_SEGMENTS.length;
+        const segCenter = winIndex * segAngle + segAngle / 2;
+        const targetAngle = 360 * 8 + (360 - segCenter + 270) % 360;
+        
+        const startAngle = spinAngle;
+        const totalRotation = targetAngle * (Math.PI / 180);
+        const startTime = Date.now();
+        const duration = 5000;
+        
+        function easeOutBack(t) {
+            const c1 = 1.2;
+            const c3 = c1 + 1;
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        }
+        
+        const wrapper = document.querySelector('.spin-wheel-wrapper');
+        if (wrapper) wrapper.style.setProperty('--spin-active', '1');
+        
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = easeOutBack(progress);
+            
+            spinAngle = startAngle + totalRotation * eased;
+            drawWheel(spinAngle);
+            
+            if (progress < 0.8 && Math.floor(elapsed / 60) !== Math.floor((elapsed - 16) / 60)) {
+                try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+            }
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                
+                // Update local state from server
+                state.lastSpinTime = Date.now();
+                state.balance = data.newBalance;
+                state.totalEarned += data.prize;
+                saveLocalData();
+                updateUI();
+                
+                const resultEl = document.getElementById('spinResult');
+                const prizeEl = document.getElementById('spinPrize');
+                if (resultEl) resultEl.style.display = 'block';
+                if (prizeEl) prizeEl.textContent = `+${data.prize.toFixed(2)} TON`;
+                
+                const btn = document.getElementById('spinBtn');
+                if (btn) btn.style.display = 'none';
+                
+                updateSpinButton();
+                updateSpinStatus();
+                showToast(`🎉 +${data.prize.toFixed(2)} TON!`, false);
+                try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+            }
+        }
+        
+        try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy'); } catch(e) {}
+        requestAnimationFrame(animate);
+        
+    } catch (error) {
+        console.error('Spin error:', error);
+        isSpinning = false;
+        updateSpinButton();
+        showToast('Spin failed!', true);
+    }
 }
 
 // --- SPLASH SCREEN ---
@@ -1884,38 +1995,58 @@ function showDailyBonusPopup(currentDay) {
     popup.style.display = 'flex';
 }
 
-window.claimDailyBonus = function() {
+window.claimDailyBonus = async function() {
     const popup = document.getElementById('dailyBonusPopup');
     if (!popup) return;
     
-    const currentDay = parseInt(popup.dataset.pendingDay) || 1;
-    const reward = DAILY_REWARDS[currentDay - 1];
-    if (!reward) return;
-    
-    // Grant reward
-    state.balance += reward.amount;
-    state.totalEarned += reward.amount;
-    state.loginStreak = currentDay;
-    state.lastLoginDate = getTodayStr();
-    
-    saveLocalData();
-    syncToServer();
-    updateUI();
-    
-    // Disable button
     const btn = document.getElementById('dbClaimBtn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fas fa-check"></i> +${reward.amount} TON`;
+    if (btn) btn.disabled = true;
+    
+    // If wallet not connected, do client-side only (will be overwritten on sync)
+    if (!state.wallet || !currentUserUid) {
+        const currentDay = parseInt(popup.dataset.pendingDay) || 1;
+        const reward = DAILY_REWARDS[currentDay - 1];
+        if (!reward) return;
+        state.balance += reward.amount;
+        state.totalEarned += reward.amount;
+        state.loginStreak = currentDay;
+        state.lastLoginDate = getTodayStr();
+        saveLocalData();
+        updateUI();
+        if (btn) btn.innerHTML = `<i class="fas fa-check"></i> +${reward.amount} TON`;
+        showToast(`🎁 +${reward.amount} TON!`, false);
+        setTimeout(() => closeDailyBonus(), 1500);
+        return;
     }
     
-    showToast(`🎁 +${reward.amount} TON!`, false);
-    
     try {
-        if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    } catch(e) {}
+        const response = await fetch('/api/daily-bonus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            state.balance = data.newBalance;
+            state.totalEarned += data.reward;
+            state.loginStreak = data.streak;
+            state.lastLoginDate = getTodayStr();
+            saveLocalData();
+            updateUI();
+            
+            if (btn) btn.innerHTML = `<i class="fas fa-check"></i> +${data.reward} TON`;
+            showToast(`🎁 +${data.reward} TON!`, false);
+            try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+        } else {
+            if (btn) btn.innerHTML = `<i class="fas fa-check"></i> ${data.error || 'Already claimed'}`;
+        }
+    } catch (error) {
+        console.error('Daily bonus error:', error);
+        if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-gift"></i> Retry`; }
+        return;
+    }
     
-    // Auto close after 1.5s
     setTimeout(() => closeDailyBonus(), 1500);
 }
 
