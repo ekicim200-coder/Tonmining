@@ -1747,98 +1747,96 @@ function updateSpinStatus() {
 
 window.doSpin = async function() {
     if (!canSpin() || isSpinning) return;
-    if (!state.wallet || !currentUserUid) {
-        showToast(t('connectFirst'), true);
-        return;
-    }
     
     isSpinning = true;
     updateSpinButton();
     
-    try {
-        // Server determines prize — client CANNOT choose
-        const response = await fetch('/api/spin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
-        });
-        const data = await response.json();
-        
-        if (!data.success) {
-            isSpinning = false;
-            updateSpinButton();
-            showToast('❌ ' + (data.error || 'Spin failed'), true);
-            return;
-        }
-        
-        // Animate to server-decided index
-        const winIndex = data.winIndex;
-        const segAngle = 360 / SPIN_SEGMENTS.length;
-        const segCenter = winIndex * segAngle + segAngle / 2;
-        const targetAngle = 360 * 8 + (360 - segCenter + 270) % 360;
-        
-        const startAngle = spinAngle;
-        const totalRotation = targetAngle * (Math.PI / 180);
-        const startTime = Date.now();
-        const duration = 5000;
-        
-        function easeOutBack(t) {
-            const c1 = 1.2;
-            const c3 = c1 + 1;
-            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-        }
-        
-        const wrapper = document.querySelector('.spin-wheel-wrapper');
-        if (wrapper) wrapper.style.setProperty('--spin-active', '1');
-        
-        function animate() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = easeOutBack(progress);
-            
-            spinAngle = startAngle + totalRotation * eased;
-            drawWheel(spinAngle);
-            
-            if (progress < 0.8 && Math.floor(elapsed / 60) !== Math.floor((elapsed - 16) / 60)) {
-                try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+    let winIndex, prize, newBalance;
+    let serverOk = false;
+    
+    // Try server first (if wallet connected)
+    if (state.wallet && currentUserUid) {
+        try {
+            const resp = await fetch('/api/spin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                winIndex = data.winIndex;
+                prize = data.prize;
+                newBalance = data.newBalance;
+                serverOk = true;
             }
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                isSpinning = false;
-                
-                // Update local state from server
-                state.lastSpinTime = Date.now();
-                state.balance = data.newBalance;
-                state.totalEarned += data.prize;
-                saveLocalData();
-                updateUI();
-                
-                const resultEl = document.getElementById('spinResult');
-                const prizeEl = document.getElementById('spinPrize');
-                if (resultEl) resultEl.style.display = 'block';
-                if (prizeEl) prizeEl.textContent = `+${data.prize.toFixed(2)} TON`;
-                
-                const btn = document.getElementById('spinBtn');
-                if (btn) btn.style.display = 'none';
-                
-                updateSpinButton();
-                updateSpinStatus();
-                showToast(`🎉 +${data.prize.toFixed(2)} TON!`, false);
-                try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-            }
-        }
-        
-        try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy'); } catch(e) {}
-        requestAnimationFrame(animate);
-        
-    } catch (error) {
-        console.error('Spin error:', error);
-        isSpinning = false;
-        updateSpinButton();
-        showToast('Spin failed!', true);
+        } catch (e) { console.warn('Spin API fallback:', e); }
     }
+    
+    // Client fallback
+    if (!serverOk) {
+        winIndex = getWeightedSegment();
+        prize = SPIN_SEGMENTS[winIndex].value;
+    }
+    
+    // --- Animate ---
+    const segAngle = 360 / SPIN_SEGMENTS.length;
+    const segCenter = winIndex * segAngle + segAngle / 2;
+    const targetAngle = 360 * 8 + (360 - segCenter + 270) % 360;
+    const startAngle = spinAngle;
+    const totalRotation = targetAngle * (Math.PI / 180);
+    const startTime = Date.now();
+    const duration = 5000;
+    
+    function easeOutBack(x) {
+        const c1 = 1.2, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+    
+    function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        spinAngle = startAngle + totalRotation * easeOutBack(progress);
+        drawWheel(spinAngle);
+        
+        if (progress < 0.8 && Math.floor(elapsed / 60) !== Math.floor((elapsed - 16) / 60)) {
+            try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Animation done — apply reward
+            isSpinning = false;
+            state.lastSpinTime = Date.now();
+            
+            if (serverOk) {
+                state.balance = newBalance;
+            } else {
+                state.balance += prize;
+            }
+            state.totalEarned += prize;
+            
+            saveLocalData();
+            if (!serverOk) syncToServer();
+            updateUI();
+            
+            const resultEl = document.getElementById('spinResult');
+            const prizeEl = document.getElementById('spinPrize');
+            if (resultEl) resultEl.style.display = 'block';
+            if (prizeEl) prizeEl.textContent = `+${prize.toFixed(2)} TON`;
+            
+            const btn = document.getElementById('spinBtn');
+            if (btn) btn.style.display = 'none';
+            
+            updateSpinButton();
+            updateSpinStatus();
+            showToast(`🎉 +${prize.toFixed(2)} TON!`, false);
+            try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+        }
+    }
+    
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy'); } catch(e) {}
+    requestAnimationFrame(animate);
 }
 
 // --- SPLASH SCREEN ---
@@ -1925,8 +1923,13 @@ function getTodayStr() {
 function checkDailyBonus() {
     const today = getTodayStr();
     
+    console.log('📅 checkDailyBonus:', { today, lastLoginDate: state.lastLoginDate, loginStreak: state.loginStreak });
+    
     // Already claimed today
-    if (state.lastLoginDate === today) return;
+    if (state.lastLoginDate === today) {
+        console.log('📅 Already claimed today, skipping');
+        return;
+    }
     
     // Calculate streak
     const yesterday = new Date();
@@ -1935,13 +1938,12 @@ function checkDailyBonus() {
     
     let newStreak;
     if (state.lastLoginDate === yesterdayStr) {
-        // Consecutive day
         newStreak = Math.min((state.loginStreak || 0) + 1, 7);
     } else {
-        // Streak broken or first time
         newStreak = 1;
     }
     
+    console.log('📅 Showing daily bonus popup, streak:', newStreak);
     showDailyBonusPopup(newStreak);
 }
 
@@ -2002,50 +2004,45 @@ window.claimDailyBonus = async function() {
     const btn = document.getElementById('dbClaimBtn');
     if (btn) btn.disabled = true;
     
-    // If wallet not connected, do client-side only (will be overwritten on sync)
-    if (!state.wallet || !currentUserUid) {
-        const currentDay = parseInt(popup.dataset.pendingDay) || 1;
-        const reward = DAILY_REWARDS[currentDay - 1];
-        if (!reward) return;
+    const currentDay = parseInt(popup.dataset.pendingDay) || 1;
+    const reward = DAILY_REWARDS[currentDay - 1];
+    if (!reward) return;
+    
+    let serverOk = false;
+    
+    // Try server if wallet connected
+    if (state.wallet && currentUserUid) {
+        try {
+            const response = await fetch('/api/daily-bonus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+            });
+            const data = await response.json();
+            if (data.success) {
+                state.balance = data.newBalance;
+                state.totalEarned += data.reward;
+                state.loginStreak = data.streak;
+                serverOk = true;
+            }
+        } catch (e) { console.warn('Daily bonus API fallback:', e); }
+    }
+    
+    // Client fallback (no wallet OR server failed)
+    if (!serverOk) {
         state.balance += reward.amount;
         state.totalEarned += reward.amount;
         state.loginStreak = currentDay;
-        state.lastLoginDate = getTodayStr();
-        saveLocalData();
-        updateUI();
-        if (btn) btn.innerHTML = `<i class="fas fa-check"></i> +${reward.amount} TON`;
-        showToast(`🎁 +${reward.amount} TON!`, false);
-        setTimeout(() => closeDailyBonus(), 1500);
-        return;
     }
     
-    try {
-        const response = await fetch('/api/daily-bonus', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            state.balance = data.newBalance;
-            state.totalEarned += data.reward;
-            state.loginStreak = data.streak;
-            state.lastLoginDate = getTodayStr();
-            saveLocalData();
-            updateUI();
-            
-            if (btn) btn.innerHTML = `<i class="fas fa-check"></i> +${data.reward} TON`;
-            showToast(`🎁 +${data.reward} TON!`, false);
-            try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-        } else {
-            if (btn) btn.innerHTML = `<i class="fas fa-check"></i> ${data.error || 'Already claimed'}`;
-        }
-    } catch (error) {
-        console.error('Daily bonus error:', error);
-        if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-gift"></i> Retry`; }
-        return;
-    }
+    state.lastLoginDate = getTodayStr();
+    saveLocalData();
+    if (!serverOk) syncToServer();
+    updateUI();
+    
+    if (btn) btn.innerHTML = `<i class="fas fa-check"></i> +${reward.amount} TON`;
+    showToast(`🎁 +${reward.amount} TON!`, false);
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
     
     setTimeout(() => closeDailyBonus(), 1500);
 }
