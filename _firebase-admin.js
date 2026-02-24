@@ -3,15 +3,26 @@
 
 const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-    
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: 'tonm-77373'
-    });
+let db = null;
+let initError = null;
+
+try {
+    if (!admin.apps.length) {
+        const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+        if (!raw || raw === '{}') {
+            throw new Error('FIREBASE_SERVICE_ACCOUNT env variable not configured');
+        }
+        const serviceAccount = JSON.parse(raw);
+        
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: 'tonm-77373'
+        });
+    }
+    db = admin.firestore();
+} catch (e) {
+    initError = e.message;
+    console.error('❌ Firebase Admin init failed:', e.message);
 }
 
-const db = admin.firestore();
-
-module.exports = { admin, db };
+module.exports = { admin, db, initError };
