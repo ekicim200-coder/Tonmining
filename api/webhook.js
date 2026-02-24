@@ -120,7 +120,7 @@ module.exports = async (req, res) => {
                                 inline_keyboard: [[
                                     {
                                         text: '⛏ Madenciliğe Başla',
-                                        web_app: { url: 'https://tonmining.vercel.app?v=12' }
+                                        web_app: { url: 'https://tonmining.vercel.app?v=16' }
                                     }
                                 ]]
                             }
