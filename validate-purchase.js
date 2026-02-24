@@ -4,7 +4,7 @@
 // Flow: Client sends TON → gets tx hash → sends tx hash to this API → 
 // Server validates and grants machine atomically
 
-const { db } = require('./_firebase-admin');
+const { db, initError } = require('./_firebase-admin');
 
 const MACHINES = {
     1:  { name: "Nano Chip",      price: 5,    rate: 3 },
@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (initError || !db) return res.status(503).json({ success: false, error: 'Server not configured' });
 
     try {
         const { walletAddress, userId, machineId, txHash } = req.body;
