@@ -1,5 +1,5 @@
 // --- IMPORT ---
-import { saveUserToFire, getUserFromFire, initAuth, saveWithdrawalRequest, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
 import { t, currentLang, setLanguage, getAvailableLanguages } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
@@ -79,6 +79,8 @@ function init() {
     });
 
     loadLocalData();
+    _lastKnownBalance = state.balance;
+    _lastBalanceCheck = Date.now();
     
     // Calculate offline but don't show toast — store result
     const offlineResult = calculateOfflineProgress();
@@ -237,6 +239,38 @@ async function syncToServer() {
     if (!state.wallet || !currentUserUid) return;
     
     try {
+        // --- BALANCE INTEGRITY CHECK ---
+        // Calculate maximum possible balance based on inventory
+        let maxHashrate = 0;
+        state.inv.forEach(item => {
+            const m = machines.find(x => x.id === item.id);
+            if (m) maxHashrate += m.rate;
+        });
+        // Add free node if active
+        if (state.freeEnd > Date.now()) maxHashrate += 300;
+        
+        // If client hashrate exceeds inventory, it's been tampered
+        if (state.hashrate > maxHashrate + 10) {
+            console.error("⚠️ Hashrate integrity violation! Resetting.");
+            state.hashrate = maxHashrate;
+        }
+
+        // Cap balance growth rate — max possible daily earning
+        // This prevents console balance manipulation from being synced
+        const maxDailyEarning = maxHashrate * CFG.rate * 86400;
+        const lastSync = parseInt(localStorage.getItem('lastSyncTime')) || Date.now();
+        const hoursSinceSync = (Date.now() - lastSync) / (1000 * 3600);
+        const maxEarningSinceSync = (maxDailyEarning / 24) * hoursSinceSync * 1.2; // 20% buffer
+        
+        const lastSyncedBalance = parseFloat(localStorage.getItem('lastSyncedBalance')) || state.balance;
+        const balanceGrowth = state.balance - lastSyncedBalance;
+        
+        if (balanceGrowth > maxEarningSinceSync + 10 && maxHashrate > 0) {
+            console.error(`⚠️ Balance growth suspicious! Growth: ${balanceGrowth.toFixed(2)}, Max expected: ${maxEarningSinceSync.toFixed(2)}`);
+            // Don't sync inflated balance, revert to last valid + max possible
+            state.balance = lastSyncedBalance + maxEarningSinceSync;
+        }
+
         const dataToSave = {
             balance: state.balance,
             hashrate: state.hashrate,
@@ -255,6 +289,10 @@ async function syncToServer() {
             lastLoginDate: state.lastLoginDate
         };
         await saveUserToFire(state.wallet, dataToSave);
+        
+        // Track last synced values for integrity checking
+        localStorage.setItem('lastSyncTime', Date.now().toString());
+        localStorage.setItem('lastSyncedBalance', state.balance.toString());
     } catch (e) {
         console.error("Sync error:", e);
     }
@@ -494,6 +532,27 @@ async function toggleWallet() {
 }
 
 // --- GAME LOOP ---
+// --- BALANCE INTEGRITY ---
+let _lastKnownBalance = 0;
+let _lastBalanceCheck = Date.now();
+
+function checkBalanceIntegrity() {
+    // If balance jumped more than possible since last check, flag it
+    const now = Date.now();
+    const secondsSinceCheck = (now - _lastBalanceCheck) / 1000;
+    const maxPossibleEarning = state.hashrate * CFG.rate * secondsSinceCheck * 1.5; // 50% buffer
+    const growth = state.balance - _lastKnownBalance;
+    
+    if (_lastKnownBalance > 0 && growth > maxPossibleEarning + 5 && secondsSinceCheck < 60) {
+        console.warn("⚠️ Balance integrity violation detected. Reverting.");
+        state.balance = _lastKnownBalance + (state.hashrate * CFG.rate * secondsSinceCheck);
+        state.totalEarned = Math.min(state.totalEarned, state.balance + 100);
+    }
+    
+    _lastKnownBalance = state.balance;
+    _lastBalanceCheck = now;
+}
+
 function loop() {
     if (state.hashrate > 0) {
         const earned = state.hashrate * CFG.rate * (CFG.tick/1000);
@@ -501,6 +560,8 @@ function loop() {
         state.totalEarned += earned;
         updateUI();
     }
+    // Periodic integrity check (every ~5 seconds)
+    if (Math.random() < 0.2) checkBalanceIntegrity();
 }
 
 function updateUI() {
@@ -717,46 +778,58 @@ window.withdraw = async function() {
     const amountStr = inputElement?.value;
 
     if (!state.wallet) {
-        showToast("Connect wallet!", true);
+        showToast(t('connectFirst'), true);
         return;
     }
 
     if (!amountStr || parseFloat(amountStr) <= 0) {
-        showToast("Invalid amount!", true);
+        showToast(t('invalidAmount'), true);
         return;
     }
 
     const amount = parseFloat(amountStr);
 
     if (amount < 100) {
-        showToast("Minimum 100 TON!", true);
+        showToast(t('minRequired'), true);
         return;
     }
 
     if (amount > state.balance) {
-        showToast("Insufficient!", true);
+        showToast(t('noBalance'), true);
         return;
     }
 
     try {
         showToast("Processing...", false);
-        const success = await saveWithdrawalRequest(state.wallet, amount);
         
-        if (success) {
-            state.balance -= amount;
+        // --- SERVER-SIDE VALIDATED WITHDRAWAL ---
+        const response = await fetch('/api/withdraw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                walletAddress: state.wallet,
+                amount: amount,
+                userId: currentUserUid
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update local state from server-confirmed balance
+            state.balance = result.newBalance;
             saveLocalData();
-            await syncToServer();
             updateUI();
             inputElement.value = '';
             showToast("✅ Requested!", false);
-            showProcessingSection(amount);
+            showProcessingSection(result.amount);
             setTimeout(() => renderHistory(), 500);
         } else {
-            showToast("Failed!", true);
+            showToast("❌ " + (result.error || "Failed!"), true);
         }
     } catch (error) {
         console.error("Withdraw error:", error);
-        showToast("Error!", true);
+        showToast("Error! Try again.", true);
     }
 }
 
