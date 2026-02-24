@@ -1,7 +1,7 @@
 // api/free-node.js — Server-side free node (ad reward) validation
 // Prevents: freeEnd manipulation, unlimited free hashrate
 
-const { db } = require('./_firebase-admin');
+const { db, initError } = require('./_firebase-admin');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,6 +9,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (initError || !db) return res.status(503).json({ success: false, error: 'Server not configured' });
 
     try {
         const { walletAddress, userId } = req.body;
