@@ -1,7 +1,7 @@
 // api/withdraw.js — Server-side validated withdrawal
 // Critical security: ALL balance checks happen on server, NOT client
 
-const { admin, db } = require('./_firebase-admin');
+const { admin, db, initError } = require('./_firebase-admin');
 
 // Mining rate constant (must match client)
 const MINING_RATE = 0.000001; // TON per GH/s per second
@@ -22,6 +22,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method not allowed' });
+    if (initError || !db) return res.status(503).json({ success: false, error: 'Server not configured' });
 
     try {
         const { walletAddress, amount, userId } = req.body;
