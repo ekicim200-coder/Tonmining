@@ -91,7 +91,7 @@ function init() {
     initAdsgram();
 
     setInterval(loop, CFG.tick); 
-    setInterval(autoSave, 10000); 
+    setInterval(autoSave, 60000); 
     setInterval(graphLoop, 300);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
@@ -241,10 +241,30 @@ function saveLocalData() {
 
 function autoSave() {
     saveLocalData();
+    syncToServer(); // Throttled — won't fire more than once per 30s
 }
+
+let _lastSyncTime = 0;
+let _syncPending = false;
 
 async function syncToServer() {
     if (!state.wallet || !currentUserUid) return;
+    
+    const now = Date.now();
+    const MIN_SYNC_INTERVAL = 30000; // 30 seconds minimum between syncs
+    
+    // Throttle: if synced recently, schedule a delayed sync
+    if (now - _lastSyncTime < MIN_SYNC_INTERVAL) {
+        if (!_syncPending) {
+            _syncPending = true;
+            setTimeout(() => {
+                _syncPending = false;
+                syncToServer();
+            }, MIN_SYNC_INTERVAL - (now - _lastSyncTime));
+        }
+        return;
+    }
+    _lastSyncTime = now;
     
     try {
         // --- BALANCE INTEGRITY CHECK ---
@@ -1342,9 +1362,19 @@ function updateReferralUI() {
     }
 }
 
+let _refHistoryCache = null;
+let _refHistoryCacheTime = 0;
+
 async function renderReferralHistory() {
     const listEl = document.getElementById('ref-history-list');
     if (!listEl || !state.wallet) return;
+    
+    // Cache for 60 seconds
+    const now = Date.now();
+    if (_refHistoryCache && (now - _refHistoryCacheTime) < 60000) {
+        listEl.innerHTML = _refHistoryCache;
+        return;
+    }
     
     listEl.innerHTML = "<p style='color:#999'>Loading...</p>";
     
@@ -1383,6 +1413,8 @@ async function renderReferralHistory() {
         });
         
         listEl.innerHTML = html;
+        _refHistoryCache = html;
+        _refHistoryCacheTime = Date.now();
     } catch (e) {
         console.error("Referral history error:", e);
         listEl.innerHTML = "<p style='color:#666'>Failed to load</p>";
@@ -2274,6 +2306,10 @@ const PRIZES = {
 for (let i = 11; i <= 25; i++) PRIZES[i] = 50;
 for (let i = 26; i <= 50; i++) PRIZES[i] = 25;
 
+let _leaderboardCache = null;
+let _leaderboardCacheTime = 0;
+const LB_CACHE_DURATION = 60000; // Cache for 60 seconds
+
 async function renderLeaderboard() {
     const listEl = document.getElementById('leaderboardList');
     if (!listEl) return;
@@ -2282,25 +2318,35 @@ async function renderLeaderboard() {
         <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>Loading...</div>`;
     
     try {
-        // Load leaderboard
-        const leaders = await getLeaderboard();
+        // Use cache if fresh
+        let leaders;
+        const now = Date.now();
+        if (_leaderboardCache && (now - _leaderboardCacheTime) < LB_CACHE_DURATION) {
+            leaders = _leaderboardCache;
+        } else {
+            leaders = await getLeaderboard();
+            _leaderboardCache = leaders;
+            _leaderboardCacheTime = now;
+        }
         
-        // Load user rank
+        // Calculate user rank from same data (no extra read!)
         if (state.wallet) {
-            const myRank = await getUserRank(state.wallet);
-            if (myRank) {
-                const rankEl = document.getElementById('myRankNum');
-                const refCountEl = document.getElementById('myRefCount');
-                const refEarnEl = document.getElementById('myRefEarn');
-                const prizeEl = document.getElementById('myPrizeAmount');
-                
-                if (rankEl) rankEl.textContent = myRank.rank > 0 ? '#' + myRank.rank : '-';
-                if (refCountEl) refCountEl.textContent = myRank.referralCount || 0;
-                if (refEarnEl) refEarnEl.textContent = (myRank.referralEarnings || 0).toFixed(2);
-                
-                const myPrize = PRIZES[myRank.rank] || 0;
-                if (prizeEl) prizeEl.textContent = myPrize > 0 ? myPrize + ' TON' : '-';
-            }
+            const allUsers = leaders; // Already sorted
+            const myIndex = allUsers.findIndex(u => u.wallet === state.wallet);
+            const myRank = myIndex >= 0 ? myIndex + 1 : 0;
+            const myData = myIndex >= 0 ? allUsers[myIndex] : null;
+            
+            const rankEl = document.getElementById('myRankNum');
+            const refCountEl = document.getElementById('myRefCount');
+            const refEarnEl = document.getElementById('myRefEarn');
+            const prizeEl = document.getElementById('myPrizeAmount');
+            
+            if (rankEl) rankEl.textContent = myRank > 0 ? '#' + myRank : '-';
+            if (refCountEl) refCountEl.textContent = myData ? myData.referralCount : (state.referralCount || 0);
+            if (refEarnEl) refEarnEl.textContent = myData ? myData.referralEarnings.toFixed(2) : (state.referralEarnings || 0).toFixed(2);
+            
+            const myPrize = PRIZES[myRank] || 0;
+            if (prizeEl) prizeEl.textContent = myPrize > 0 ? myPrize + ' TON' : '-';
         }
         
         if (leaders.length === 0) {
