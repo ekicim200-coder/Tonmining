@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -267,14 +267,6 @@
                 </button>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <button class="w-btn" onclick="window.location.href='leaderboard.html'" style="width: 100%; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px;">
-                    <i class="fas fa-trophy"></i>
-                    <span>VIEW LEADERBOARD & PRIZES</span>
-                    <span style="background: rgba(0,0,0,0.2); padding: 3px 8px; border-radius: 5px; font-size: 0.75rem;">TOP 50</span>
-                </button>
-            </div>
-            
             <div id="refStatusBadge" style="display:none; background:rgba(16,185,129,0.2); border:1px solid var(--success); border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">
                 <i class="fas fa-check-circle" style="color:var(--success); margin-right:8px;"></i>
                 <span style="color:var(--success); font-weight:bold;">Referred by: <span id="refByCode">---</span></span>
@@ -315,26 +307,87 @@
         </div>
     </div>
 
-    <!-- TASKS & ACHIEVEMENTS -->
+    <!-- TASKS, LEADERBOARD & REWARDS -->
     <div id="v-tasks" class="view">
-        <div class="wallet-page" style="padding-top:15px;">
-            <div style="text-align:center; margin-bottom:20px;">
-                <i class="fas fa-trophy fa-3x" style="color:#FFD700; margin-bottom:10px;"></i>
-                <h3 id="tasksTitle" style="margin:0;">Tasks & Achievements</h3>
-                <p id="tasksSubtitle" style="color:var(--muted); font-size:0.85rem; margin-top:5px;">Complete tasks to earn bonus TON!</p>
-                <div style="display:flex; justify-content:center; gap:15px; margin-top:12px;">
-                    <div style="text-align:center;">
-                        <span id="tasksCompletedCount" style="color:#FFD700; font-size:1.3rem; font-weight:bold;">0</span>
-                        <span style="color:var(--muted); font-size:0.75rem; display:block;">Completed</span>
+        <div class="wallet-page" style="padding-top:10px;">
+            <!-- Tab Switcher -->
+            <div style="display:flex; gap:0; margin-bottom:15px; background:rgba(255,255,255,0.04); border-radius:12px; padding:3px; border:1px solid rgba(255,255,255,0.06);">
+                <button id="tabTasks" onclick="switchRewardTab('tasks')" style="flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; background:var(--primary); color:#000; transition:all 0.3s;">
+                    🏆 Tasks
+                </button>
+                <button id="tabLeaderboard" onclick="switchRewardTab('leaderboard')" style="flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; background:transparent; color:#888; transition:all 0.3s;">
+                    🏅 Leaderboard
+                </button>
+            </div>
+
+            <!-- TASKS CONTENT -->
+            <div id="tasksContent">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:center; gap:20px;">
+                        <div style="text-align:center;">
+                            <span id="tasksCompletedCount" style="color:#FFD700; font-size:1.3rem; font-weight:bold;">0</span>
+                            <span style="color:var(--muted); font-size:0.7rem; display:block;">Completed</span>
+                        </div>
+                        <div style="width:1px; background:#333;"></div>
+                        <div style="text-align:center;">
+                            <span id="tasksTotalReward" style="color:var(--success); font-size:1.3rem; font-weight:bold;">0.00</span>
+                            <span style="color:var(--muted); font-size:0.7rem; display:block;">TON Earned</span>
+                        </div>
                     </div>
-                    <div style="width:1px; background:#333;"></div>
-                    <div style="text-align:center;">
-                        <span id="tasksTotalReward" style="color:var(--success); font-size:1.3rem; font-weight:bold;">0.00</span>
-                        <span style="color:var(--muted); font-size:0.75rem; display:block;">TON Earned</span>
+                </div>
+                <div id="tasksList"></div>
+            </div>
+
+            <!-- LEADERBOARD CONTENT -->
+            <div id="leaderboardContent" style="display:none;">
+                <!-- Prize Pool -->
+                <div style="background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08)); border:1.5px solid rgba(255,215,0,0.4); border-radius:14px; padding:16px; margin-bottom:15px; text-align:center;">
+                    <p style="color:#FFD700; font-size:0.75rem; font-weight:600; margin:0 0 6px; letter-spacing:1px;">🏆 REFERRAL COMPETITION PRIZES</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px;">
+                        <div style="background:rgba(255,215,0,0.15); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥇</div>
+                            <div style="color:#FFD700; font-weight:bold; font-size:0.9rem;">1,000</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                        <div style="background:rgba(192,192,192,0.1); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥈</div>
+                            <div style="color:#C0C0C0; font-weight:bold; font-size:0.9rem;">500</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                        <div style="background:rgba(205,127,50,0.1); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥉</div>
+                            <div style="color:#CD7F32; font-weight:bold; font-size:0.9rem;">250</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; display:flex; justify-content:center; gap:12px; font-size:0.7rem; color:#aaa;">
+                        <span>4-10th: <b style="color:#FFD700;">100 TON</b></span>
+                        <span>11-25th: <b style="color:#FFD700;">50 TON</b></span>
+                        <span>26-50th: <b style="color:#FFD700;">25 TON</b></span>
+                    </div>
+                </div>
+
+                <!-- Your Rank -->
+                <div id="myRankCard" style="background:rgba(16,185,129,0.1); border:1.5px solid rgba(16,185,129,0.3); border-radius:12px; padding:14px; margin-bottom:15px; display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:rgba(16,185,129,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--success); font-size:1.1rem;" id="myRankNum">-</div>
+                    <div style="flex:1;">
+                        <div style="color:#fff; font-size:0.85rem; font-weight:600;">Your Rank</div>
+                        <div style="color:#888; font-size:0.75rem;"><span id="myRefCount">0</span> referrals • <span id="myRefEarn">0.00</span> TON earned</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:#FFD700; font-size:0.85rem; font-weight:bold;" id="myPrizeAmount">-</div>
+                        <div style="color:#888; font-size:0.6rem;">Prize</div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard List -->
+                <div id="leaderboardList" style="margin-top:10px;">
+                    <div style="text-align:center; padding:30px; color:#666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>
+                        Loading leaderboard...
                     </div>
                 </div>
             </div>
-            <div id="tasksList"></div>
         </div>
     </div>
 
@@ -411,6 +464,6 @@
 
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script type="module" src="script.js?v=17"></script>
+    <script type="module" src="script.js?v=18"></script>
 </body>
 </html>
