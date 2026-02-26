@@ -173,19 +173,6 @@
                 <div id="spinBadge" style="background:rgba(255,215,0,0.2); color:#FFD700; border:1px solid #FFD700; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.7rem;">FREE</div>
             </div>
 
-            <!-- Referral Stats Mini Card -->
-            <div onclick="window.goTo('referral', document.querySelectorAll('.nav-item')[4])" style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04)); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                <div style="font-size:1.3rem; color:var(--success);"><i class="fas fa-users"></i></div>
-                <div style="flex:1">
-                    <h4 style="margin:0; color:var(--success); font-size:0.8rem; font-weight:700;">Referral Program</h4>
-                    <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);">
-                        <span id="dashRefCount" style="color:var(--success); font-weight:bold;">0</span> friends • 
-                        <span id="dashRefEarn" style="color:var(--success); font-weight:bold;">0.00</span> TON earned
-                    </p>
-                </div>
-                <div style="color:var(--success); font-size:0.75rem; font-weight:bold;">40% <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i></div>
-            </div>
-
             <!-- Tasks Mini Card -->
             <div onclick="window.goTo('tasks', document.querySelectorAll('.nav-item')[5])" style="background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,215,0,0.04)); border: 1.5px solid rgba(255,215,0,0.3); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
                 <div style="font-size:1.3rem; color:#FFD700;"><i class="fas fa-trophy"></i></div>
@@ -385,6 +372,7 @@
         <div class="nav-item" onclick="window.goTo('wallet', this)"><i class="fas fa-wallet"></i></div>
         <div class="nav-item" onclick="window.goTo('referral', this)"><i class="fas fa-users"></i></div>
         <div class="nav-item" onclick="window.goTo('tasks', this)"><i class="fas fa-trophy"></i></div>
+        <div class="nav-item" onclick="window.open('info.html', '_blank')" title="How It Works"><i class="fas fa-circle-info"></i></div>
     </div>
 
     <!-- Legal links footer -->
