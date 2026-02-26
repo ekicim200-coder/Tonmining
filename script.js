@@ -1,5 +1,5 @@
 // --- IMPORT ---
-import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats, getLeaderboard, getUserRank } from './firebase-config.js';
 import { t, currentLang, setLanguage, getAvailableLanguages } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
@@ -2246,6 +2246,113 @@ function getClaimableTaskCount() {
     return count;
 }
 
+// --- LEADERBOARD ---
+window.switchRewardTab = function(tab) {
+    const tabTasks = document.getElementById('tabTasks');
+    const tabLeaderboard = document.getElementById('tabLeaderboard');
+    const tasksContent = document.getElementById('tasksContent');
+    const leaderboardContent = document.getElementById('leaderboardContent');
+    
+    if (tab === 'tasks') {
+        if (tabTasks) { tabTasks.style.background = 'var(--primary)'; tabTasks.style.color = '#000'; }
+        if (tabLeaderboard) { tabLeaderboard.style.background = 'transparent'; tabLeaderboard.style.color = '#888'; }
+        if (tasksContent) tasksContent.style.display = 'block';
+        if (leaderboardContent) leaderboardContent.style.display = 'none';
+    } else {
+        if (tabTasks) { tabTasks.style.background = 'transparent'; tabTasks.style.color = '#888'; }
+        if (tabLeaderboard) { tabLeaderboard.style.background = 'var(--primary)'; tabLeaderboard.style.color = '#000'; }
+        if (tasksContent) tasksContent.style.display = 'none';
+        if (leaderboardContent) leaderboardContent.style.display = 'block';
+        renderLeaderboard();
+    }
+};
+
+const PRIZES = {
+    1: 1000, 2: 500, 3: 250,
+    4: 100, 5: 100, 6: 100, 7: 100, 8: 100, 9: 100, 10: 100
+};
+for (let i = 11; i <= 25; i++) PRIZES[i] = 50;
+for (let i = 26; i <= 50; i++) PRIZES[i] = 25;
+
+async function renderLeaderboard() {
+    const listEl = document.getElementById('leaderboardList');
+    if (!listEl) return;
+    
+    listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">
+        <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>Loading...</div>`;
+    
+    try {
+        // Load leaderboard
+        const leaders = await getLeaderboard();
+        
+        // Load user rank
+        if (state.wallet) {
+            const myRank = await getUserRank(state.wallet);
+            if (myRank) {
+                const rankEl = document.getElementById('myRankNum');
+                const refCountEl = document.getElementById('myRefCount');
+                const refEarnEl = document.getElementById('myRefEarn');
+                const prizeEl = document.getElementById('myPrizeAmount');
+                
+                if (rankEl) rankEl.textContent = myRank.rank > 0 ? '#' + myRank.rank : '-';
+                if (refCountEl) refCountEl.textContent = myRank.referralCount || 0;
+                if (refEarnEl) refEarnEl.textContent = (myRank.referralEarnings || 0).toFixed(2);
+                
+                const myPrize = PRIZES[myRank.rank] || 0;
+                if (prizeEl) prizeEl.textContent = myPrize > 0 ? myPrize + ' TON' : '-';
+            }
+        }
+        
+        if (leaders.length === 0) {
+            listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">
+                <div style="font-size:2rem; margin-bottom:10px;">🏅</div>
+                <p>No participants yet</p>
+                <p style="font-size:0.8rem;">Invite friends to climb the leaderboard!</p></div>`;
+            return;
+        }
+        
+        let html = '';
+        leaders.forEach((user, i) => {
+            const rank = i + 1;
+            const prize = PRIZES[rank] || 0;
+            const walletShort = user.wallet.substring(0, 6) + '...' + user.wallet.substring(user.wallet.length - 4);
+            const isMe = state.wallet && user.wallet === state.wallet;
+            
+            let rankIcon, rankColor, bgColor;
+            if (rank === 1) { rankIcon = '🥇'; rankColor = '#FFD700'; bgColor = 'rgba(255,215,0,0.1)'; }
+            else if (rank === 2) { rankIcon = '🥈'; rankColor = '#C0C0C0'; bgColor = 'rgba(192,192,192,0.08)'; }
+            else if (rank === 3) { rankIcon = '🥉'; rankColor = '#CD7F32'; bgColor = 'rgba(205,127,50,0.08)'; }
+            else { rankIcon = '#' + rank; rankColor = '#888'; bgColor = 'rgba(255,255,255,0.02)'; }
+            
+            const meBorder = isMe ? 'border:1.5px solid var(--primary);' : 'border:1px solid rgba(255,255,255,0.05);';
+            
+            html += `
+            <div style="background:${bgColor}; ${meBorder} border-radius:12px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:${rank<=3 ? '1.2rem' : '0.8rem'}; color:${rankColor}; font-weight:bold; flex-shrink:0;">
+                    ${rankIcon}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:0.85rem; font-weight:600; color:${isMe ? 'var(--primary)' : '#fff'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${isMe ? '⭐ You' : walletShort}
+                    </div>
+                    <div style="font-size:0.7rem; color:#888;">
+                        👥 ${user.referralCount} referrals • ${user.referralEarnings.toFixed(2)} TON
+                    </div>
+                </div>
+                ${prize > 0 ? `<div style="text-align:right; flex-shrink:0;">
+                    <div style="color:#FFD700; font-weight:bold; font-size:0.85rem;">${prize}</div>
+                    <div style="color:#888; font-size:0.6rem;">TON</div>
+                </div>` : ''}
+            </div>`;
+        });
+        
+        listEl.innerHTML = html;
+    } catch (e) {
+        console.error('Leaderboard error:', e);
+        listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">Failed to load leaderboard</div>`;
+    }
+}
+
 // --- ONBOARDING ---
 function checkOnboarding() {
     const seen = localStorage.getItem('tonminer_onboard');
@@ -2365,11 +2472,11 @@ function applyLanguage() {
     const langBtn = document.getElementById('langToggle');
     if (langBtn) langBtn.textContent = '🌐 ' + currentLang.toUpperCase();
 
-    // Tasks
-    const tasksTitle = document.getElementById('tasksTitle');
-    const tasksSubtitle = document.getElementById('tasksSubtitle');
-    if (tasksTitle) tasksTitle.textContent = t('tasksTitle') || 'Tasks & Achievements';
-    if (tasksSubtitle) tasksSubtitle.textContent = t('tasksSubtitle') || 'Complete tasks to earn bonus TON!';
+    // Tasks tab
+    const tabTasks = document.getElementById('tabTasks');
+    if (tabTasks) tabTasks.textContent = '🏆 ' + (t('tasksTitle') || 'Tasks');
+    const tabLb = document.getElementById('tabLeaderboard');
+    if (tabLb) tabLb.textContent = '🏅 Leaderboard';
 
     // Re-render dynamic content
     renderMarket();
