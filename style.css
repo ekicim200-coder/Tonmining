@@ -1524,3 +1524,131 @@ body {
 .nav-item i {
     pointer-events: none;
 }
+
+/* --- TASKS & ACHIEVEMENTS --- */
+.task-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.3s ease;
+}
+.task-card.completed {
+    border-color: rgba(16,185,129,0.3);
+    background: rgba(16,185,129,0.08);
+    opacity: 0.7;
+}
+.task-card.claimable {
+    border-color: rgba(255,215,0,0.5);
+    background: rgba(255,215,0,0.08);
+    animation: taskPulse 2s infinite;
+}
+@keyframes taskPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.2); }
+    50% { box-shadow: 0 0 15px 3px rgba(255,215,0,0.15); }
+}
+.task-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+.task-info {
+    flex: 1;
+    min-width: 0;
+}
+.task-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+.task-desc {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 6px;
+}
+.task-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.task-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+.task-reward {
+    text-align: center;
+    flex-shrink: 0;
+}
+.task-reward-val {
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: block;
+}
+.task-claim-btn {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 4px;
+}
+.task-claim-btn:disabled {
+    background: rgba(255,255,255,0.1);
+    color: #666;
+    cursor: default;
+}
+.task-claimed-badge {
+    color: var(--success);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* --- ONBOARDING --- */
+.onboard-step { animation: fadeInUp 0.4s ease; }
+@keyframes fadeInUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+.onboard-dots { display: flex; justify-content: center; gap: 8px; }
+.onboard-dots .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: all 0.3s ease;
+}
+.onboard-dots .dot.active {
+    background: #10b981;
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* --- REFERRAL STATS CARDS --- */
+.ref-stat-card {
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+}
+.ref-stat-val {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--success);
+}
+.ref-stat-lbl {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 4px;
+}
