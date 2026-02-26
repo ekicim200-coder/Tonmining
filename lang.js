@@ -21,7 +21,24 @@ const LANG = {
         terms: "Terms of Service", privacy: "Privacy Policy", lastUpdated: "Last Updated",
         offlineTitle: "Welcome Back!", offlineSub: "Your miners worked while you were away",
         dailyReward: "Daily Reward", claimReward: "CLAIM REWARD", day: "Day",
-        sent: "Sending...", cancelled: "Cancelled", opening: "Opening..."
+        sent: "Sending...", cancelled: "Cancelled", opening: "Opening...",
+        tasksTitle: "Tasks & Achievements", tasksSubtitle: "Complete tasks to earn bonus TON!",
+        taskConnectWallet: "Connect Wallet", taskConnectWalletDesc: "Connect your TON wallet",
+        taskFirstMachine: "First Machine", taskFirstMachineDesc: "Buy your first mining machine",
+        taskBuy5: "Machine Collector", taskBuy5Desc: "Own 5 mining machines",
+        taskBuy10: "Mining Farm", taskBuy10Desc: "Own 10 mining machines",
+        taskFirstSpin: "Lucky Spinner", taskFirstSpinDesc: "Use the daily spin wheel",
+        taskWatchAd: "Ad Watcher", taskWatchAdDesc: "Watch an ad for free hashrate",
+        taskInvite1: "First Referral", taskInvite1Desc: "Invite 1 friend",
+        taskInvite5: "Team Builder", taskInvite5Desc: "Invite 5 friends",
+        taskInvite20: "Network Master", taskInvite20Desc: "Invite 20 friends",
+        taskLogin7: "7-Day Streak", taskLogin7Desc: "Login 7 days in a row",
+        taskEarn10: "First Milestone", taskEarn10Desc: "Earn 10 TON total",
+        taskEarn100: "TON Whale", taskEarn100Desc: "Earn 100 TON total",
+        taskSilver: "Silver Rank", taskSilverDesc: "Reach Silver rank",
+        taskGold: "Gold Rank", taskGoldDesc: "Reach Gold rank",
+        taskDiamond: "Diamond Rank", taskDiamondDesc: "Reach Diamond rank",
+        completed: "Completed", claim: "CLAIM"
     },
     tr: {
         langName: "Türkçe", totalBalance: "TOPLAM BAKİYE", connect: "Bağlan", connected: "Bağlı",
@@ -44,7 +61,24 @@ const LANG = {
         terms: "Kullanım Şartları", privacy: "Gizlilik Politikası", lastUpdated: "Son Güncelleme",
         offlineTitle: "Tekrar Hoşgeldin!", offlineSub: "Madencilerin sen yokken çalıştı",
         dailyReward: "Günlük Ödül", claimReward: "ÖDÜLÜ AL", day: "Gün",
-        sent: "Gönderiliyor...", cancelled: "İptal Edildi", opening: "Açılıyor..."
+        sent: "Gönderiliyor...", cancelled: "İptal Edildi", opening: "Açılıyor...",
+        tasksTitle: "Görevler & Başarılar", tasksSubtitle: "Görevleri tamamla, bonus TON kazan!",
+        taskConnectWallet: "Cüzdan Bağla", taskConnectWalletDesc: "TON cüzdanını bağla",
+        taskFirstMachine: "İlk Makine", taskFirstMachineDesc: "İlk madencilik makineni al",
+        taskBuy5: "Makine Koleksiyoncusu", taskBuy5Desc: "5 makineye sahip ol",
+        taskBuy10: "Madencilik Çiftliği", taskBuy10Desc: "10 makineye sahip ol",
+        taskFirstSpin: "Şanslı Çevirici", taskFirstSpinDesc: "Günlük çarkı çevir",
+        taskWatchAd: "Reklam İzleyici", taskWatchAdDesc: "Ücretsiz hashrate için reklam izle",
+        taskInvite1: "İlk Davet", taskInvite1Desc: "1 arkadaş davet et",
+        taskInvite5: "Takım Kurucu", taskInvite5Desc: "5 arkadaş davet et",
+        taskInvite20: "Ağ Ustası", taskInvite20Desc: "20 arkadaş davet et",
+        taskLogin7: "7 Gün Seri", taskLogin7Desc: "7 gün üst üste giriş yap",
+        taskEarn10: "İlk Kilometre Taşı", taskEarn10Desc: "Toplam 10 TON kazan",
+        taskEarn100: "TON Balinası", taskEarn100Desc: "Toplam 100 TON kazan",
+        taskSilver: "Gümüş Rütbe", taskSilverDesc: "Gümüş rütbeye ulaş",
+        taskGold: "Altın Rütbe", taskGoldDesc: "Altın rütbeye ulaş",
+        taskDiamond: "Elmas Rütbe", taskDiamondDesc: "Elmas rütbeye ulaş",
+        completed: "Tamamlandı", claim: "AL"
     },
     zh: {
         langName: "中文", totalBalance: "总余额", connect: "连接", connected: "已连接",
@@ -67,7 +101,24 @@ const LANG = {
         terms: "服务条款", privacy: "隐私政策", lastUpdated: "最后更新",
         offlineTitle: "欢迎回来!", offlineSub: "您不在时矿机一直在工作",
         dailyReward: "每日奖励", claimReward: "领取奖励", day: "天",
-        sent: "发送中...", cancelled: "已取消", opening: "打开中..."
+        sent: "发送中...", cancelled: "已取消", opening: "打开中...",
+        tasksTitle: "任务和成就", tasksSubtitle: "完成任务赚取奖励TON！",
+        taskConnectWallet: "连接钱包", taskConnectWalletDesc: "连接你的TON钱包",
+        taskFirstMachine: "第一台矿机", taskFirstMachineDesc: "购买你的第一台矿机",
+        taskBuy5: "矿机收藏家", taskBuy5Desc: "拥有5台矿机",
+        taskBuy10: "矿场", taskBuy10Desc: "拥有10台矿机",
+        taskFirstSpin: "幸运转盘", taskFirstSpinDesc: "使用每日转盘",
+        taskWatchAd: "广告观看者", taskWatchAdDesc: "观看广告获得免费算力",
+        taskInvite1: "首次邀请", taskInvite1Desc: "邀请1位好友",
+        taskInvite5: "团队建设者", taskInvite5Desc: "邀请5位好友",
+        taskInvite20: "网络大师", taskInvite20Desc: "邀请20位好友",
+        taskLogin7: "7天连续", taskLogin7Desc: "连续登录7天",
+        taskEarn10: "第一个里程碑", taskEarn10Desc: "总共赚取10 TON",
+        taskEarn100: "TON鲸鱼", taskEarn100Desc: "总共赚取100 TON",
+        taskSilver: "白银段位", taskSilverDesc: "达到白银段位",
+        taskGold: "黄金段位", taskGoldDesc: "达到黄金段位",
+        taskDiamond: "钻石段位", taskDiamondDesc: "达到钻石段位",
+        completed: "已完成", claim: "领取"
     },
     ja: {
         langName: "日本語", totalBalance: "合計残高", connect: "接続", connected: "接続済み",
@@ -90,7 +141,8 @@ const LANG = {
         terms: "利用規約", privacy: "プライバシーポリシー", lastUpdated: "最終更新",
         offlineTitle: "おかえりなさい!", offlineSub: "留守中もマイナーが稼働していました",
         dailyReward: "デイリー報酬", claimReward: "報酬を受け取る", day: "日目",
-        sent: "送信中...", cancelled: "キャンセル", opening: "開いています..."
+        sent: "送信中...", cancelled: "キャンセル", opening: "開いています...",
+        tasksTitle: "タスク＆実績", tasksSubtitle: "タスクを完成してTONを獲得！"
     },
     ko: {
         langName: "한국어", totalBalance: "총 잔액", connect: "연결", connected: "연결됨",
@@ -113,7 +165,8 @@ const LANG = {
         terms: "이용약관", privacy: "개인정보처리방침", lastUpdated: "최종 업데이트",
         offlineTitle: "돌아오셨군요!", offlineSub: "부재중에도 채굴기가 작동했습니다",
         dailyReward: "일일 보상", claimReward: "보상 받기", day: "일차",
-        sent: "전송중...", cancelled: "취소됨", opening: "여는 중..."
+        sent: "전송중...", cancelled: "취소됨", opening: "여는 중...",
+        tasksTitle: "과제 & 업적", tasksSubtitle: "과제를 완료하고 보너스 TON을 받으세요!"
     },
     hi: {
         langName: "हिन्दी", totalBalance: "कुल शेष", connect: "कनेक्ट", connected: "कनेक्टेड",
@@ -136,7 +189,8 @@ const LANG = {
         terms: "सेवा की शर्तें", privacy: "गोपनीयता नीति", lastUpdated: "अंतिम अपडेट",
         offlineTitle: "वापस स्वागत है!", offlineSub: "आपकी अनुपस्थिति में माइनर काम कर रहे थे",
         dailyReward: "दैनिक इनाम", claimReward: "इनाम लें", day: "दिन",
-        sent: "भेज रहा है...", cancelled: "रद्द", opening: "खुल रहा है..."
+        sent: "भेज रहा है...", cancelled: "रद्द", opening: "खुल रहा है...",
+        tasksTitle: "कार्य और उपलब्धियाँ", tasksSubtitle: "कार्य पूरा करें, बोनस TON कमाएं!"
     },
     ur: {
         langName: "اردو", totalBalance: "کل بیلنس", connect: "جوڑیں", connected: "جڑا ہوا",
@@ -159,7 +213,8 @@ const LANG = {
         terms: "شرائط", privacy: "رازداری پالیسی", lastUpdated: "آخری اپڈیٹ",
         offlineTitle: "واپس خوش آمدید!", offlineSub: "آپ کی غیر موجودگی میں مائنرز کام کر رہے تھے",
         dailyReward: "روزانہ انعام", claimReward: "انعام لیں", day: "دن",
-        sent: "بھیج رہا ہے...", cancelled: "منسوخ", opening: "کھل رہا ہے..."
+        sent: "بھیج رہا ہے...", cancelled: "منسوخ", opening: "کھل رہا ہے...",
+        tasksTitle: "ٹاسک اور کامیابیاں", tasksSubtitle: "ٹاسک مکمل کریں بونس TON کمائیں!"
     },
     ar: {
         langName: "العربية", totalBalance: "الرصيد الإجمالي", connect: "اتصال", connected: "متصل",
@@ -182,7 +237,8 @@ const LANG = {
         terms: "شروط الخدمة", privacy: "سياسة الخصوصية", lastUpdated: "آخر تحديث",
         offlineTitle: "مرحباً بعودتك!", offlineSub: "عمال المناجم عملوا أثناء غيابك",
         dailyReward: "المكافأة اليومية", claimReward: "استلم المكافأة", day: "يوم",
-        sent: "جاري الإرسال...", cancelled: "ملغي", opening: "جاري الفتح..."
+        sent: "جاري الإرسال...", cancelled: "ملغي", opening: "جاري الفتح...",
+        tasksTitle: "المهام والإنجازات", tasksSubtitle: "أكمل المهام واكسب TON إضافي!"
     },
     es: {
         langName: "Español", totalBalance: "SALDO TOTAL", connect: "Conectar", connected: "Conectado",
@@ -205,7 +261,8 @@ const LANG = {
         terms: "Términos", privacy: "Privacidad", lastUpdated: "Última Actualización",
         offlineTitle: "¡Bienvenido!", offlineSub: "Tus mineros trabajaron mientras estabas fuera",
         dailyReward: "Recompensa Diaria", claimReward: "RECLAMAR", day: "Día",
-        sent: "Enviando...", cancelled: "Cancelado", opening: "Abriendo..."
+        sent: "Enviando...", cancelled: "Cancelado", opening: "Abriendo...",
+        tasksTitle: "Tareas y Logros", tasksSubtitle: "¡Completa tareas para ganar TON bonus!"
     },
     pt: {
         langName: "Português", totalBalance: "SALDO TOTAL", connect: "Conectar", connected: "Conectado",
@@ -228,7 +285,8 @@ const LANG = {
         terms: "Termos", privacy: "Privacidade", lastUpdated: "Última Atualização",
         offlineTitle: "Bem-vindo de volta!", offlineSub: "Seus mineradores trabalharam na sua ausência",
         dailyReward: "Recompensa Diária", claimReward: "COLETAR", day: "Dia",
-        sent: "Enviando...", cancelled: "Cancelado", opening: "Abrindo..."
+        sent: "Enviando...", cancelled: "Cancelado", opening: "Abrindo...",
+        tasksTitle: "Tarefas e Conquistas", tasksSubtitle: "Complete tarefas para ganhar TON bônus!"
     },
     ru: {
         langName: "Русский", totalBalance: "ОБЩИЙ БАЛАНС", connect: "Подключить", connected: "Подключено",
@@ -251,7 +309,8 @@ const LANG = {
         terms: "Условия", privacy: "Конфиденциальность", lastUpdated: "Обновлено",
         offlineTitle: "С возвращением!", offlineSub: "Ваши майнеры работали пока вас не было",
         dailyReward: "Ежедневная награда", claimReward: "ПОЛУЧИТЬ", day: "День",
-        sent: "Отправка...", cancelled: "Отменено", opening: "Открытие..."
+        sent: "Отправка...", cancelled: "Отменено", opening: "Открытие...",
+        tasksTitle: "Задания и достижения", tasksSubtitle: "Выполняйте задания и получайте бонус TON!"
     },
     id: {
         langName: "Bahasa", totalBalance: "TOTAL SALDO", connect: "Hubungkan", connected: "Terhubung",
@@ -274,7 +333,8 @@ const LANG = {
         terms: "Ketentuan", privacy: "Privasi", lastUpdated: "Terakhir Diperbarui",
         offlineTitle: "Selamat Datang!", offlineSub: "Penambang bekerja saat Anda pergi",
         dailyReward: "Hadiah Harian", claimReward: "KLAIM", day: "Hari",
-        sent: "Mengirim...", cancelled: "Dibatalkan", opening: "Membuka..."
+        sent: "Mengirim...", cancelled: "Dibatalkan", opening: "Membuka...",
+        tasksTitle: "Tugas & Pencapaian", tasksSubtitle: "Selesaikan tugas untuk mendapat bonus TON!"
     },
     fr: {
         langName: "Français", totalBalance: "SOLDE TOTAL", connect: "Connecter", connected: "Connecté",
@@ -297,7 +357,8 @@ const LANG = {
         terms: "Conditions", privacy: "Confidentialité", lastUpdated: "Mise à jour",
         offlineTitle: "Bon retour!", offlineSub: "Vos mineurs ont travaillé pendant votre absence",
         dailyReward: "Récompense", claimReward: "RÉCLAMER", day: "Jour",
-        sent: "Envoi...", cancelled: "Annulé", opening: "Ouverture..."
+        sent: "Envoi...", cancelled: "Annulé", opening: "Ouverture...",
+        tasksTitle: "Tâches et Réalisations", tasksSubtitle: "Complétez les tâches pour gagner du TON bonus !"
     },
     de: {
         langName: "Deutsch", totalBalance: "GESAMTGUTHABEN", connect: "Verbinden", connected: "Verbunden",
@@ -320,7 +381,8 @@ const LANG = {
         terms: "Nutzungsbedingungen", privacy: "Datenschutz", lastUpdated: "Aktualisierung",
         offlineTitle: "Willkommen zurück!", offlineSub: "Ihre Miner haben während Ihrer Abwesenheit gearbeitet",
         dailyReward: "Tägliche Belohnung", claimReward: "EINLÖSEN", day: "Tag",
-        sent: "Sende...", cancelled: "Abgebrochen", opening: "Öffne..."
+        sent: "Sende...", cancelled: "Abgebrochen", opening: "Öffne...",
+        tasksTitle: "Aufgaben & Erfolge", tasksSubtitle: "Aufgaben erledigen und Bonus-TON verdienen!"
     },
     vi: {
         langName: "Tiếng Việt", totalBalance: "TỔNG SỐ DƯ", connect: "Kết nối", connected: "Đã kết nối",
@@ -343,7 +405,8 @@ const LANG = {
         terms: "Điều khoản", privacy: "Bảo mật", lastUpdated: "Cập nhật",
         offlineTitle: "Chào mừng trở lại!", offlineSub: "Máy đào đã hoạt động khi bạn vắng",
         dailyReward: "Phần thưởng", claimReward: "NHẬN", day: "Ngày",
-        sent: "Đang gửi...", cancelled: "Đã hủy", opening: "Đang mở..."
+        sent: "Đang gửi...", cancelled: "Đã hủy", opening: "Đang mở...",
+        tasksTitle: "Nhiệm vụ & Thành tích", tasksSubtitle: "Hoàn thành nhiệm vụ để nhận TON thưởng!"
     },
     th: {
         langName: "ไทย", totalBalance: "ยอดรวม", connect: "เชื่อมต่อ", connected: "เชื่อมต่อแล้ว",
@@ -366,7 +429,8 @@ const LANG = {
         terms: "ข้อกำหนด", privacy: "ความเป็นส่วนตัว", lastUpdated: "อัปเดตล่าสุด",
         offlineTitle: "ยินดีต้อนรับกลับ!", offlineSub: "เครื่องขุดทำงานขณะคุณไม่อยู่",
         dailyReward: "รางวัลประจำวัน", claimReward: "รับรางวัล", day: "วัน",
-        sent: "กำลังส่ง...", cancelled: "ยกเลิก", opening: "กำลังเปิด..."
+        sent: "กำลังส่ง...", cancelled: "ยกเลิก", opening: "กำลังเปิด...",
+        tasksTitle: "ภารกิจและความสำเร็จ", tasksSubtitle: "ทำภารกิจเพื่อรับ TON โบนัส!"
     },
     fil: {
         langName: "Filipino", totalBalance: "KABUUANG BALANSE", connect: "Ikonekta", connected: "Nakakonekta",
@@ -389,7 +453,8 @@ const LANG = {
         terms: "Mga Tuntunin", privacy: "Privacy", lastUpdated: "Huling Na-update",
         offlineTitle: "Welcome Back!", offlineSub: "Nagtatrabaho ang mga miner mo habang wala ka",
         dailyReward: "Daily Reward", claimReward: "KUNIN", day: "Araw",
-        sent: "Ipinapadala...", cancelled: "Kinansela", opening: "Binubuksan..."
+        sent: "Ipinapadala...", cancelled: "Kinansela", opening: "Binubuksan...",
+        tasksTitle: "Mga Gawain at Tagumpay", tasksSubtitle: "Kumpletuhin ang mga gawain para makakuha ng bonus TON!"
     },
     bn: {
         langName: "বাংলা", totalBalance: "মোট ব্যালেন্স", connect: "সংযুক্ত করুন", connected: "সংযুক্ত",
@@ -412,7 +477,8 @@ const LANG = {
         terms: "শর্তাবলী", privacy: "গোপনীয়তা", lastUpdated: "সর্বশেষ আপডেট",
         offlineTitle: "স্বাগতম!", offlineSub: "আপনার অনুপস্থিতিতে মাইনাররা কাজ করেছে",
         dailyReward: "দৈনিক পুরস্কার", claimReward: "পুরস্কার নিন", day: "দিন",
-        sent: "পাঠানো হচ্ছে...", cancelled: "বাতিল", opening: "খুলছে..."
+        sent: "পাঠানো হচ্ছে...", cancelled: "বাতিল", opening: "খুলছে...",
+        tasksTitle: "কাজ ও অর্জন", tasksSubtitle: "কাজ সম্পন্ন করে বোনাস TON আয় করুন!"
     }
 };
 
