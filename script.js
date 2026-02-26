@@ -586,12 +586,6 @@ function updateUI() {
     const daily = (state.hashrate * CFG.rate * 86400).toFixed(2);
     if (dDaily) dDaily.textContent = daily;
     
-    // Dashboard referral stats
-    const dashRef = document.getElementById('dashRefCount');
-    const dashRefEarn = document.getElementById('dashRefEarn');
-    if (dashRef) dashRef.textContent = state.referralCount || 0;
-    if (dashRefEarn) dashRefEarn.textContent = (state.referralEarnings || 0).toFixed(2);
-    
     // Dashboard task badge
     const claimable = getClaimableTaskCount();
     const badge = document.getElementById('dashTaskBadge');
