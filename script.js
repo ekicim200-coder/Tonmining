@@ -102,10 +102,18 @@ function init() {
     initSpinWheel();
     updateSpinStatus();
     applyLanguage();
+    checkNotificationEligibility();
     
     // Hide splash after a minimum display time, then show popups in sequence
     setTimeout(() => {
         hideSplash(() => {
+            // Check onboarding first (new users)
+            const onboardSeen = localStorage.getItem('tonminer_onboard');
+            if (!onboardSeen) {
+                checkOnboarding();
+                return; // Onboarding will handle further flow
+            }
+            
             // After splash hides, show offline popup if earned
             if (offlineResult && offlineResult.earned > 0.001) {
                 showOfflinePopup(offlineResult.earned, offlineResult.seconds);
@@ -578,6 +586,24 @@ function updateUI() {
     const daily = (state.hashrate * CFG.rate * 86400).toFixed(2);
     if (dDaily) dDaily.textContent = daily;
     
+    // Dashboard referral stats
+    const dashRef = document.getElementById('dashRefCount');
+    const dashRefEarn = document.getElementById('dashRefEarn');
+    if (dashRef) dashRef.textContent = state.referralCount || 0;
+    if (dashRefEarn) dashRefEarn.textContent = (state.referralEarnings || 0).toFixed(2);
+    
+    // Dashboard task badge
+    const claimable = getClaimableTaskCount();
+    const badge = document.getElementById('dashTaskBadge');
+    if (badge) {
+        if (claimable > 0) {
+            badge.style.display = 'block';
+            badge.textContent = claimable;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
     updateRankBadge();
 }
 
@@ -967,6 +993,9 @@ function go(id, el) {
     if(id==='referral') {
         updateReferralUI();
         renderReferralHistory();
+    }
+    if(id==='tasks') {
+        renderTasks();
     }
 }
 
@@ -2052,6 +2081,232 @@ window.closeDailyBonus = function() {
     if (popup) popup.style.display = 'none';
 }
 
+// --- TASKS & ACHIEVEMENTS ---
+const TASKS = [
+    { id: 'connect_wallet', icon: '👛', color: '#3b82f6', reward: 0.10, goal: 1,
+      getName: () => t('taskConnectWallet') || 'Connect Wallet',
+      getDesc: () => t('taskConnectWalletDesc') || 'Connect your TON wallet',
+      getProgress: () => state.wallet ? 1 : 0 },
+    
+    { id: 'first_machine', icon: '⛏️', color: '#8b5cf6', reward: 0.50, goal: 1,
+      getName: () => t('taskFirstMachine') || 'First Machine',
+      getDesc: () => t('taskFirstMachineDesc') || 'Buy your first mining machine',
+      getProgress: () => state.inv.filter(i => i.mid !== 999).length >= 1 ? 1 : 0 },
+    
+    { id: 'buy_5_machines', icon: '🏭', color: '#06b6d4', reward: 1.00, goal: 5,
+      getName: () => t('taskBuy5') || 'Machine Collector',
+      getDesc: () => t('taskBuy5Desc') || 'Own 5 mining machines',
+      getProgress: () => Math.min(state.inv.filter(i => i.mid !== 999).length, 5) },
+    
+    { id: 'buy_10_machines', icon: '🏗️', color: '#0891b2', reward: 3.00, goal: 10,
+      getName: () => t('taskBuy10') || 'Mining Farm',
+      getDesc: () => t('taskBuy10Desc') || 'Own 10 mining machines',
+      getProgress: () => Math.min(state.inv.filter(i => i.mid !== 999).length, 10) },
+    
+    { id: 'first_spin', icon: '🎰', color: '#ec4899', reward: 0.10, goal: 1,
+      getName: () => t('taskFirstSpin') || 'Lucky Spinner',
+      getDesc: () => t('taskFirstSpinDesc') || 'Use the daily spin wheel',
+      getProgress: () => state.lastSpinTime ? 1 : 0 },
+    
+    { id: 'watch_ad', icon: '📺', color: '#f59e0b', reward: 0.10, goal: 1,
+      getName: () => t('taskWatchAd') || 'Ad Watcher',
+      getDesc: () => t('taskWatchAdDesc') || 'Watch an ad for free hashrate',
+      getProgress: () => state.lastAdTime ? 1 : 0 },
+    
+    { id: 'invite_1', icon: '👤', color: '#10b981', reward: 0.50, goal: 1,
+      getName: () => t('taskInvite1') || 'First Referral',
+      getDesc: () => t('taskInvite1Desc') || 'Invite 1 friend',
+      getProgress: () => Math.min(state.referralCount || 0, 1) },
+    
+    { id: 'invite_5', icon: '👥', color: '#059669', reward: 2.00, goal: 5,
+      getName: () => t('taskInvite5') || 'Team Builder',
+      getDesc: () => t('taskInvite5Desc') || 'Invite 5 friends',
+      getProgress: () => Math.min(state.referralCount || 0, 5) },
+    
+    { id: 'invite_20', icon: '🌐', color: '#047857', reward: 5.00, goal: 20,
+      getName: () => t('taskInvite20') || 'Network Master',
+      getDesc: () => t('taskInvite20Desc') || 'Invite 20 friends',
+      getProgress: () => Math.min(state.referralCount || 0, 20) },
+    
+    { id: 'login_7', icon: '🔥', color: '#ef4444', reward: 1.00, goal: 7,
+      getName: () => t('taskLogin7') || '7-Day Streak',
+      getDesc: () => t('taskLogin7Desc') || 'Login 7 days in a row',
+      getProgress: () => Math.min(state.loginStreak || 0, 7) },
+    
+    { id: 'earn_10', icon: '💰', color: '#eab308', reward: 1.00, goal: 10,
+      getName: () => t('taskEarn10') || 'First Milestone',
+      getDesc: () => t('taskEarn10Desc') || 'Earn 10 TON total',
+      getProgress: () => Math.min(state.totalEarned || 0, 10) },
+    
+    { id: 'earn_100', icon: '💎', color: '#a855f7', reward: 5.00, goal: 100,
+      getName: () => t('taskEarn100') || 'TON Whale',
+      getDesc: () => t('taskEarn100Desc') || 'Earn 100 TON total',
+      getProgress: () => Math.min(state.totalEarned || 0, 100) },
+    
+    { id: 'reach_silver', icon: '🥈', color: '#94a3b8', reward: 0.50, goal: 1,
+      getName: () => t('taskSilver') || 'Silver Rank',
+      getDesc: () => t('taskSilverDesc') || 'Reach Silver rank',
+      getProgress: () => (state.totalEarned || 0) >= 10 ? 1 : 0 },
+    
+    { id: 'reach_gold', icon: '🥇', color: '#f59e0b', reward: 1.00, goal: 1,
+      getName: () => t('taskGold') || 'Gold Rank',
+      getDesc: () => t('taskGoldDesc') || 'Reach Gold rank',
+      getProgress: () => (state.totalEarned || 0) >= 50 ? 1 : 0 },
+    
+    { id: 'reach_diamond', icon: '💠', color: '#06b6d4', reward: 3.00, goal: 1,
+      getName: () => t('taskDiamond') || 'Diamond Rank',
+      getDesc: () => t('taskDiamondDesc') || 'Reach Diamond rank',
+      getProgress: () => (state.totalEarned || 0) >= 200 ? 1 : 0 }
+];
+
+function getClaimedTasks() {
+    try { return JSON.parse(localStorage.getItem('tonminer_tasks') || '[]'); } catch(e) { return []; }
+}
+function saveClaimedTasks(arr) {
+    localStorage.setItem('tonminer_tasks', JSON.stringify(arr));
+}
+
+function renderTasks() {
+    const list = document.getElementById('tasksList');
+    if (!list) return;
+    
+    const claimed = getClaimedTasks();
+    let completedCount = 0;
+    let totalReward = 0;
+    let html = '';
+    
+    TASKS.forEach(task => {
+        const progress = task.getProgress();
+        const pct = Math.min((progress / task.goal) * 100, 100);
+        const isComplete = progress >= task.goal;
+        const isClaimed = claimed.includes(task.id);
+        
+        if (isClaimed) { completedCount++; totalReward += task.reward; }
+        
+        let statusHtml;
+        if (isClaimed) {
+            statusHtml = `<span class="task-claimed-badge">✅</span>`;
+        } else if (isComplete) {
+            statusHtml = `<button class="task-claim-btn" onclick="claimTask('${task.id}')">CLAIM</button>`;
+        } else {
+            statusHtml = `<span class="task-reward-val" style="color:#FFD700;">+${task.reward}</span><span style="font-size:0.65rem; color:#888;">TON</span>`;
+        }
+        
+        const cardClass = isClaimed ? 'completed' : (isComplete ? 'claimable' : '');
+        
+        html += `
+        <div class="task-card ${cardClass}">
+            <div class="task-icon" style="background:${task.color}20; color:${task.color};">${task.icon}</div>
+            <div class="task-info">
+                <div class="task-name">${task.getName()}</div>
+                <div class="task-desc">${task.getDesc()}</div>
+                <div class="task-progress-bar">
+                    <div class="task-progress-fill" style="width:${pct}%; background:${isClaimed ? 'var(--success)' : task.color};"></div>
+                </div>
+                <div style="font-size:0.7rem; color:#666; margin-top:3px;">${progress >= task.goal ? task.goal : Math.floor(progress)}/${task.goal}</div>
+            </div>
+            <div class="task-reward">${statusHtml}</div>
+        </div>`;
+    });
+    
+    list.innerHTML = html;
+    
+    const countEl = document.getElementById('tasksCompletedCount');
+    const rewardEl = document.getElementById('tasksTotalReward');
+    if (countEl) countEl.textContent = completedCount;
+    if (rewardEl) rewardEl.textContent = totalReward.toFixed(2);
+}
+
+window.claimTask = function(taskId) {
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const progress = task.getProgress();
+    if (progress < task.goal) return;
+    
+    const claimed = getClaimedTasks();
+    if (claimed.includes(taskId)) return;
+    
+    claimed.push(taskId);
+    saveClaimedTasks(claimed);
+    
+    state.balance += task.reward;
+    state.totalEarned += task.reward;
+    saveLocalData();
+    syncToServer();
+    updateUI();
+    
+    showToast(`🏆 +${task.reward} TON! ${task.getName()}`, false);
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+    
+    renderTasks();
+};
+
+// Check for claimable tasks and show badge
+function getClaimableTaskCount() {
+    const claimed = getClaimedTasks();
+    let count = 0;
+    TASKS.forEach(task => {
+        if (!claimed.includes(task.id) && task.getProgress() >= task.goal) count++;
+    });
+    return count;
+}
+
+// --- ONBOARDING ---
+function checkOnboarding() {
+    const seen = localStorage.getItem('tonminer_onboard');
+    if (seen) return;
+    
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+window.nextOnboard = function(step) {
+    document.querySelectorAll('.onboard-step').forEach(s => s.style.display = 'none');
+    const el = document.getElementById('onboardStep' + step);
+    if (el) el.style.display = 'block';
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+};
+
+window.finishOnboard = function() {
+    localStorage.setItem('tonminer_onboard', '1');
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) {
+        overlay.style.transition = 'opacity 0.4s ease';
+        overlay.style.opacity = '0';
+        setTimeout(() => { 
+            overlay.style.display = 'none'; 
+            overlay.style.opacity = '1'; 
+            // After onboarding, check daily bonus
+            checkDailyBonus();
+        }, 400);
+    }
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+};
+
+// --- PUSH NOTIFICATION HELPER ---
+async function sendPushNotification(chatId, message) {
+    try {
+        await fetch('/api/push-notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, message })
+        });
+    } catch(e) { console.warn('Push notify failed:', e); }
+}
+
+// Schedule notification check (runs every time app opens)
+function checkNotificationEligibility() {
+    const chatId = tg?.initDataUnsafe?.user?.id;
+    if (!chatId) return;
+    
+    // Save chatId for push notifications
+    if (state.wallet) {
+        const dataToSave = { telegramChatId: chatId };
+        try { saveUserToFire(state.wallet, dataToSave); } catch(e) {}
+    }
+}
+
 // --- LANGUAGE ---
 function applyLanguage() {
     // Header
@@ -2116,10 +2371,17 @@ function applyLanguage() {
     const langBtn = document.getElementById('langToggle');
     if (langBtn) langBtn.textContent = '🌐 ' + currentLang.toUpperCase();
 
+    // Tasks
+    const tasksTitle = document.getElementById('tasksTitle');
+    const tasksSubtitle = document.getElementById('tasksSubtitle');
+    if (tasksTitle) tasksTitle.textContent = t('tasksTitle') || 'Tasks & Achievements';
+    if (tasksSubtitle) tasksSubtitle.textContent = t('tasksSubtitle') || 'Complete tasks to earn bonus TON!';
+
     // Re-render dynamic content
     renderMarket();
     renderInv();
     updateRankBadge();
+    renderTasks();
 }
 
 window.toggleLanguage = function() {
