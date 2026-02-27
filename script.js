@@ -1,5 +1,5 @@
 // --- IMPORT ---
-import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats, getLeaderboard, getUserRank } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats, getLeaderboard, getUserRank, createClanInFire, joinClanInFire, leaveClanInFire, getClanData, getClanLeaderboard } from './firebase-config.js';
 import { t, currentLang, setLanguage, getAvailableLanguages } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
@@ -50,7 +50,8 @@ let state = {
     totalEarned: 0,
     lastSpinTime: 0,
     loginStreak: 0,
-    lastLoginDate: null
+    lastLoginDate: null,
+    clanId: null
 };
 
 const machines = [
@@ -361,6 +362,7 @@ async function loadServerData(walletAddress) {
             state.lastSpinTime = serverData.lastSpinTime || 0;
             state.loginStreak = serverData.loginStreak || 0;
             state.lastLoginDate = serverData.lastLoginDate || null;
+            state.clanId = serverData.clanId || null;
             
             if (!state.referralCode) {
                 await initReferralCode(walletAddress);
@@ -375,6 +377,10 @@ async function loadServerData(walletAddress) {
             updateReferralUI();
             drawChart();
             saveLocalData();
+            // Preload clan data for mining bonus
+            if (state.clanId) {
+                getClanData(state.clanId).then(d => { _clanCache = d; _clanCacheTime = Date.now(); updateUI(); });
+            }
             showToast("Synced ✅");
         } else {
             await initReferralCode(walletAddress);
@@ -444,7 +450,8 @@ function calculateOfflineProgress() {
     const secondsPassed = (now - state.lastSave) / 1000;
     
     if (secondsPassed > 30) {
-        const earned = secondsPassed * state.hashrate * CFG.rate;
+        const clanMult = 1 + getClanBonus();
+        const earned = secondsPassed * state.hashrate * CFG.rate * clanMult;
         if (earned > 0) {
             state.balance += earned;
             state.totalEarned += earned;
@@ -584,7 +591,8 @@ function checkBalanceIntegrity() {
 
 function loop() {
     if (state.hashrate > 0) {
-        const earned = state.hashrate * CFG.rate * (CFG.tick/1000);
+        const clanMultiplier = 1 + getClanBonus();
+        const earned = state.hashrate * CFG.rate * (CFG.tick/1000) * clanMultiplier;
         state.balance += earned;
         state.totalEarned += earned;
         updateUI();
@@ -603,7 +611,8 @@ function updateUI() {
     if (dHash) dHash.textContent = state.hashrate;
     if (dCount) dCount.textContent = state.inv.length;
     
-    const daily = (state.hashrate * CFG.rate * 86400).toFixed(2);
+    const clanMult = 1 + getClanBonus();
+    const daily = (state.hashrate * CFG.rate * 86400 * clanMult).toFixed(2);
     if (dDaily) dDaily.textContent = daily;
     
     // Dashboard task badge
@@ -1010,6 +1019,9 @@ function go(id, el) {
     }
     if(id==='tasks') {
         renderTasks();
+    }
+    if(id==='clan') {
+        renderClanView();
     }
 }
 
@@ -2182,7 +2194,12 @@ const TASKS = [
     { id: 'reach_diamond', icon: '💠', color: '#06b6d4', reward: 3.00, goal: 1,
       getName: () => t('taskDiamond') || 'Diamond Rank',
       getDesc: () => t('taskDiamondDesc') || 'Reach Diamond rank',
-      getProgress: () => (state.totalEarned || 0) >= 200 ? 1 : 0 }
+      getProgress: () => (state.totalEarned || 0) >= 200 ? 1 : 0 },
+    
+    { id: 'join_clan', icon: '🏰', color: '#a855f7', reward: 0.20, goal: 1,
+      getName: () => 'Join a Clan',
+      getDesc: () => 'Join or create a clan',
+      getProgress: () => state.clanId ? 1 : 0 }
 ];
 
 function getClaimedTasks() {
@@ -2398,6 +2415,252 @@ async function renderLeaderboard() {
         listEl.innerHTML = `<div style="text-align:center; padding:30px; color:#666;">Failed to load leaderboard</div>`;
     }
 }
+
+// --- CLAN SYSTEM ---
+let _selectedClanEmoji = '⚔️';
+let _clanCache = null;
+let _clanCacheTime = 0;
+let _clanLbCache = null;
+let _clanLbCacheTime = 0;
+
+window.pickClanEmoji = function(el) {
+    document.querySelectorAll('.clan-emoji').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    _selectedClanEmoji = el.dataset.emoji;
+};
+
+window.createClan = async function() {
+    if (!state.wallet) { showToast('Connect wallet first!', true); return; }
+    
+    const nameInput = document.getElementById('clanNameInput');
+    const name = (nameInput?.value || '').trim();
+    
+    if (name.length < 3 || name.length > 20) { showToast('Name must be 3-20 characters', true); return; }
+    
+    showToast('Creating clan...', false);
+    const result = await createClanInFire({ name, avatar: _selectedClanEmoji, wallet: state.wallet, hashrate: state.hashrate });
+    
+    if (result.success) {
+        state.clanId = result.clanId;
+        saveLocalData();
+        showToast('🏰 Clan created! Code: ' + result.clanCode, false);
+        try { if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+        renderClanView();
+    } else {
+        showToast('❌ ' + (result.error || 'Failed'), true);
+    }
+};
+
+window.joinClan = async function() {
+    if (!state.wallet) { showToast('Connect wallet first!', true); return; }
+    
+    const codeInput = document.getElementById('clanCodeInput');
+    const code = (codeInput?.value || '').trim().toUpperCase();
+    
+    if (code.length < 3) { showToast('Enter a valid clan code', true); return; }
+    
+    showToast('Joining clan...', false);
+    const result = await joinClanInFire(code, state.wallet, state.hashrate);
+    
+    if (result.success) {
+        state.clanId = result.clanId;
+        saveLocalData();
+        showToast('🎉 Joined ' + result.clanName + '!', false);
+        try { if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+        _clanCache = null;
+        renderClanView();
+    } else {
+        showToast('❌ ' + (result.error || 'Failed'), true);
+    }
+};
+
+window.leaveClan = async function() {
+    if (!state.wallet || !state.clanId) return;
+    
+    const isLeader = _clanCache && _clanCache.leader === state.wallet;
+    const msg = isLeader ? 'You are the leader. Leaving will DELETE the clan. Continue?' : 'Leave this clan?';
+    
+    if (!confirm(msg)) return;
+    
+    showToast('Leaving clan...', false);
+    const result = await leaveClanInFire(state.wallet);
+    
+    if (result.success) {
+        state.clanId = null;
+        _clanCache = null;
+        saveLocalData();
+        showToast('Left clan', false);
+        renderClanView();
+    } else {
+        showToast('Failed to leave', true);
+    }
+};
+
+async function renderClanView() {
+    const noneEl = document.getElementById('clanNone');
+    const activeEl = document.getElementById('clanActive');
+    if (!noneEl || !activeEl) return;
+    
+    // Check if user has a clan
+    if (!state.clanId) {
+        noneEl.style.display = 'block';
+        activeEl.style.display = 'none';
+        return;
+    }
+    
+    noneEl.style.display = 'none';
+    activeEl.style.display = 'block';
+    
+    // Load clan data (cache 30s)
+    const now = Date.now();
+    if (!_clanCache || (now - _clanCacheTime) > 30000) {
+        _clanCache = await getClanData(state.clanId);
+        _clanCacheTime = now;
+    }
+    
+    if (!_clanCache) {
+        state.clanId = null;
+        saveLocalData();
+        noneEl.style.display = 'block';
+        activeEl.style.display = 'none';
+        return;
+    }
+    
+    const clan = _clanCache;
+    const bonus = Math.min(clan.memberCount * 2, 40);
+    
+    // Update header
+    const el = (id) => document.getElementById(id);
+    if (el('clanAvatar')) el('clanAvatar').textContent = clan.avatar;
+    if (el('clanNameDisplay')) el('clanNameDisplay').textContent = clan.name;
+    if (el('clanMemberCount')) el('clanMemberCount').textContent = clan.memberCount + '/20';
+    if (el('clanTotalHash')) el('clanTotalHash').textContent = clan.totalHashrate.toLocaleString();
+    if (el('clanBonus')) el('clanBonus').textContent = '+' + bonus + '%';
+    if (el('clanCodeDisplay')) el('clanCodeDisplay').textContent = clan.code;
+    
+    // Update leave button text
+    const leaveBtn = el('clanLeaveBtn');
+    if (leaveBtn && clan.leader === state.wallet) {
+        leaveBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Clan';
+    }
+    
+    // Render members
+    const membersEl = el('clanMembersList');
+    if (membersEl) {
+        let html = '';
+        clan.members.forEach((m, i) => {
+            const short = m.wallet.substring(0, 6) + '...' + m.wallet.substring(m.wallet.length - 4);
+            const isMe = m.wallet === state.wallet;
+            const leaderBadge = m.isLeader ? '<span style="color:#FFD700; font-size:0.65rem; margin-left:4px;">👑 Leader</span>' : '';
+            const meBadge = isMe ? '<span style="color:var(--primary); font-size:0.65rem; margin-left:4px;">⭐ You</span>' : '';
+            
+            html += `
+            <div class="clan-member-card ${m.isLeader ? 'leader' : ''}">
+                <div style="width:32px; height:32px; border-radius:50%; background:rgba(168,85,247,0.15); display:flex; align-items:center; justify-content:center; color:#a855f7; font-weight:bold; font-size:0.8rem; flex-shrink:0;">
+                    ${i + 1}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:0.8rem; color:${isMe ? 'var(--primary)' : '#fff'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${short}${leaderBadge}${meBadge}
+                    </div>
+                    <div style="font-size:0.7rem; color:#888;">${m.hashrate.toLocaleString()} GH/s</div>
+                </div>
+            </div>`;
+        });
+        membersEl.innerHTML = html;
+    }
+}
+
+// Apply clan mining bonus to rate
+function getClanBonus() {
+    if (!_clanCache || !state.clanId) return 0;
+    return Math.min(_clanCache.memberCount * 2, 40) / 100; // 0.0 to 0.4
+}
+
+window.copyClanCode = function() {
+    const code = document.getElementById('clanCodeDisplay')?.textContent;
+    if (!code || code === '---') return;
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(code).then(() => showToast('✅ Code copied!', false));
+    }
+};
+
+window.shareClanCode = function() {
+    if (!_clanCache) return;
+    const text = `🏰 Join my clan "${_clanCache.name}" in TON Miner!\n\n📋 Code: ${_clanCache.code}\n⚡ ${_clanCache.memberCount} members mining together\n\n🚀 https://t.me/${typeof BOT_USERNAME !== 'undefined' ? BOT_USERNAME : 'TonProMiner_bot'}`;
+    
+    if (tg?.openTelegramLink) {
+        tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(text));
+    } else if (navigator.share) {
+        navigator.share({ text });
+    } else {
+        navigator.clipboard?.writeText(text).then(() => showToast('✅ Copied!', false));
+    }
+};
+
+window.showClanLeaderboard = async function() {
+    const modal = document.getElementById('clanLbModal');
+    if (modal) modal.style.display = 'block';
+    
+    const listEl = document.getElementById('clanLbList');
+    if (!listEl) return;
+    
+    // Cache 60s
+    const now = Date.now();
+    if (!_clanLbCache || (now - _clanLbCacheTime) > 60000) {
+        listEl.innerHTML = '<div style="text-align:center; padding:30px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+        _clanLbCache = await getClanLeaderboard();
+        _clanLbCacheTime = now;
+    }
+    
+    const clans = _clanLbCache;
+    const CLAN_PRIZES = { 1:500, 2:250, 3:100, 4:50, 5:50 };
+    for (let i=6;i<=10;i++) CLAN_PRIZES[i]=25;
+    for (let i=11;i<=15;i++) CLAN_PRIZES[i]=10;
+    
+    if (clans.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:30px; color:#666;"><div style="font-size:2rem; margin-bottom:10px;">🏰</div><p>No clans yet. Be the first!</p></div>';
+        return;
+    }
+    
+    let html = '';
+    clans.forEach((clan, i) => {
+        const rank = i + 1;
+        const prize = CLAN_PRIZES[rank] || 0;
+        const isMine = state.clanId && clan.id === state.clanId;
+        
+        let rankIcon, bgColor;
+        if (rank === 1) { rankIcon = '🥇'; bgColor = 'rgba(255,215,0,0.08)'; }
+        else if (rank === 2) { rankIcon = '🥈'; bgColor = 'rgba(192,192,192,0.06)'; }
+        else if (rank === 3) { rankIcon = '🥉'; bgColor = 'rgba(205,127,50,0.06)'; }
+        else { rankIcon = '#' + rank; bgColor = 'rgba(255,255,255,0.02)'; }
+        
+        html += `
+        <div class="clan-lb-card" style="background:${bgColor}; ${isMine ? 'border-color:var(--primary);' : ''}">
+            <div style="font-size:${rank<=3?'1.2rem':'0.8rem'}; width:32px; text-align:center; font-weight:bold; color:#888; flex-shrink:0;">${rankIcon}</div>
+            <div style="font-size:1.3rem; flex-shrink:0;">${clan.avatar}</div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:0.85rem; font-weight:600; color:${isMine?'var(--primary)':'#fff'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${clan.name} ${isMine?'⭐':''}
+                </div>
+                <div style="font-size:0.7rem; color:#888;">
+                    👥 ${clan.memberCount} • ⚡ ${clan.totalHashrate.toLocaleString()} GH/s
+                </div>
+            </div>
+            ${prize > 0 ? `<div style="text-align:right; flex-shrink:0;">
+                <div style="color:#FFD700; font-weight:bold; font-size:0.85rem;">${prize}</div>
+                <div style="color:#888; font-size:0.55rem;">TON</div>
+            </div>` : ''}
+        </div>`;
+    });
+    
+    listEl.innerHTML = html;
+};
+
+window.closeClanLb = function() {
+    const modal = document.getElementById('clanLbModal');
+    if (modal) modal.style.display = 'none';
+};
 
 // --- ONBOARDING ---
 function checkOnboarding() {
