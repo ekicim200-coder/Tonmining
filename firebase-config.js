@@ -604,6 +604,7 @@ export async function leaveClanInFire(walletAddress) {
         const clanDoc = await getDoc(clanRef);
         
         if (!clanDoc.exists()) {
+            // Clan already deleted, just clear user
             await setDoc(userRef, { clanId: null }, { merge: true });
             return { success: true };
         }
@@ -612,21 +613,18 @@ export async function leaveClanInFire(walletAddress) {
         const newMembers = data.members.filter(m => m !== walletAddress);
         
         if (newMembers.length === 0 || data.leader === walletAddress) {
-            // Delete clan if leader leaves or empty
-            // Remove clanId from all remaining members
-            for (const m of newMembers) {
-                const mRef = doc(db, "users", m);
-                await setDoc(mRef, { clanId: null }, { merge: true });
-            }
-            // Delete clan doc
+            // Leader leaves or last member → delete clan
+            // Other members will auto-detect on next load (clan gone → clear clanId)
             await deleteDoc(clanRef);
         } else {
+            // Regular member leaves
             await setDoc(clanRef, {
                 members: newMembers,
                 memberCount: newMembers.length
             }, { merge: true });
         }
         
+        // Clear own clanId
         await setDoc(userRef, { clanId: null }, { merge: true });
         return { success: true };
     } catch (e) {
