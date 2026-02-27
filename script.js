@@ -316,7 +316,8 @@ async function syncToServer() {
             totalEarned: state.totalEarned,
             lastSpinTime: state.lastSpinTime,
             loginStreak: state.loginStreak,
-            lastLoginDate: state.lastLoginDate
+            lastLoginDate: state.lastLoginDate,
+            clanId: state.clanId || null
         };
         await saveUserToFire(state.wallet, dataToSave);
         
@@ -2438,16 +2439,27 @@ window.createClan = async function() {
     if (name.length < 3 || name.length > 20) { showToast('Name must be 3-20 characters', true); return; }
     
     showToast('Creating clan...', false);
-    const result = await createClanInFire({ name, avatar: _selectedClanEmoji, wallet: state.wallet, hashrate: state.hashrate });
+    console.log('🏰 Creating clan:', name, _selectedClanEmoji, state.wallet);
     
-    if (result.success) {
-        state.clanId = result.clanId;
-        saveLocalData();
-        showToast('🏰 Clan created! Code: ' + result.clanCode, false);
-        try { if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
-        renderClanView();
-    } else {
-        showToast('❌ ' + (result.error || 'Failed'), true);
+    try {
+        const result = await createClanInFire({ name, avatar: _selectedClanEmoji, wallet: state.wallet, hashrate: state.hashrate });
+        console.log('🏰 Create result:', result);
+        
+        if (result.success) {
+            state.clanId = result.clanId;
+            saveLocalData();
+            syncToServer();
+            showToast('🏰 Clan created! Code: ' + result.clanCode, false);
+            try { if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+            _clanCache = null;
+            renderClanView();
+        } else {
+            showToast('❌ ' + (result.error || 'Failed to create'), true);
+            console.error('Clan create failed:', result.error);
+        }
+    } catch(e) {
+        console.error('Clan create exception:', e);
+        showToast('❌ Error: ' + e.message, true);
     }
 };
 
