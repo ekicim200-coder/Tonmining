@@ -1656,3 +1656,43 @@ body {
 /* --- LEADERBOARD --- */
 .lb-entry { transition: all 0.2s ease; }
 .lb-entry:active { transform: scale(0.98); }
+
+/* --- CLAN --- */
+.clan-emoji {
+    padding: 8px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.03);
+    transition: all 0.2s ease;
+}
+.clan-emoji.selected {
+    border-color: #a855f7;
+    background: rgba(168,85,247,0.15);
+    box-shadow: 0 0 10px rgba(168,85,247,0.3);
+}
+.clan-member-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.clan-member-card.leader {
+    border-color: rgba(255,215,0,0.3);
+    background: rgba(255,215,0,0.05);
+}
+.clan-lb-card {
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
