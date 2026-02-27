@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 // 👇 BURASI ÖNEMLİ: collection, query, where, getDocs EKLENDİ 👇
-import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Firebase Config - SİZİN BİLGİLERİNİZ
 const firebaseConfig = {
@@ -523,5 +523,188 @@ export async function distributeCompetitionPrizes() {
     } catch (error) {
         console.error("❌ Ödül dağıtım hatası:", error);
         return false;
+    }
+}
+
+// ==================== CLAN SYSTEM ====================
+
+export async function createClanInFire(clanData) {
+    if (!currentUser) return { success: false, error: 'Not authenticated' };
+    try {
+        const clanId = 'CLN' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
+        const clanCode = clanId.substring(3, 9);
+        
+        const clanRef = doc(db, "clans", clanId);
+        await setDoc(clanRef, {
+            name: clanData.name,
+            avatar: clanData.avatar || '⚔️',
+            code: clanCode,
+            leader: clanData.wallet,
+            members: [clanData.wallet],
+            memberCount: 1,
+            totalHashrate: clanData.hashrate || 0,
+            createdAt: Date.now()
+        });
+        
+        // Update user
+        const userRef = doc(db, "users", clanData.wallet);
+        await setDoc(userRef, { clanId: clanId }, { merge: true });
+        
+        return { success: true, clanId, clanCode };
+    } catch (e) {
+        console.error("Create clan error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function joinClanInFire(clanCode, walletAddress, hashrate) {
+    if (!currentUser) return { success: false, error: 'Not authenticated' };
+    try {
+        // Find clan by code
+        const q = query(collection(db, "clans"), where("code", "==", clanCode.toUpperCase()));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) return { success: false, error: 'Clan not found' };
+        
+        let clanDoc = null;
+        snap.forEach(d => { clanDoc = { id: d.id, ...d.data() }; });
+        
+        if (clanDoc.members.length >= 20) return { success: false, error: 'Clan is full (20/20)' };
+        if (clanDoc.members.includes(walletAddress)) return { success: false, error: 'Already in this clan' };
+        
+        // Add member
+        const clanRef = doc(db, "clans", clanDoc.id);
+        const newMembers = [...clanDoc.members, walletAddress];
+        await setDoc(clanRef, {
+            members: newMembers,
+            memberCount: newMembers.length,
+            totalHashrate: (clanDoc.totalHashrate || 0) + (hashrate || 0)
+        }, { merge: true });
+        
+        // Update user
+        const userRef = doc(db, "users", walletAddress);
+        await setDoc(userRef, { clanId: clanDoc.id }, { merge: true });
+        
+        return { success: true, clanId: clanDoc.id, clanName: clanDoc.name };
+    } catch (e) {
+        console.error("Join clan error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function leaveClanInFire(walletAddress) {
+    if (!currentUser) return { success: false };
+    try {
+        const userRef = doc(db, "users", walletAddress);
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists() || !userDoc.data().clanId) return { success: false };
+        
+        const clanId = userDoc.data().clanId;
+        const clanRef = doc(db, "clans", clanId);
+        const clanDoc = await getDoc(clanRef);
+        
+        if (!clanDoc.exists()) {
+            await setDoc(userRef, { clanId: null }, { merge: true });
+            return { success: true };
+        }
+        
+        const data = clanDoc.data();
+        const newMembers = data.members.filter(m => m !== walletAddress);
+        
+        if (newMembers.length === 0 || data.leader === walletAddress) {
+            // Delete clan if leader leaves or empty
+            // Remove clanId from all remaining members
+            for (const m of newMembers) {
+                const mRef = doc(db, "users", m);
+                await setDoc(mRef, { clanId: null }, { merge: true });
+            }
+            // Delete clan doc
+            await deleteDoc(clanRef);
+        } else {
+            await setDoc(clanRef, {
+                members: newMembers,
+                memberCount: newMembers.length
+            }, { merge: true });
+        }
+        
+        await setDoc(userRef, { clanId: null }, { merge: true });
+        return { success: true };
+    } catch (e) {
+        console.error("Leave clan error:", e);
+        return { success: false };
+    }
+}
+
+export async function getClanData(clanId) {
+    try {
+        const clanRef = doc(db, "clans", clanId);
+        const clanDoc = await getDoc(clanRef);
+        if (!clanDoc.exists()) return null;
+        
+        const data = clanDoc.data();
+        
+        // Fetch member details
+        let members = [];
+        let totalHash = 0;
+        for (const wallet of data.members) {
+            const uRef = doc(db, "users", wallet);
+            const uDoc = await getDoc(uRef);
+            const uData = uDoc.exists() ? uDoc.data() : {};
+            const h = uData.hashrate || 0;
+            totalHash += h;
+            members.push({
+                wallet,
+                hashrate: h,
+                balance: uData.balance || 0,
+                isLeader: wallet === data.leader
+            });
+        }
+        members.sort((a, b) => b.hashrate - a.hashrate);
+        
+        // Update totalHashrate
+        await setDoc(clanRef, { totalHashrate: totalHash }, { merge: true });
+        
+        return {
+            id: clanId,
+            name: data.name,
+            avatar: data.avatar,
+            code: data.code,
+            leader: data.leader,
+            members,
+            memberCount: data.members.length,
+            totalHashrate: totalHash,
+            createdAt: data.createdAt
+        };
+    } catch (e) {
+        console.error("Get clan error:", e);
+        return null;
+    }
+}
+
+export async function getClanLeaderboard() {
+    try {
+        const clansRef = collection(db, "clans");
+        const snap = await getDocs(clansRef);
+        
+        let clans = [];
+        snap.forEach(d => {
+            const data = d.data();
+            if (data.memberCount > 0) {
+                clans.push({
+                    id: d.id,
+                    name: data.name,
+                    avatar: data.avatar || '⚔️',
+                    memberCount: data.memberCount || 0,
+                    totalHashrate: data.totalHashrate || 0,
+                    leader: data.leader
+                });
+            }
+        });
+        
+        clans.sort((a, b) => b.totalHashrate - a.totalHashrate);
+        return clans.slice(0, 15);
+    } catch (e) {
+        console.error("Clan leaderboard error:", e);
+        return [];
     }
 }
