@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TON Pro Miner</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=19">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <svg viewBox="0 0 64 64" width="80" height="80">
+                    <defs>
+                        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#40e0d0"/>
+                            <stop offset="100%" stop-color="#2ec5b6"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="32,8 50,28 42,56 22,56 14,28" fill="url(#sg)" opacity="0.9"/>
+                    <polygon points="32,8 42,28 32,20 22,28" fill="#fff" opacity="0.3"/>
+                </svg>
+            </div>
+            <div class="splash-title">TON Pro Miner</div>
+            <div class="splash-sub">Loading your mining rig...</div>
+            <div class="splash-bar">
+                <div class="splash-bar-fill" id="splashProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Earnings Popup -->
+    <div id="offlinePopup" class="offline-popup" style="display:none;">
+        <div class="offline-popup-content">
+            <div class="offline-icon">⛏️</div>
+            <div class="offline-title" id="offlineTitle">Welcome Back!</div>
+            <div class="offline-sub" id="offlineSub">Your miners worked while you were away</div>
+            <div class="offline-amount">+<span id="offlineAmount">0.0000</span> TON</div>
+            <div class="offline-time" id="offlineTime">Mining for 2h 15m</div>
+            <button class="offline-claim-btn" onclick="closeOfflinePopup()">COLLECT</button>
+        </div>
+    </div>
+
+    <!-- Daily Login Bonus Popup -->
+    <div id="dailyBonusPopup" class="daily-bonus-popup" style="display:none;">
+        <div class="daily-bonus-content">
+            <div class="daily-bonus-header">
+                <h3><i class="fas fa-calendar-check"></i> <span id="dbTitle">Daily Reward</span></h3>
+                <button class="spin-close" onclick="closeDailyBonus()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="daily-bonus-streak" id="dbStreak">Day 1</div>
+            <div class="daily-bonus-grid" id="dailyBonusGrid"></div>
+            <button class="daily-bonus-claim" id="dbClaimBtn" onclick="claimDailyBonus()">
+                <i class="fas fa-gift"></i> <span id="dbClaimText">CLAIM REWARD</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="bal-box">
+            <span class="bal-lbl">TOTAL BALANCE</span>
+            <span class="bal-val"><span id="totalBal">1.00</span> <span class="bal-unit">TON</span></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button id="langToggle" onclick="toggleLanguage()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:var(--text-muted); padding:5px 8px; border-radius:8px; font-size:0.65rem; font-weight:600; cursor:pointer;">🌐 EN</button>
+            <button class="wallet-btn" id="connectBtn">
+                <i class="fas fa-wallet"></i> Connect
+            </button>
+        </div>
+    </div>
+
+    <div id="v-dash" class="view active">
+        <div class="dashboard">
+            <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 100 100"><circle class="c-bg" cx="50" cy="50" r="40"></circle><g id="chartSegments"></g></svg>
+                <div class="chart-info"><div class="chart-val" id="d-hash">0</div><div class="chart-lbl">GH/s</div></div>
+            </div>
+
+            <!-- Rank Badge -->
+            <div class="rank-card" id="rankCard">
+                <div class="rank-icon" id="rankIcon"><i class="fas fa-medal"></i></div>
+                <div class="rank-info">
+                    <div class="rank-name" id="rankName">Bronze</div>
+                    <div class="rank-progress-bar">
+                        <div class="rank-progress-fill" id="rankFill" style="width: 0%"></div>
+                    </div>
+                    <div class="rank-sub" id="rankSub">0 / 50 TON to Silver</div>
+                </div>
+            </div>
+
+            <div class="live-graph" id="liveGraphCard">
+                <div class="lg-header">
+                    <span>Network Status</span>
+                    <span id="networkStatus" style="color:var(--text-muted)">Offline ○</span>
+                </div>
+                <svg class="lg-svg" viewBox="0 0 100 25" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#3b82f6" />
+                            <stop offset="50%" stop-color="#40e0d0" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                        <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="rgba(64,224,208,0.3)" />
+                            <stop offset="100%" stop-color="rgba(64,224,208,0)" />
+                        </linearGradient>
+                    </defs>
+                    <polygon class="lg-fill" id="liveFill" points="0,25 100,25" />
+                    <polyline class="lg-line" id="liveLine" points="0,12 100,12"></polyline>
+                    <circle class="lg-dot" id="liveDot" cx="100" cy="12" r="1.5" />
+                </svg>
+                <div class="lg-stats" id="lgStats" style="display:none;">
+                    <span><i class="fas fa-bolt"></i> <span id="lgHash">0</span> GH/s</span>
+                    <span><i class="fas fa-server"></i> Active</span>
+                </div>
+            </div>
+
+            <div class="terminal">
+                <div class="term-content" id="termLogs">
+                    <div class="log-line">> System initialized...</div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <span class="ib-val" id="d-count">0</span>
+                    <span class="ib-lbl" data-lang="activeDevices">Active Devices</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="d-daily">0.00</span>
+                    <span class="ib-lbl" data-lang="dailyTon">Daily TON</span>
+                </div>
+            </div>
+
+            <div class="free-card" id="freeCard">
+                <div style="font-size:1.3rem; color:var(--danger);"><i class="fas fa-server"></i></div>
+                <div class="fc-info" style="flex:1">
+                    <h4>FREE Node</h4>
+                    <p>+300 GH/s (30 min)</p>
+                </div>
+                <div id="adBtnArea">
+                    <button class="ad-btn">WATCH</button>
+                </div>
+                <div id="timerArea" style="display:none;">
+                    <div class="timer-badge" id="freeTimer">30:00</div>
+                </div>
+            </div>
+
+            <a href="https://t.me/TonProMiner_Channel" target="_blank" style="text-decoration:none; display:block;">
+                <div style="background: linear-gradient(135deg, rgba(0, 136, 204, 0.15), rgba(0, 136, 204, 0.05)); border: 1.5px solid #0088cc; border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <div style="font-size:1.3rem; color:#0088cc;"><i class="fab fa-telegram"></i></div>
+                    <div style="flex:1">
+                        <h4 style="margin:0; color:#0088cc; font-size:0.8rem; font-weight:700;" data-lang="joinChannel">Join Our Channel</h4>
+                        <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);" data-lang="channelDesc">News & giveaways</p>
+                    </div>
+                    <div style="color:#0088cc; font-size:1rem;"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Daily Spin Wheel Card -->
+            <div class="spin-card" id="spinCard" onclick="openSpinWheel()">
+                <div style="font-size:1.3rem; color:#FFD700;"><i class="fas fa-dharmachakra fa-spin" style="animation-duration:4s;"></i></div>
+                <div style="flex:1">
+                    <h4 style="margin:0; color:#FFD700; font-size:0.8rem; font-weight:700;" data-lang="dailySpin">Daily Spin</h4>
+                    <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);" id="spinStatus">Spin to win free TON!</p>
+                </div>
+                <div id="spinBadge" style="background:rgba(255,215,0,0.2); color:#FFD700; border:1px solid #FFD700; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.7rem;">FREE</div>
+            </div>
+
+            <!-- Tasks Mini Card -->
+            <div onclick="window.goTo('tasks', document.querySelectorAll('.nav-item')[5])" style="background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,215,0,0.04)); border: 1.5px solid rgba(255,215,0,0.3); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <div style="font-size:1.3rem; color:#FFD700;"><i class="fas fa-trophy"></i></div>
+                <div style="flex:1">
+                    <h4 style="margin:0; color:#FFD700; font-size:0.8rem; font-weight:700;" id="dashTasksTitle">Tasks & Rewards</h4>
+                    <p style="margin:2px 0 0; font-size:0.6rem; color:var(--text-muted);" id="dashTasksInfo">Complete tasks for bonus TON!</p>
+                </div>
+                <div id="dashTaskBadge" style="display:none; background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.7rem;">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-market" class="view">
+        <h3 id="marketTitle" style="padding:20px 20px 0;">Hardware Store</h3>
+        <div class="list-grid" id="marketList"></div>
+    </div>
+
+    <div id="v-inv" class="view">
+        <h3 id="invTitle" style="padding:20px 20px 0;">My Devices</h3>
+        <div class="list-grid" id="invList"></div>
+    </div>
+
+    <div id="v-wallet" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-wallet fa-4x" style="color:var(--primary); margin-bottom:20px;"></i>
+            <h3 id="walletTitle">Wallet Management</h3>
+            <p id="wMinLabel" style="color:var(--muted); font-size:0.9rem; margin-bottom:30px;">Minimum withdrawal is 100 TON.</p>
+            
+            <input type="text" id="w-addr" class="w-input" placeholder="Wallet Address (Connect First)" disabled>
+            <input type="number" id="w-amt" class="w-input" placeholder="Enter Amount">
+            
+            <button class="w-btn" id="wBtn" onclick="withdraw()">WITHDRAW</button>
+            
+            <div id="processing-section" style="display: none; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); border: 1.5px solid #10b981; border-radius: 12px;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="fas fa-clock" style="color: #10b981; font-size: 2.5rem; margin-bottom: 10px;"></i>
+                    <h4 style="color: #10b981; margin: 0 0 10px 0;">Withdrawal Submitted</h4>
+                    <p style="color: #aaa; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+                        Your withdrawal request has been received
+                    </p>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center;">
+                    <span style="color: #888; font-size: 0.8rem; display: block; margin-bottom: 5px;">Withdrawal Amount</span>
+                    <div style="color: #fff; font-size: 1.5rem; font-weight: bold;">
+                        <span id="withdrawal-ton-amount">0</span> TON
+                    </div>
+                </div>
+                
+                <div style="padding: 15px; background: rgba(16,185,129,0.1); border-radius: 10px; border: 1px solid rgba(16,185,129,0.3);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <i class="fas fa-info-circle" style="color: #10b981;"></i>
+                        <span style="color: #10b981; font-weight: bold; font-size: 0.9rem;">Processing Time</span>
+                    </div>
+                    <p style="color: #aaa; font-size: 0.85rem; margin: 0; line-height: 1.6;">
+                        Your withdrawal will be processed within <strong style="color: #10b981;">15-30 days</strong>.
+                    </p>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <p style="color: #888; font-size: 0.75rem; margin: 0; line-height: 1.5; text-align: center;">
+                        <i class="fas fa-shield-alt"></i> All withdrawals are manually reviewed for security. Thank you for your patience.
+                    </p>
+                </div>
+            </div>
+
+            <div class="history-section" style="margin-top: 20px; text-align: left;">
+                <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-history"></i> Payment History
+                </h3>
+                <div id="tx-history-list">
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-referral" class="view">
+        <div class="wallet-page">
+            <i class="fas fa-users fa-4x" style="color:var(--success); margin-bottom:20px;"></i>
+            <h3 id="refTitle">Referral System</h3>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:20px;">Earn 40% commission from your referrals' purchases!</p>
+            
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.5); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <i class="fas fa-gift" style="color: #FFC107;"></i>
+                    <p style="color: #FFC107; font-size: 0.9rem; font-weight: bold; margin: 0;">Have a referral code? Enter it to get bonus rewards!</p>
+                </div>
+                <input type="text" id="refInput" class="w-input" placeholder="ENTER REFERRAL CODE" style="margin-bottom: 12px; text-transform: uppercase;">
+                <button class="w-btn" onclick="applyReferralCode()" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); font-weight: bold;">
+                    <i class="fas fa-check"></i> Apply
+                </button>
+            </div>
+
+            <div id="refStatusBadge" style="display:none; background:rgba(16,185,129,0.2); border:1px solid var(--success); border-radius:12px; padding:15px; margin-bottom:20px; text-align:center;">
+                <i class="fas fa-check-circle" style="color:var(--success); margin-right:8px;"></i>
+                <span style="color:var(--success); font-weight:bold;">Referred by: <span id="refByCode">---</span></span>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border: 1.5px solid var(--success); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #fff; font-size: 0.9rem; margin-bottom: 15px; text-align: center; font-weight: bold; letter-spacing: 1px;">YOUR REFERRAL CODE</p>
+                <input type="text" id="ref-code" class="w-input" readonly style="width: 100%; font-weight: bold; color: var(--success); text-align: center; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(16,185,129,0.3);" placeholder="Connect wallet first">
+                <input type="text" id="ref-link" class="w-input" readonly style="width: 100%; font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-bottom: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08);" placeholder="Your referral link">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="w-btn" id="copy-ref-btn" style="padding: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--success); font-weight: 600;">
+                        <i class="fas fa-copy"></i> Copy Code
+                    </button>
+                    <button class="w-btn" id="share-ref-btn" style="padding: 12px; background: linear-gradient(135deg, #10b981, #059669); font-weight: 600;">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                </div>
+            </div>
+
+            <div class="info-grid" style="margin-bottom: 20px;">
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-count">0</span>
+                    <span class="ib-lbl">Referrals</span>
+                </div>
+                <div class="info-box">
+                    <span class="ib-val" style="color:var(--success)" id="ref-earnings">0.00</span>
+                    <span class="ib-lbl">Total Earned (TON)</span>
+                </div>
+            </div>
+
+            <div class="history-section" style="margin-top: 20px; text-align: left;">
+                <h3 style="border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-chart-line"></i> Referral History
+                </h3>
+                <div id="ref-history-list">
+                    <p style="color:#666; font-size: 0.9rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TASKS, LEADERBOARD & REWARDS -->
+    <div id="v-tasks" class="view">
+        <div class="wallet-page" style="padding-top:10px;">
+            <!-- Tab Switcher -->
+            <div style="display:flex; gap:0; margin-bottom:15px; background:rgba(255,255,255,0.04); border-radius:12px; padding:3px; border:1px solid rgba(255,255,255,0.06);">
+                <button id="tabTasks" onclick="switchRewardTab('tasks')" style="flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; background:var(--primary); color:#000; transition:all 0.3s;">
+                    🏆 Tasks
+                </button>
+                <button id="tabLeaderboard" onclick="switchRewardTab('leaderboard')" style="flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; background:transparent; color:#888; transition:all 0.3s;">
+                    🏅 Leaderboard
+                </button>
+            </div>
+
+            <!-- TASKS CONTENT -->
+            <div id="tasksContent">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:center; gap:20px;">
+                        <div style="text-align:center;">
+                            <span id="tasksCompletedCount" style="color:#FFD700; font-size:1.3rem; font-weight:bold;">0</span>
+                            <span style="color:var(--muted); font-size:0.7rem; display:block;">Completed</span>
+                        </div>
+                        <div style="width:1px; background:#333;"></div>
+                        <div style="text-align:center;">
+                            <span id="tasksTotalReward" style="color:var(--success); font-size:1.3rem; font-weight:bold;">0.00</span>
+                            <span style="color:var(--muted); font-size:0.7rem; display:block;">TON Earned</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="tasksList"></div>
+            </div>
+
+            <!-- LEADERBOARD CONTENT -->
+            <div id="leaderboardContent" style="display:none;">
+                <!-- Prize Pool -->
+                <div style="background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08)); border:1.5px solid rgba(255,215,0,0.4); border-radius:14px; padding:16px; margin-bottom:15px; text-align:center;">
+                    <p style="color:#FFD700; font-size:0.75rem; font-weight:600; margin:0 0 6px; letter-spacing:1px;">🏆 REFERRAL COMPETITION PRIZES</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px;">
+                        <div style="background:rgba(255,215,0,0.15); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥇</div>
+                            <div style="color:#FFD700; font-weight:bold; font-size:0.9rem;">1,000</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                        <div style="background:rgba(192,192,192,0.1); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥈</div>
+                            <div style="color:#C0C0C0; font-weight:bold; font-size:0.9rem;">500</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                        <div style="background:rgba(205,127,50,0.1); border-radius:10px; padding:10px;">
+                            <div style="font-size:1.3rem;">🥉</div>
+                            <div style="color:#CD7F32; font-weight:bold; font-size:0.9rem;">250</div>
+                            <div style="color:#888; font-size:0.6rem;">TON</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; display:flex; justify-content:center; gap:12px; font-size:0.7rem; color:#aaa;">
+                        <span>4-10th: <b style="color:#FFD700;">100 TON</b></span>
+                        <span>11-25th: <b style="color:#FFD700;">50 TON</b></span>
+                        <span>26-50th: <b style="color:#FFD700;">25 TON</b></span>
+                    </div>
+                </div>
+
+                <!-- Your Rank -->
+                <div id="myRankCard" style="background:rgba(16,185,129,0.1); border:1.5px solid rgba(16,185,129,0.3); border-radius:12px; padding:14px; margin-bottom:15px; display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:rgba(16,185,129,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--success); font-size:1.1rem;" id="myRankNum">-</div>
+                    <div style="flex:1;">
+                        <div style="color:#fff; font-size:0.85rem; font-weight:600;">Your Rank</div>
+                        <div style="color:#888; font-size:0.75rem;"><span id="myRefCount">0</span> referrals • <span id="myRefEarn">0.00</span> TON earned</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:#FFD700; font-size:0.85rem; font-weight:bold;" id="myPrizeAmount">-</div>
+                        <div style="color:#888; font-size:0.6rem;">Prize</div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard List -->
+                <div id="leaderboardList" style="margin-top:10px;">
+                    <div style="text-align:center; padding:30px; color:#666;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>
+                        Loading leaderboard...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLAN / TEAM -->
+    <div id="v-clan" class="view">
+        <div class="wallet-page" style="padding-top:10px;">
+            <!-- No Clan State -->
+            <div id="clanNone">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <div style="font-size:3.5rem; margin-bottom:10px;">🏰</div>
+                    <h3 style="margin:0; color:#fff;">Clan System</h3>
+                    <p style="color:#888; font-size:0.85rem; margin-top:6px;">Join a clan and mine together for bonus rewards!</p>
+                </div>
+                
+                <!-- Bonus Info -->
+                <div style="background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(168,85,247,0.04)); border:1.5px solid rgba(168,85,247,0.3); border-radius:14px; padding:14px; margin-bottom:16px; text-align:center;">
+                    <p style="color:#a855f7; font-size:0.8rem; font-weight:600; margin:0 0 4px;">⚡ CLAN MINING BONUS</p>
+                    <p style="color:#ccc; font-size:0.75rem; margin:0;">Every member adds +2% mining speed (max +40%)</p>
+                </div>
+
+                <!-- Create Clan -->
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; margin-bottom:12px;">
+                    <h4 style="color:#fff; margin:0 0 12px; font-size:0.9rem;"><i class="fas fa-plus-circle" style="color:var(--success);"></i> Create a Clan</h4>
+                    <input type="text" id="clanNameInput" class="w-input" placeholder="Clan Name (3-20 chars)" maxlength="20" style="margin-bottom:8px;">
+                    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:12px;" id="clanEmojiPicker">
+                        <div class="clan-emoji selected" onclick="pickClanEmoji(this)" data-emoji="⚔️">⚔️</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🛡️">🛡️</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🔥">🔥</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="💎">💎</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🐉">🐉</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="⭐">⭐</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🦁">🦁</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🚀">🚀</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="👑">👑</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="⚡">⚡</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🏴‍☠️">🏴‍☠️</div>
+                        <div class="clan-emoji" onclick="pickClanEmoji(this)" data-emoji="🐺">🐺</div>
+                    </div>
+                    <button class="w-btn" onclick="createClan()" style="width:100%; background:linear-gradient(135deg,#a855f7,#7c3aed); font-weight:bold; padding:13px;">
+                        <i class="fas fa-crown"></i> Create Clan (FREE)
+                    </button>
+                </div>
+
+                <!-- Join Clan -->
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px;">
+                    <h4 style="color:#fff; margin:0 0 12px; font-size:0.9rem;"><i class="fas fa-sign-in-alt" style="color:#3b82f6;"></i> Join a Clan</h4>
+                    <input type="text" id="clanCodeInput" class="w-input" placeholder="Enter Clan Code" maxlength="10" style="margin-bottom:10px; text-transform:uppercase;">
+                    <button class="w-btn" onclick="joinClan()" style="width:100%; background:linear-gradient(135deg,#3b82f6,#2563eb); font-weight:bold; padding:13px;">
+                        <i class="fas fa-users"></i> Join Clan
+                    </button>
+                </div>
+
+                <!-- Clan Leaderboard Button -->
+                <button class="w-btn" onclick="showClanLeaderboard()" style="width:100%; margin-top:14px; background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,165,0,0.1)); border:1.5px solid rgba(255,215,0,0.4); color:#FFD700; font-weight:bold; padding:13px;">
+                    <i class="fas fa-trophy"></i> Clan Leaderboard & Prizes
+                </button>
+            </div>
+
+            <!-- In Clan State -->
+            <div id="clanActive" style="display:none;">
+                <!-- Clan Header -->
+                <div id="clanHeader" style="text-align:center; background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05)); border:1.5px solid rgba(168,85,247,0.3); border-radius:16px; padding:18px; margin-bottom:14px;">
+                    <div id="clanAvatar" style="font-size:2.8rem; margin-bottom:6px;">⚔️</div>
+                    <h3 id="clanNameDisplay" style="margin:0; color:#fff; font-size:1.1rem;">Clan Name</h3>
+                    <div style="display:flex; justify-content:center; gap:20px; margin-top:12px;">
+                        <div style="text-align:center;">
+                            <span id="clanMemberCount" style="color:#a855f7; font-size:1.2rem; font-weight:bold;">0</span>
+                            <span style="color:#888; font-size:0.65rem; display:block;">Members</span>
+                        </div>
+                        <div style="width:1px; background:#333;"></div>
+                        <div style="text-align:center;">
+                            <span id="clanTotalHash" style="color:var(--primary); font-size:1.2rem; font-weight:bold;">0</span>
+                            <span style="color:#888; font-size:0.65rem; display:block;">GH/s</span>
+                        </div>
+                        <div style="width:1px; background:#333;"></div>
+                        <div style="text-align:center;">
+                            <span id="clanBonus" style="color:var(--success); font-size:1.2rem; font-weight:bold;">+0%</span>
+                            <span style="color:#888; font-size:0.65rem; display:block;">Bonus</span>
+                        </div>
+                    </div>
+                    <!-- Clan Code -->
+                    <div style="margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <span style="color:#888; font-size:0.75rem;">Code:</span>
+                        <span id="clanCodeDisplay" style="color:#a855f7; font-weight:bold; font-size:0.85rem; letter-spacing:2px;">---</span>
+                        <button onclick="copyClanCode()" style="background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.3); color:#a855f7; padding:4px 10px; border-radius:8px; font-size:0.7rem; cursor:pointer;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Members List -->
+                <div style="margin-bottom:14px;">
+                    <h4 style="color:#fff; font-size:0.85rem; margin:0 0 10px; padding:0 4px;"><i class="fas fa-users" style="color:#a855f7;"></i> Members</h4>
+                    <div id="clanMembersList"></div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <button class="w-btn" onclick="shareClanCode()" style="background:linear-gradient(135deg,#a855f7,#7c3aed); font-weight:600; padding:12px; font-size:0.8rem;">
+                        <i class="fas fa-share"></i> Invite
+                    </button>
+                    <button class="w-btn" onclick="showClanLeaderboard()" style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,165,0,0.1)); border:1.5px solid rgba(255,215,0,0.4); color:#FFD700; font-weight:600; padding:12px; font-size:0.8rem;">
+                        <i class="fas fa-trophy"></i> Rankings
+                    </button>
+                </div>
+                <button class="w-btn" id="clanLeaveBtn" onclick="leaveClan()" style="width:100%; margin-top:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; font-weight:600; padding:12px; font-size:0.8rem;">
+                    <i class="fas fa-sign-out-alt"></i> Leave Clan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLAN LEADERBOARD MODAL -->
+    <div id="clanLbModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:5000; overflow-y:auto; padding:20px;">
+        <div style="max-width:400px; margin:0 auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="color:#FFD700; margin:0; font-size:1rem;">🏆 Clan Leaderboard</h3>
+                <button onclick="closeClanLb()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:1rem;">✕</button>
+            </div>
+            <!-- Prizes -->
+            <div style="background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.06)); border:1.5px solid rgba(255,215,0,0.3); border-radius:14px; padding:14px; margin-bottom:16px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+                    <div><div style="font-size:1.5rem;">🥇</div><div style="color:#FFD700; font-weight:bold;">500</div><div style="color:#888; font-size:0.6rem;">TON</div></div>
+                    <div><div style="font-size:1.5rem;">🥈</div><div style="color:#C0C0C0; font-weight:bold;">250</div><div style="color:#888; font-size:0.6rem;">TON</div></div>
+                    <div><div style="font-size:1.5rem;">🥉</div><div style="color:#CD7F32; font-weight:bold;">100</div><div style="color:#888; font-size:0.6rem;">TON</div></div>
+                </div>
+                <div style="text-align:center; margin-top:8px; font-size:0.7rem; color:#aaa;">
+                    4-5th: <b style="color:#FFD700;">50 TON</b> • 6-10th: <b style="color:#FFD700;">25 TON</b> • 11-15th: <b style="color:#FFD700;">10 TON</b>
+                </div>
+                <p style="text-align:center; color:#888; font-size:0.65rem; margin:8px 0 0;">* Prizes split equally among clan members</p>
+            </div>
+            <div id="clanLbList">
+                <div style="text-align:center; padding:30px; color:#666;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONBOARDING OVERLAY -->
+    <div id="onboardingOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center;">
+        <div style="max-width:340px; width:90%; text-align:center; padding:30px;">
+            <div id="onboardStep1" class="onboard-step">
+                <div style="font-size:4rem; margin-bottom:20px;">⛏️</div>
+                <h2 style="color:#fff; margin-bottom:10px;">Welcome to TON Miner!</h2>
+                <p style="color:#aaa; font-size:0.95rem; line-height:1.5; margin-bottom:25px;">Buy mining machines, earn TON daily, and withdraw your profits to your wallet.</p>
+                <div class="onboard-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+                <button onclick="nextOnboard(2)" class="w-btn" style="width:100%; margin-top:20px; background:linear-gradient(135deg,#10b981,#059669); padding:14px; font-weight:bold;">Next →</button>
+            </div>
+            <div id="onboardStep2" class="onboard-step" style="display:none;">
+                <div style="font-size:4rem; margin-bottom:20px;">🎁</div>
+                <h2 style="color:#fff; margin-bottom:10px;">Free Rewards Daily!</h2>
+                <p style="color:#aaa; font-size:0.95rem; line-height:1.5; margin-bottom:25px;">Spin the wheel, claim login bonuses, complete tasks, and invite friends to earn even more TON.</p>
+                <div class="onboard-dots"><span class="dot"></span><span class="dot active"></span><span class="dot"></span></div>
+                <button onclick="nextOnboard(3)" class="w-btn" style="width:100%; margin-top:20px; background:linear-gradient(135deg,#10b981,#059669); padding:14px; font-weight:bold;">Next →</button>
+            </div>
+            <div id="onboardStep3" class="onboard-step" style="display:none;">
+                <div style="font-size:4rem; margin-bottom:20px;">💰</div>
+                <h2 style="color:#fff; margin-bottom:10px;">Connect & Earn!</h2>
+                <p style="color:#aaa; font-size:0.95rem; line-height:1.5; margin-bottom:25px;">Connect your TON wallet to save progress, withdraw earnings, and unlock all features!</p>
+                <div class="onboard-dots"><span class="dot"></span><span class="dot"></span><span class="dot active"></span></div>
+                <button onclick="finishOnboard()" class="w-btn" style="width:100%; margin-top:20px; background:linear-gradient(135deg,#FFD700,#FFA500); color:#000; padding:14px; font-weight:bold;">🚀 Start Mining!</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item active" onclick="window.goTo('dash', this)"><i class="fas fa-chart-pie"></i></div>
+        <div class="nav-item" onclick="window.goTo('market', this)"><i class="fas fa-shopping-bag"></i></div>
+        <div class="nav-item" onclick="window.goTo('inv', this)"><i class="fas fa-server"></i></div>
+        <div class="nav-item" onclick="window.goTo('wallet', this)"><i class="fas fa-wallet"></i></div>
+        <div class="nav-item" onclick="window.goTo('referral', this)"><i class="fas fa-users"></i></div>
+        <div class="nav-item" onclick="window.goTo('tasks', this)"><i class="fas fa-trophy"></i></div>
+        <div class="nav-item" onclick="window.goTo('clan', this)"><i class="fas fa-shield-halved"></i></div>
+        <div class="nav-item" onclick="window.open('info.html', '_blank')" title="How It Works"><i class="fas fa-circle-info"></i></div>
+    </div>
+
+    <!-- Legal links footer -->
+    <div style="position:fixed; bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 2px); left:50%; transform:translateX(-50%); display:flex; gap:12px; z-index:99;">
+        <a href="terms.html" target="_blank" style="color:var(--text-muted); font-size:0.5rem; text-decoration:none; opacity:0.5;">Terms</a>
+        <a href="privacy.html" target="_blank" style="color:var(--text-muted); font-size:0.5rem; text-decoration:none; opacity:0.5;">Privacy</a>
+    </div>
+
+    <!-- Spin Wheel Modal -->
+    <div id="spinModal" class="spin-modal" style="display:none;">
+        <div class="spin-modal-content">
+            <div class="spin-modal-header">
+                <h3><i class="fas fa-dharmachakra"></i> Daily Fortune</h3>
+                <button class="spin-close" onclick="closeSpinWheel()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="spin-wheel-wrapper">
+                <div class="spin-wheel-inner">
+                    <div class="spin-pointer"></div>
+                    <canvas id="spinCanvas" width="300" height="300"></canvas>
+                </div>
+            </div>
+            <div id="spinResult" class="spin-result-box" style="display:none;">
+                <div class="spin-result-amount" id="spinPrize">+0.10 TON</div>
+                <div class="spin-result-label">Added to your balance!</div>
+            </div>
+            <button class="spin-btn" id="spinBtn" onclick="doSpin()">
+                <i class="fas fa-play"></i> SPIN TO WIN
+            </button>
+            <div class="spin-timer" id="spinTimer" style="display:none;">
+                <i class="fas fa-clock"></i> Next spin in: <span id="spinCountdown">23:59:59</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Message</div>
+
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script type="module" src="script.js?v=19"></script>
+</body>
+</html>
