@@ -31,7 +31,7 @@ const BOT_USERNAME = "TonProMiner_Bot";
 let tonConnectUI = null;
 let currentUserUid = null;
 let adsgramController = null;
-let referralCodePending = null;
+let referralCodePending = localStorage.getItem('pendingReferralCode') || null;
 
 let state = { 
     balance: 1.00, 
@@ -169,6 +169,7 @@ function checkReferralPopup() {
     
     if (refCode && !localStorage.getItem('hasUsedReferral')) {
         referralCodePending = refCode;
+        localStorage.setItem('pendingReferralCode', refCode);
         localStorage.setItem('hasUsedReferral', 'applied');
         console.log('✅ Referral code detected:', refCode);
         
@@ -206,6 +207,7 @@ window.applyReferralCode = async function() {
     }
     
     referralCodePending = code;
+    localStorage.setItem('pendingReferralCode', code);
     localStorage.setItem('hasUsedReferral', 'applied');
     
     if (state.wallet && !state.referredBy) {
@@ -347,23 +349,25 @@ async function loadServerData(walletAddress) {
         const serverData = await getUserFromFire(walletAddress);
 
         if (serverData) {
-            state.balance = serverData.balance || state.balance;
-            state.hashrate = serverData.hashrate || 0;
-            state.inv = serverData.inv || [];
-            state.freeEnd = serverData.freeEnd || 0;
-            state.lastSave = serverData.lastSave || Date.now();
-            state.lastAdTime = serverData.lastAdTime || 0;
-            state.referralCode = serverData.referralCode || null;
-            state.referredBy = serverData.referredBy || null;
-            state.referralCount = serverData.referralCount || 0;
-            state.referralEarnings = serverData.referralEarnings || 0;
-            state.referralLocked = serverData.referralLocked || false;
-            state.referralBonusReceived = serverData.referralBonusReceived || false;
-            state.totalEarned = serverData.totalEarned || 0;
-            state.lastSpinTime = serverData.lastSpinTime || 0;
-            state.loginStreak = serverData.loginStreak || 0;
-            state.lastLoginDate = serverData.lastLoginDate || null;
-            state.clanId = serverData.clanId || null;
+            // Server is ALWAYS authoritative — use ?? (nullish coalescing)
+            // so that 0 from server is NOT treated as "missing"
+            state.balance = serverData.balance ?? state.balance;
+            state.hashrate = serverData.hashrate ?? 0;
+            state.inv = serverData.inv ?? [];
+            state.freeEnd = serverData.freeEnd ?? 0;
+            state.lastSave = serverData.lastSave ?? Date.now();
+            state.lastAdTime = serverData.lastAdTime ?? 0;
+            state.referralCode = serverData.referralCode ?? null;
+            state.referredBy = serverData.referredBy ?? null;
+            state.referralCount = serverData.referralCount ?? 0;
+            state.referralEarnings = serverData.referralEarnings ?? 0;
+            state.referralLocked = serverData.referralLocked ?? false;
+            state.referralBonusReceived = serverData.referralBonusReceived ?? false;
+            state.totalEarned = serverData.totalEarned ?? 0;
+            state.lastSpinTime = serverData.lastSpinTime ?? 0;
+            state.loginStreak = serverData.loginStreak ?? 0;
+            state.lastLoginDate = serverData.lastLoginDate ?? null;
+            state.clanId = serverData.clanId ?? null;
             
             if (!state.referralCode) {
                 await initReferralCode(walletAddress);
@@ -374,6 +378,9 @@ async function loadServerData(walletAddress) {
             }
             
             calculateOfflineProgress();
+            // Reset integrity baseline to server values
+            localStorage.setItem('lastSyncedBalance', state.balance.toString());
+            localStorage.setItem('lastSyncTime', Date.now().toString());
             updateUI();
             updateReferralUI();
             drawChart();
@@ -434,6 +441,7 @@ async function applyPendingReferral(walletAddress) {
     }
     
     referralCodePending = null;
+    localStorage.removeItem('pendingReferralCode');
 }
 
 function grantReferralBonus() {
