@@ -115,6 +115,50 @@ module.exports = async (req, res) => {
 
         console.log(`🛒 Purchase validated: ${walletAddress} bought ${result.machineName} | HR: ${result.newHashrate}`);
 
+        // --- REFERRAL COMMISSION (server-side) ---
+        try {
+            const userData = (await userRef.get()).data();
+            if (userData.referredBy && userData.referralLocked && userData.referredBy !== walletAddress) {
+                const referrerWallet = userData.referredBy;
+                const commission = machine.price * 0.4;
+
+                // Duplicate check
+                const commId = `${walletAddress}_${machineId}_${txHash || Date.now()}`;
+                const commRef = db.collection('commissionCheck').doc(commId);
+                const commDoc = await commRef.get();
+
+                if (!commDoc.exists && commission > 0) {
+                    const referrerRef = db.collection('users').doc(referrerWallet);
+                    const referrerDoc = await referrerRef.get();
+
+                    if (referrerDoc.exists) {
+                        const curBalance = referrerDoc.data().balance || 0;
+                        const curEarnings = referrerDoc.data().referralEarnings || 0;
+
+                        await referrerRef.update({
+                            balance: curBalance + commission,
+                            referralEarnings: curEarnings + commission,
+                            lastCommissionDate: Date.now()
+                        });
+
+                        await commRef.set({ processed: true, timestamp: Date.now(), commission, machineId });
+
+                        // Save history
+                        const histId = `REF_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        await db.collection('referralHistory').doc(histId).set({
+                            referrerWallet, buyerWallet: walletAddress,
+                            commission, machinePrice: machine.price,
+                            date: Date.now(), verified: true
+                        });
+
+                        console.log(`💰 Commission: ${commission} TON → ${referrerWallet}`);
+                    }
+                }
+            }
+        } catch (commErr) {
+            console.error('Commission error (non-blocking):', commErr.message);
+        }
+
         return res.status(200).json({
             success: true,
             newHashrate: result.newHashrate,
