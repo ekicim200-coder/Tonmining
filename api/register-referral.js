@@ -1,6 +1,4 @@
 // api/register-referral.js — Server-side referral registration
-// Fixes: client can't update another user's doc due to Firestore rules
-
 const { db, initError } = require('./_firebase-admin');
 
 module.exports = async (req, res) => {
@@ -18,7 +16,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing fields' });
         }
 
-        // 1. Check if user already has a referrer
+        // 1. Check user (outside transaction)
         const newUserRef = db.collection('users').doc(newUserWallet);
         const newUserDoc = await newUserRef.get();
 
@@ -26,14 +24,12 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Already referred' });
         }
 
-        // Verify userId matches
         if (newUserDoc.exists && newUserDoc.data().userId !== userId) {
             return res.status(403).json({ success: false, error: 'Unauthorized' });
         }
 
-        // 2. Find referrer by code
-        const usersRef = db.collection('users');
-        const snapshot = await usersRef.where('referralCode', '==', referrerCode).get();
+        // 2. Find referrer by code (outside transaction)
+        const snapshot = await db.collection('users').where('referralCode', '==', referrerCode).get();
 
         if (snapshot.empty) {
             return res.status(400).json({ success: false, error: 'Invalid referral code' });
@@ -47,9 +43,21 @@ module.exports = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Cannot refer yourself' });
         }
 
-        // 4. Use transaction for atomicity
+        // 4. Transaction: ALL reads first, then ALL writes
         await db.runTransaction(async (transaction) => {
-            // Update new user: set referredBy
+            // --- ALL READS FIRST ---
+            const freshUserDoc = await transaction.get(newUserRef);
+            const referrerRef = db.collection('users').doc(referrerWallet);
+            const referrerDoc = await transaction.get(referrerRef);
+
+            // Double-check inside transaction
+            if (freshUserDoc.exists && freshUserDoc.data().referredBy) {
+                throw new Error('Already referred');
+            }
+
+            const currentCount = referrerDoc.exists ? (referrerDoc.data().referralCount || 0) : 0;
+
+            // --- ALL WRITES AFTER ---
             transaction.update(newUserRef, {
                 referredBy: referrerWallet,
                 referredByCode: referrerCode,
@@ -57,27 +65,18 @@ module.exports = async (req, res) => {
                 referralLocked: true
             });
 
-            // Update referrer: increment referralCount
-            const referrerRef = db.collection('users').doc(referrerWallet);
-            const referrerDoc = await transaction.get(referrerRef);
-
             if (referrerDoc.exists) {
-                const currentCount = referrerDoc.data().referralCount || 0;
                 transaction.update(referrerRef, {
                     referralCount: currentCount + 1
                 });
             }
         });
 
-        console.log(`✅ Referral registered: ${newUserWallet} referred by ${referrerWallet}`);
-
-        return res.status(200).json({
-            success: true,
-            referrerWallet: referrerWallet
-        });
+        console.log(`✅ Referral: ${newUserWallet} referred by ${referrerWallet}`);
+        return res.status(200).json({ success: true, referrerWallet });
 
     } catch (error) {
-        console.error('Referral registration error:', error.message);
+        console.error('Referral error:', error.message);
         return res.status(400).json({ success: false, error: error.message });
     }
 };
