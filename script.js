@@ -1,5 +1,5 @@
 // --- IMPORT ---
-import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, registerReferral, addReferralCommission, getReferralStats, getLeaderboard, getUserRank, createClanInFire, joinClanInFire, leaveClanInFire, getClanData, getClanLeaderboard } from './firebase-config.js';
+import { saveUserToFire, getUserFromFire, initAuth, getHistoryFromFire, saveReferralCode, getReferralStats, getLeaderboard, getUserRank, createClanInFire, joinClanInFire, leaveClanInFire, getClanData, getClanLeaderboard } from './firebase-config.js';
 import { t, currentLang, setLanguage, getAvailableLanguages } from './lang.js';
 
 // --- TELEGRAM WEBAPP ---
@@ -402,10 +402,20 @@ async function applyPendingReferral(walletAddress) {
     showToast("Activating referral...", false);
     
     try {
-        const success = await registerReferral(walletAddress, referralCodePending);
+        // SERVER-SIDE referral registration (fixes Firestore permission issue)
+        const response = await fetch('/api/register-referral', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                newUserWallet: walletAddress,
+                userId: currentUserUid,
+                referrerCode: referralCodePending
+            })
+        });
+        const data = await response.json();
         
-        if (success) {
-            state.referredBy = referralCodePending;
+        if (data.success) {
+            state.referredBy = data.referrerWallet;
             state.referralLocked = true;
             
             if (!state.referralBonusReceived) {
@@ -416,7 +426,7 @@ async function applyPendingReferral(walletAddress) {
             updateReferralUI();
             syncToServer();
         } else {
-            showToast("❌ Invalid or used code!", true);
+            showToast("❌ " + (data.error || "Invalid code!"), true);
         }
     } catch (e) {
         console.error("Referral error:", e);
@@ -441,7 +451,7 @@ function grantReferralBonus() {
     renderInv();
     
     setTimeout(() => {
-        showToast("🎁 +5 GH/s Basic Chip!", false);
+        showToast("🎁 +3 GH/s Nano Chip!", false);
     }, 1000);
 }
 
@@ -778,11 +788,6 @@ window.buy = async function(id, paymentMethod = 'ton') {
                     drawChart();
                     renderInv();
                     
-                    // Referral commission
-                    if (state.wallet && m.price > 0) {
-                        try { await addReferralCommission(state.wallet, m.price); } catch(e) {}
-                    }
-                    
                     showToast(`✅ ${m.name}!`, false);
                 } else {
                     showToast("❌ " + (data.error || "Verification failed"), true);
@@ -839,9 +844,6 @@ async function buyWithStars(id) {
                         updateUI();
                         drawChart();
                         renderInv();
-                        if (state.wallet && m.price > 0) {
-                            try { await addReferralCommission(state.wallet, m.price); } catch(e) {}
-                        }
                         showToast(`✅ ${m.name}!`, false);
                     } else {
                         showToast("❌ " + (data.error || "Failed"), true);
@@ -902,14 +904,6 @@ async function grantMachine(mid) {
         state.inv.push({ mid, uid: Date.now(), bonus: false });
     } else {
         state.inv.push({ mid, uid: Date.now(), bonus: false });
-        
-        if (state.wallet && m.price > 0) {
-            try {
-                await addReferralCommission(state.wallet, m.price);
-            } catch (e) {
-                console.log('Referral commission error:', e);
-            }
-        }
     }
 
     state.hashrate += m.rate;
