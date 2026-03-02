@@ -167,10 +167,9 @@ function checkReferralPopup() {
         }
     }
     
-    if (refCode && !localStorage.getItem('hasUsedReferral')) {
+    if (refCode && !state.referredBy && !localStorage.getItem('hasUsedReferral')) {
         referralCodePending = refCode;
         localStorage.setItem('pendingReferralCode', refCode);
-        localStorage.setItem('hasUsedReferral', 'applied');
         console.log('✅ Referral code detected:', refCode);
         
         const refInput = document.getElementById('refInput');
@@ -200,17 +199,16 @@ window.applyReferralCode = async function() {
         return;
     }
     
-    const hasUsedRef = localStorage.getItem('hasUsedReferral');
-    if (hasUsedRef && hasUsedRef !== 'skipped') {
+    // Only block if already successfully referred (from server data)
+    if (state.referredBy) {
         showToast("You already used a referral code!", true);
         return;
     }
     
     referralCodePending = code;
     localStorage.setItem('pendingReferralCode', code);
-    localStorage.setItem('hasUsedReferral', 'applied');
     
-    if (state.wallet && !state.referredBy) {
+    if (state.wallet) {
         await applyPendingReferral(state.wallet);
     } else {
         showToast("✅ Code saved! Connect wallet to activate", false);
@@ -425,6 +423,11 @@ async function applyPendingReferral(walletAddress) {
             state.referredBy = data.referrerWallet;
             state.referralLocked = true;
             
+            // Only mark as used AFTER successful registration
+            localStorage.setItem('hasUsedReferral', 'applied');
+            referralCodePending = null;
+            localStorage.removeItem('pendingReferralCode');
+            
             if (!state.referralBonusReceived) {
                 grantReferralBonus();
             }
@@ -433,15 +436,13 @@ async function applyPendingReferral(walletAddress) {
             updateReferralUI();
             syncToServer();
         } else {
+            // Keep pending so user can retry
             showToast("❌ " + (data.error || "Invalid code!"), true);
         }
     } catch (e) {
         console.error("Referral error:", e);
-        showToast("Referral failed", true);
+        showToast("Referral failed, try again", true);
     }
-    
-    referralCodePending = null;
-    localStorage.removeItem('pendingReferralCode');
 }
 
 function grantReferralBonus() {
