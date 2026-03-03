@@ -609,41 +609,59 @@ function checkBalanceIntegrity() {
     _lastBalanceCheck = now;
 }
 
+let _lastUIUpdate = 0;
+
 function loop() {
     if (state.hashrate > 0) {
         const clanMultiplier = 1 + getClanBonus();
         const earned = state.hashrate * CFG.rate * (CFG.tick/1000) * clanMultiplier;
         state.balance += earned;
         state.totalEarned += earned;
-        updateUI();
+        
+        // UI update only once per second (not every 100ms)
+        const now = Date.now();
+        if (now - _lastUIUpdate >= 1000) {
+            _lastUIUpdate = now;
+            updateUI();
+        } else {
+            // Only update balance text (lightweight)
+            const totalBal = document.getElementById('totalBal');
+            if (totalBal) totalBal.textContent = state.balance.toFixed(6);
+        }
     }
     // Periodic integrity check (every ~5 seconds)
-    if (Math.random() < 0.2) checkBalanceIntegrity();
+    if (Math.random() < 0.02) checkBalanceIntegrity();
 }
 
 function updateUI() {
-    const totalBal = document.getElementById('totalBal');
-    const dHash = document.getElementById('d-hash');
-    const dCount = document.getElementById('d-count');
-    const dDaily = document.getElementById('d-daily');
+    // Cache DOM refs (queried once, reused)
+    if (!updateUI._el) {
+        updateUI._el = {
+            bal: document.getElementById('totalBal'),
+            hash: document.getElementById('d-hash'),
+            cnt: document.getElementById('d-count'),
+            daily: document.getElementById('d-daily'),
+            badge: document.getElementById('dashTaskBadge')
+        };
+    }
+    const el = updateUI._el;
     
-    if (totalBal) totalBal.textContent = state.balance.toFixed(6);
-    if (dHash) dHash.textContent = state.hashrate;
-    if (dCount) dCount.textContent = state.inv.length;
+    if (el.bal) el.bal.textContent = state.balance.toFixed(6);
+    if (el.hash) el.hash.textContent = state.hashrate;
+    if (el.cnt) el.cnt.textContent = state.inv.length;
     
     const clanMult = 1 + getClanBonus();
     const daily = (state.hashrate * CFG.rate * 86400 * clanMult).toFixed(2);
-    if (dDaily) dDaily.textContent = daily;
+    if (el.daily) el.daily.textContent = daily;
     
-    // Dashboard task badge
+    // Dashboard task badge (cached every 5s)
     const claimable = getClaimableTaskCount();
-    const badge = document.getElementById('dashTaskBadge');
-    if (badge) {
+    if (el.badge) {
         if (claimable > 0) {
-            badge.style.display = 'block';
-            badge.textContent = claimable;
+            el.badge.style.display = 'block';
+            el.badge.textContent = claimable;
         } else {
-            badge.style.display = 'none';
+            el.badge.style.display = 'none';
         }
     }
     
@@ -2290,12 +2308,20 @@ window.claimTask = function(taskId) {
 };
 
 // Check for claimable tasks and show badge
+let _claimableCache = 0;
+let _claimableCacheTime = 0;
+
 function getClaimableTaskCount() {
+    const now = Date.now();
+    if (now - _claimableCacheTime < 5000) return _claimableCache;
+    _claimableCacheTime = now;
+    
     const claimed = getClaimedTasks();
     let count = 0;
     TASKS.forEach(task => {
         if (!claimed.includes(task.id) && task.getProgress() >= task.goal) count++;
     });
+    _claimableCache = count;
     return count;
 }
 
