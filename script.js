@@ -1455,6 +1455,64 @@ async function renderReferralHistory() {
     }
 }
 
+
+// --- PROMO CODE REDEMPTION ---
+window.redeemPromo = async function() {
+    const input = document.getElementById('promoInput');
+    if (!input) return;
+    
+    const code = input.value.trim().toUpperCase();
+    if (!code || code.length < 3) {
+        showToast("Enter a valid promo code!", true);
+        return;
+    }
+    
+    if (!state.wallet) {
+        showToast("Connect wallet first!", true);
+        return;
+    }
+    
+    showToast("Checking promo code...", false);
+    
+    try {
+        const response = await fetch('/api/promo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'redeem',
+                code: code,
+                walletAddress: state.wallet,
+                userId: currentUserUid
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const serverData = await getUserFromFire(state.wallet);
+            if (serverData) {
+                state.balance = serverData.balance ?? state.balance;
+                state.hashrate = serverData.hashrate ?? state.hashrate;
+                state.inv = serverData.inv ?? state.inv;
+                state.lastSpinTime = serverData.lastSpinTime ?? state.lastSpinTime;
+            }
+            
+            saveLocalData();
+            updateUI();
+            drawChart();
+            renderInv();
+            
+            input.value = '';
+            showToast("\ud83c\udf81 " + data.rewardDesc, false);
+            try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+        } else {
+            showToast("\u274c " + (data.error || "Invalid code"), true);
+        }
+    } catch (e) {
+        console.error("Promo error:", e);
+        showToast("Promo failed, try again", true);
+    }
+};
+
 function copyReferralCode() {
     if (!state.referralCode) {
         showToast("Connect wallet!", true);
