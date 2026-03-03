@@ -2568,7 +2568,7 @@ async function renderClanView() {
     }
     
     const clan = _clanCache;
-    const bonus = Math.min(clan.memberCount * 2, 40);
+    const bonus = Math.min(clan.memberCount * 0.5, 10);
     
     // Update header
     const el = (id) => document.getElementById(id);
@@ -2615,7 +2615,7 @@ async function renderClanView() {
 // Apply clan mining bonus to rate
 function getClanBonus() {
     if (!_clanCache || !state.clanId) return 0;
-    return Math.min(_clanCache.memberCount * 2, 40) / 100; // 0.0 to 0.4
+    return Math.min(_clanCache.memberCount * 0.5, 10) / 100; // 0.0 to 0.10
 }
 
 window.copyClanCode = function() {
