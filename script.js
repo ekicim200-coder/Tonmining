@@ -470,7 +470,7 @@ function calculateOfflineProgress() {
     const secondsPassed = (now - state.lastSave) / 1000;
     
     if (secondsPassed > 30) {
-        const clanMult = 1 + getClanBonus();
+        const clanMult = 1 + getClanBonus() + getRankBonus();
         const earned = secondsPassed * state.hashrate * CFG.rate * clanMult;
         if (earned > 0) {
             state.balance += earned;
@@ -613,7 +613,7 @@ let _lastUIUpdate = 0;
 
 function loop() {
     if (state.hashrate > 0) {
-        const clanMultiplier = 1 + getClanBonus();
+        const clanMultiplier = 1 + getClanBonus() + getRankBonus();
         const earned = state.hashrate * CFG.rate * (CFG.tick/1000) * clanMultiplier;
         state.balance += earned;
         state.totalEarned += earned;
@@ -650,7 +650,7 @@ function updateUI() {
     if (el.hash) el.hash.textContent = state.hashrate;
     if (el.cnt) el.cnt.textContent = state.inv.length;
     
-    const clanMult = 1 + getClanBonus();
+    const clanMult = 1 + getClanBonus() + getRankBonus();
     const daily = (state.hashrate * CFG.rate * 86400 * clanMult).toFixed(2);
     if (el.daily) el.daily.textContent = daily;
     
@@ -1530,11 +1530,11 @@ function showToast(msg, err=false) {
 
 // --- RANK SYSTEM ---
 const RANKS = [
-    { name: 'Bronze', min: 0, max: 50, color: '#cd7f32', icon: 'fa-medal', bg: 'rgba(205,127,50,0.15)' },
-    { name: 'Silver', min: 50, max: 200, color: '#C0C0C0', icon: 'fa-medal', bg: 'rgba(192,192,192,0.15)' },
-    { name: 'Gold', min: 200, max: 1000, color: '#FFD700', icon: 'fa-crown', bg: 'rgba(255,215,0,0.15)' },
-    { name: 'Diamond', min: 1000, max: 5000, color: '#00BFFF', icon: 'fa-gem', bg: 'rgba(0,191,255,0.15)' },
-    { name: 'Legendary', min: 5000, max: Infinity, color: '#d946ef', icon: 'fa-star', bg: 'rgba(217,70,239,0.15)' }
+    { name: 'Bronze', min: 0, max: 50, color: '#cd7f32', icon: 'fa-medal', bg: 'rgba(205,127,50,0.15)', miningBonus: 0 },
+    { name: 'Silver', min: 50, max: 200, color: '#C0C0C0', icon: 'fa-medal', bg: 'rgba(192,192,192,0.15)', miningBonus: 0.02 },
+    { name: 'Gold', min: 200, max: 1000, color: '#FFD700', icon: 'fa-crown', bg: 'rgba(255,215,0,0.15)', miningBonus: 0.05 },
+    { name: 'Diamond', min: 1000, max: 5000, color: '#00BFFF', icon: 'fa-gem', bg: 'rgba(0,191,255,0.15)', miningBonus: 0.10 },
+    { name: 'Legendary', min: 5000, max: Infinity, color: '#d946ef', icon: 'fa-star', bg: 'rgba(217,70,239,0.15)', miningBonus: 0.15 }
 ];
 
 function getRank(totalEarned) {
@@ -1542,6 +1542,10 @@ function getRank(totalEarned) {
         if (totalEarned >= RANKS[i].min) return { ...RANKS[i], index: i };
     }
     return { ...RANKS[0], index: 0 };
+}
+
+function getRankBonus() {
+    return getRank(state.totalEarned).miningBonus || 0;
 }
 
 function updateRankBadge() {
@@ -1572,11 +1576,13 @@ function updateRankBadge() {
     }
     
     if (subEl) {
+        const bonusPct = Math.round(rank.miningBonus * 100);
+        const bonusTag = bonusPct > 0 ? ` • ⚡+${bonusPct}% mining` : '';
         if (rank.max === Infinity) {
-            subEl.textContent = `${state.totalEarned.toFixed(1)} TON earned — MAX RANK`;
+            subEl.textContent = `${state.totalEarned.toFixed(1)} TON earned — MAX RANK${bonusTag}`;
         } else {
             const nextRank = RANKS[rank.index + 1];
-            subEl.textContent = `${state.totalEarned.toFixed(1)} / ${rank.max} TON to ${nextRank.name}`;
+            subEl.textContent = `${state.totalEarned.toFixed(1)} / ${rank.max} TON to ${nextRank.name}${bonusTag}`;
         }
     }
 }
