@@ -707,7 +707,15 @@ function checkFree() {
 // Check and remove expired promo machines
 function checkPromoMachines() {
     const now = Date.now();
-    const expired = state.inv.filter(i => i.promoExpiry && now > i.promoExpiry);
+    
+    // Find expired promo machines (has promoExpiry and it's passed)
+    // Also find old promo machines without promoExpiry but with promoCode (legacy - give 1 hour grace)
+    const expired = state.inv.filter(i => {
+        if (i.promoExpiry && now > i.promoExpiry) return true;
+        // Legacy promo machines: has promoCode but no promoExpiry → expire after 1 hour from uid
+        if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return true;
+        return false;
+    });
     
     if (expired.length === 0) return;
     
@@ -719,7 +727,11 @@ function checkPromoMachines() {
     });
     
     // Remove expired machines
-    state.inv = state.inv.filter(i => !(i.promoExpiry && now > i.promoExpiry));
+    state.inv = state.inv.filter(i => {
+        if (i.promoExpiry && now > i.promoExpiry) return false;
+        if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return false;
+        return true;
+    });
     state.hashrate = Math.max(0, state.hashrate - hashLost);
     
     saveLocalData();
