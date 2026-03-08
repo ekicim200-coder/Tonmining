@@ -248,21 +248,6 @@
                 </div>
             </div>
 
-            <!-- PROMO CODE -->
-            <div style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(124,58,237,0.05)); border: 1.5px solid rgba(167,139,250,0.3); border-radius: 14px;">
-                <div style="text-align: center; margin-bottom: 12px;">
-                    <i class="fas fa-gift" style="color: #a78bfa; font-size: 1.3rem;"></i>
-                    <h4 id="promoTitle" style="color: #a78bfa; margin: 6px 0 4px 0; font-size: 0.95rem;">Promo Code</h4>
-                    <p id="promoDesc" style="color: #888; font-size: 0.78rem; margin: 0;">Enter a promo code to claim your reward!</p>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="promoInput" class="w-input" placeholder="Enter code..." style="flex:1; text-transform:uppercase; margin:0;">
-                    <button onclick="redeemPromo()" style="padding: 10px 18px; background: linear-gradient(135deg,#a78bfa,#7c3aed); border: none; border-radius: 10px; color: #fff; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap;">
-                        <i class="fas fa-check"></i> Claim
-                    </button>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -327,6 +312,24 @@
     <!-- TASKS, LEADERBOARD & REWARDS -->
     <div id="v-tasks" class="view">
         <div class="wallet-page" style="padding-top:10px;">
+
+            <!-- PROMO CODE -->
+            <div style="margin-bottom: 15px; padding: 14px; background: linear-gradient(135deg, rgba(167,139,250,0.1), rgba(124,58,237,0.05)); border: 1.5px solid rgba(167,139,250,0.3); border-radius: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-gift" style="color: #a78bfa; font-size: 1.1rem;"></i>
+                    <div>
+                        <h4 id="promoTitle" style="color: #a78bfa; margin: 0; font-size: 0.9rem;">Promo Code</h4>
+                        <p id="promoDesc" style="color: #888; font-size: 0.72rem; margin: 0;">Enter a promo code to claim your reward!</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="promoInput" class="w-input" placeholder="Enter code..." style="flex:1; text-transform:uppercase; margin:0; padding:9px 12px; font-size:0.85rem;">
+                    <button onclick="redeemPromo()" style="padding: 9px 16px; background: linear-gradient(135deg,#a78bfa,#7c3aed); border: none; border-radius: 10px; color: #fff; font-weight: 600; font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-check"></i> Claim
+                    </button>
+                </div>
+            </div>
+
             <!-- Tab Switcher -->
             <div style="display:flex; gap:0; margin-bottom:15px; background:rgba(255,255,255,0.04); border-radius:12px; padding:3px; border:1px solid rgba(255,255,255,0.06);">
                 <button id="tabTasks" onclick="switchRewardTab('tasks')" style="flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; background:var(--primary); color:#000; transition:all 0.3s;">
