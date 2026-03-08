@@ -97,6 +97,7 @@ function init() {
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
     setInterval(updateSpinStatus, 1000);
+    setInterval(checkPromoMachines, 10000);
     
     setupEventListeners();
     checkReferralPopup();
@@ -376,6 +377,7 @@ async function loadServerData(walletAddress) {
             }
             
             calculateOfflineProgress();
+            checkPromoMachines(); // Clean expired promo machines
             // Reset integrity baseline to server values
             localStorage.setItem('lastSyncedBalance', state.balance.toString());
             localStorage.setItem('lastSyncTime', Date.now().toString());
@@ -700,6 +702,33 @@ function checkFree() {
         adArea.style.display = 'block';
         timerArea.style.display = 'none';
     }
+}
+
+// Check and remove expired promo machines
+function checkPromoMachines() {
+    const now = Date.now();
+    const expired = state.inv.filter(i => i.promoExpiry && now > i.promoExpiry);
+    
+    if (expired.length === 0) return;
+    
+    // Calculate hashrate to remove
+    const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
+    let hashLost = 0;
+    expired.forEach(item => {
+        hashLost += machineRates[item.mid] || 0;
+    });
+    
+    // Remove expired machines
+    state.inv = state.inv.filter(i => !(i.promoExpiry && now > i.promoExpiry));
+    state.hashrate = Math.max(0, state.hashrate - hashLost);
+    
+    saveLocalData();
+    syncToServer();
+    updateUI();
+    drawChart();
+    renderInv();
+    
+    showToast(`⏰ ${expired.length} promo machine(s) expired`, true);
 }
 
 async function watchAd() {
@@ -1495,6 +1524,9 @@ window.redeemPromo = async function() {
                 state.inv = serverData.inv ?? state.inv;
                 state.lastSpinTime = serverData.lastSpinTime ?? state.lastSpinTime;
             }
+            
+            // Clean expired promo machines immediately
+            checkPromoMachines();
             
             saveLocalData();
             updateUI();
