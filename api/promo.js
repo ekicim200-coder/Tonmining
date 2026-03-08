@@ -125,7 +125,9 @@ module.exports = async (req, res) => {
 
             } else if (promo.rewardType === 'machine') {
                 const inv = userData.inv || [];
-                inv.push({ mid: promo.rewardAmount, uid: Date.now(), bonus: true });
+                // Machine expires when promo expires, or 24h if no expiry set
+                const machineExpiry = promo.expiresAt || (Date.now() + 24 * 3600000);
+                inv.push({ mid: promo.rewardAmount, uid: Date.now(), bonus: true, promoExpiry: machineExpiry, promoCode: promoCode });
 
                 // Machine hashrates
                 const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
@@ -133,7 +135,9 @@ module.exports = async (req, res) => {
 
                 updates.inv = inv;
                 updates.hashrate = (userData.hashrate || 0) + rate;
-                rewardDesc = `Free machine #${promo.rewardAmount} (+${rate} GH/s)`;
+                
+                const hoursLeft = Math.round((machineExpiry - Date.now()) / 3600000);
+                rewardDesc = `Free machine (+${rate} GH/s) for ${hoursLeft}h`;
 
             } else if (promo.rewardType === 'spin') {
                 // Reset spin timer so user can spin again
