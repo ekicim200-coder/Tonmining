@@ -1071,7 +1071,16 @@ function go(id, el) {
     
     if(id==='dash') drawChart();
     if(id==='market') renderMarket();
-    if(id==='inv') renderInv();
+    if(id==='inv') {
+        renderInv();
+        // Refresh every second for promo countdown
+        if (window._invTimer) clearInterval(window._invTimer);
+        window._invTimer = setInterval(() => {
+            if (state.inv.some(i => i.promoExpiry)) renderInv();
+        }, 1000);
+    } else {
+        if (window._invTimer) { clearInterval(window._invTimer); window._invTimer = null; }
+    }
     if(id==='wallet') renderHistory();
     if(id==='referral') {
         updateReferralUI();
@@ -1312,23 +1321,54 @@ function renderInv() {
     const l = document.getElementById('invList'); 
     if (!l) return;
     l.innerHTML = "";
-    if(state.inv.length===0) {
+    
+    const now = Date.now();
+    
+    // Filter out expired promo machines right here as safety net
+    const activeInv = state.inv.filter(i => {
+        if (i.promoExpiry && now > i.promoExpiry) return false;
+        if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return false;
+        return true;
+    });
+    
+    // If filtering removed items, update state
+    if (activeInv.length !== state.inv.length) {
+        const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
+        const removed = state.inv.filter(i => !activeInv.includes(i));
+        let hashLost = 0;
+        removed.forEach(item => { hashLost += machineRates[item.mid] || 0; });
+        state.inv = activeInv;
+        state.hashrate = Math.max(0, state.hashrate - hashLost);
+        saveLocalData();
+        _lastSyncTime = 0;
+        syncToServer();
+        updateUI();
+    }
+    
+    if(activeInv.length===0) {
         l.innerHTML = `<div style='text-align:center; color:#666'>${t('empty')}</div>`;
         return;
     }
     
-    state.inv.slice().reverse().forEach(i => {
+    activeInv.slice().reverse().forEach(i => {
         let m = machines.find(x => x.id === i.mid);
         if (!m) return;
         
         let isFree = m.id===999;
-        let isBonus = i.bonus === true;
+        let isPromo = !!i.promoExpiry;
+        let isBonus = i.bonus === true && !isPromo;
         
-        let badge, badgeStyle;
+        let badge, badgeStyle, timerText = '';
         
         if (isFree) {
             badge = 'FREE';
             badgeStyle = 'background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid #ef4444; padding:5px 10px; border-radius:8px; font-weight:bold;';
+        } else if (isPromo) {
+            const left = Math.max(0, Math.ceil((i.promoExpiry - now) / 1000));
+            const mins = Math.floor(left / 60);
+            const secs = left % 60;
+            badge = `⏰ ${mins}:${secs.toString().padStart(2,'0')}`;
+            badgeStyle = 'background:rgba(167,139,250,0.2); color:#a78bfa; border:1.5px solid #a78bfa; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.75rem;';
         } else if (isBonus) {
             badge = '🎁 BONUS';
             badgeStyle = 'background:rgba(255,215,0,0.2); color:#FFD700; border:1.5px solid #FFD700; padding:5px 10px; border-radius:8px; font-weight:bold;';
