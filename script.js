@@ -708,25 +708,20 @@ function checkFree() {
 function checkPromoMachines() {
     const now = Date.now();
     
-    // Find expired promo machines (has promoExpiry and it's passed)
-    // Also find old promo machines without promoExpiry but with promoCode (legacy - give 1 hour grace)
     const expired = state.inv.filter(i => {
         if (i.promoExpiry && now > i.promoExpiry) return true;
-        // Legacy promo machines: has promoCode but no promoExpiry → expire after 1 hour from uid
         if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return true;
         return false;
     });
     
     if (expired.length === 0) return;
     
-    // Calculate hashrate to remove
     const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
     let hashLost = 0;
     expired.forEach(item => {
         hashLost += machineRates[item.mid] || 0;
     });
     
-    // Remove expired machines
     state.inv = state.inv.filter(i => {
         if (i.promoExpiry && now > i.promoExpiry) return false;
         if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return false;
@@ -735,6 +730,8 @@ function checkPromoMachines() {
     state.hashrate = Math.max(0, state.hashrate - hashLost);
     
     saveLocalData();
+    // Force sync — bypass 30s throttle so server gets updated immediately
+    _lastSyncTime = 0;
     syncToServer();
     updateUI();
     drawChart();
