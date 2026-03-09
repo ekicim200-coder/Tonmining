@@ -97,7 +97,7 @@ function init() {
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
     setInterval(updateSpinStatus, 1000);
-    setInterval(checkPromoMachines, 10000);
+    setInterval(checkPromoMachines, 5000);
     
     setupEventListeners();
     checkReferralPopup();
@@ -1566,18 +1566,27 @@ window.redeemPromo = async function() {
         const data = await response.json();
         
         if (data.success) {
-            const serverData = await getUserFromFire(state.wallet);
-            if (serverData) {
-                state.balance = serverData.balance ?? state.balance;
-                state.hashrate = serverData.hashrate ?? state.hashrate;
-                state.inv = serverData.inv ?? state.inv;
-                state.lastSpinTime = serverData.lastSpinTime ?? state.lastSpinTime;
+            if (data.rewardType === 'machine') {
+                // Add machine directly with promoExpiry from server
+                const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
+                const rate = machineRates[data.rewardAmount] || 0;
+                state.inv.push({
+                    mid: data.rewardAmount,
+                    uid: Date.now(),
+                    bonus: true,
+                    promoExpiry: data.promoExpiry,
+                    promoCode: code
+                });
+                state.hashrate += rate;
+            } else if (data.rewardType === 'ton') {
+                state.balance += data.rewardAmount;
+            } else if (data.rewardType === 'spin') {
+                state.lastSpinTime = 0;
             }
             
-            // Clean expired promo machines immediately
-            checkPromoMachines();
-            
             saveLocalData();
+            _lastSyncTime = 0;
+            syncToServer();
             updateUI();
             drawChart();
             renderInv();
