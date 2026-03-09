@@ -273,7 +273,7 @@ async function syncToServer() {
         // Calculate maximum possible balance based on inventory
         let maxHashrate = 0;
         state.inv.forEach(item => {
-            const m = machines.find(x => x.id === item.id);
+            const m = machines.find(x => x.id === item.mid);
             if (m) maxHashrate += m.rate;
         });
         // Add free node if active
@@ -705,39 +705,56 @@ function checkFree() {
 }
 
 // Check and remove expired promo machines
-function checkPromoMachines() {
+async function checkPromoMachines() {
+    // Quick local check first
     const now = Date.now();
+    const hasExpired = state.inv.some(i => 
+        (i.promoExpiry && now > i.promoExpiry) ||
+        (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000)
+    );
     
-    const expired = state.inv.filter(i => {
-        if (i.promoExpiry && now > i.promoExpiry) return true;
-        if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return true;
-        return false;
-    });
+    if (!hasExpired) return;
     
-    if (expired.length === 0) return;
-    
-    const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
-    let hashLost = 0;
-    expired.forEach(item => {
-        hashLost += machineRates[item.mid] || 0;
-    });
-    
-    state.inv = state.inv.filter(i => {
-        if (i.promoExpiry && now > i.promoExpiry) return false;
-        if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return false;
-        return true;
-    });
-    state.hashrate = Math.max(0, state.hashrate - hashLost);
-    
-    saveLocalData();
-    // Force sync — bypass 30s throttle so server gets updated immediately
-    _lastSyncTime = 0;
-    syncToServer();
-    updateUI();
-    drawChart();
-    renderInv();
-    
-    showToast(`⏰ ${expired.length} promo machine(s) expired`, true);
+    // Server-side cleanup (bypasses Firestore rules)
+    if (state.wallet && currentUserUid) {
+        try {
+            const resp = await fetch('/api/cleanup-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+            });
+            const data = await resp.json();
+            
+            if (data.success && data.removed > 0) {
+                state.inv = data.inv;
+                state.hashrate = data.hashrate;
+                state.balance = data.balance;
+                saveLocalData();
+                localStorage.setItem('lastSyncedBalance', state.balance.toString());
+                updateUI();
+                drawChart();
+                renderInv();
+                showToast(`⏰ ${data.removed} promo machine(s) expired (-${data.hashLost} GH/s)`, true);
+            }
+        } catch (e) {
+            console.error('Promo cleanup error:', e);
+            // Fallback: remove locally anyway
+            const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
+            let hashLost = 0;
+            state.inv.filter(i => (i.promoExpiry && now > i.promoExpiry) || (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000))
+                .forEach(item => { hashLost += machineRates[item.mid] || 0; });
+            state.inv = state.inv.filter(i => {
+                if (i.promoExpiry && now > i.promoExpiry) return false;
+                if (i.promoCode && !i.promoExpiry && i.uid && now > i.uid + 3600000) return false;
+                return true;
+            });
+            state.hashrate = Math.max(0, state.hashrate - hashLost);
+            saveLocalData();
+            updateUI();
+            drawChart();
+            renderInv();
+        }
+    }
 }
 
 async function watchAd() {
@@ -1331,7 +1348,8 @@ function renderInv() {
         return true;
     });
     
-    // If filtering removed items, update state
+    // If filtering removed items, update local state only
+    // Server cleanup handled by checkPromoMachines interval (every 5s)
     if (activeInv.length !== state.inv.length) {
         const machineRates = { 1:3, 2:7, 3:16, 4:35, 5:69, 6:139, 7:278, 8:556, 9:1157, 10:2315 };
         const removed = state.inv.filter(i => !activeInv.includes(i));
@@ -1340,8 +1358,6 @@ function renderInv() {
         state.inv = activeInv;
         state.hashrate = Math.max(0, state.hashrate - hashLost);
         saveLocalData();
-        _lastSyncTime = 0;
-        syncToServer();
         updateUI();
     }
     
