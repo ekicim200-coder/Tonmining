@@ -97,7 +97,7 @@ module.exports = async (req, res) => {
             const inv = userData.inv || [];
             let totalHashrate = 0;
             inv.forEach(item => {
-                const machine = MACHINES[item.id];
+                const machine = MACHINES[item.mid];
                 if (machine) totalHashrate += machine.rate;
             });
 
