@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC Admin Panel - TON Pro Miner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-card .label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .filter-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-color: #3b82f6;
+        }
+        .kyc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .kyc-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .kyc-item.pending {
+            border-left: 4px solid #f59e0b;
+        }
+        .kyc-item.approved {
+            border-left: 4px solid #10b981;
+        }
+        .kyc-item.rejected {
+            border-left: 4px solid #ef4444;
+        }
+        .kyc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .wallet {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #3b82f6;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .status-badge.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+        .status-badge.approved {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .status-badge.rejected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .kyc-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            color: #888;
+            font-size: 0.75rem;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        .btn-approve {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+        .btn-reject:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        .btn-view {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+        .empty i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s;
+        }
+        .refresh-btn:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-alt"></i> KYC Admin Panel</h1>
+            <p>Manage user verification requests</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <i class="fas fa-clock" style="color: #f59e0b;"></i>
+                <div class="number" id="stat-pending">0</div>
+                <div class="label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                <div class="number" id="stat-approved">0</div>
+                <div class="label">Approved</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+                <div class="number" id="stat-rejected">0</div>
+                <div class="label">Rejected</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-users" style="color: #3b82f6;"></i>
+                <div class="number" id="stat-total">0</div>
+                <div class="label">Total</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterKYC('all')">
+                <i class="fas fa-list"></i> All
+            </button>
+            <button class="filter-btn" onclick="filterKYC('pending')">
+                <i class="fas fa-clock"></i> Pending
+            </button>
+            <button class="filter-btn" onclick="filterKYC('approved')">
+                <i class="fas fa-check-circle"></i> Approved
+            </button>
+            <button class="filter-btn" onclick="filterKYC('rejected')">
+                <i class="fas fa-times-circle"></i> Rejected
+            </button>
+        </div>
+
+        <div id="kyc-list" class="kyc-list">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 15px;"></i>
+                <p>Loading KYC requests...</p>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadKYCRequests()">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXwByb4qNJeH5F9pYA8ry-zYcBhdzKsOo",
+            authDomain: "tonm-77373.firebaseapp.com",
+            projectId: "tonm-77373",
+            storageBucket: "tonm-77373.firebasestorage.app",
+            messagingSenderId: "507031118335",
+            appId: "1:507031118335:web:1d209e303dca154ec487ca",
+            measurementId: "G-5EV1T50VK8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let allKYCRequests = [];
+        let currentFilter = 'all';
+
+        // Anonim giriş
+        signInAnonymously(auth).then((userCredential) => {
+            currentUser = userCredential.user;
+            console.log("✅ Admin authenticated");
+            loadKYCRequests();
+        });
+
+        // KYC isteklerini yükle
+        window.loadKYCRequests = async function() {
+            const listEl = document.getElementById('kyc-list');
+            listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Loading...</p></div>';
+
+            try {
+                const q = query(collection(db, "kyc"), orderBy("submittedDate", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                allKYCRequests = [];
+                querySnapshot.forEach((doc) => {
+                    allKYCRequests.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                updateStats();
+                renderKYCList();
+            } catch (error) {
+                console.error("Error loading KYC:", error);
+                listEl.innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i><p>Error loading KYC requests</p></div>';
+            }
+        }
+
+        // İstatistikleri güncelle
+        function updateStats() {
+            const pending = allKYCRequests.filter(k => k.status === 'pending').length;
+            const approved = allKYCRequests.filter(k => k.status === 'approved').length;
+            const rejected = allKYCRequests.filter(k => k.status === 'rejected').length;
+
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-approved').textContent = approved;
+            document.getElementById('stat-rejected').textContent = rejected;
+            document.getElementById('stat-total').textContent = allKYCRequests.length;
+        }
+
+        // KYC listesini render et
+        function renderKYCList() {
+            const listEl = document.getElementById('kyc-list');
+            
+            let filtered = allKYCRequests;
+            if (currentFilter !== 'all') {
+                filtered = allKYCRequests.filter(k => k.status === currentFilter);
+            }
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div class="empty"><i class="fas fa-folder-open"></i><p>No KYC requests found</p></div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(kyc => `
+                <div class="kyc-item ${kyc.status}">
+                    <div class="kyc-header">
+                        <div class="wallet">${kyc.walletAddress}</div>
+                        <span class="status-badge ${kyc.status}">${kyc.status.toUpperCase()}</span>
+                    </div>
+                    <div class="kyc-details">
+                        <div class="detail-item">
+                            <div class="detail-label">User ID</div>
+                            <div class="detail-value">${kyc.userId || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Submitted</div>
+                            <div class="detail-value">${new Date(kyc.submittedDate).toLocaleString('tr-TR')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value">${kyc.userEmail || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Name</div>
+                            <div class="detail-value">${kyc.userName || 'N/A'}</div>
+                        </div>
+                    </div>
+                    ${kyc.status === 'pending' ? `
+                        <div class="actions">
+                            <button class="btn btn-approve" onclick="approveKYC('${kyc.walletAddress}')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-reject" onclick="rejectKYC('${kyc.walletAddress}')">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    ` : kyc.status === 'approved' ? `
+                        <div style="color: #10b981; font-size: 0.85rem; margin-top: 10px;">
+                            <i class="fas fa-check-circle"></i> Approved on ${new Date(kyc.approvedDate).toLocaleString('tr-TR')}
+                        </div>
+                    ` : `
+                        <div style="color: #ef4444; font-size: 0.85rem; margin-top: 10px;">
+                            <i class="fas fa-times-circle"></i> Rejected: ${kyc.rejectedReason || 'No reason provided'}
+                        </div>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        // KYC onayla
+        window.approveKYC = async function(walletAddress) {
+            if (!confirm(`Are you sure you want to APPROVE KYC for ${walletAddress}?`)) {
+                return;
+            }
+
+            try {
+                const kycRef = doc(db, "kyc", walletAddress);
+                await setDoc(kycRef, {
+                    status: 'approved',
+                    approvedDate: Date.now(),
+                    approvedBy: currentUser.uid
+                }, { merge: true });
+
+                alert('✅ KYC Approved!');
+                loadKYCRequests();
+            } catch (error) {
+                console.error("Error approving KYC:", error);
+                alert('❌ Error approving KYC');
+            }
+        }
+
+        // KYC reddet
+        window.rejectKYC = async function(walletAddress) {
+            const reason = prompt(`Reject reason for ${walletAddress}:`);
+            if (!reason) return;
+
+            try {
+                const kycRef = doc(db, "kyc", walletAddress);
+                await setDoc(kycRef, {
+                    status: 'rejected',
+                    rejectedReason: reason,
+                    rejectedDate: Date.now(),
+                    rejectedBy: currentUser.uid
+                }, { merge: true });
+
+                alert('✅ KYC Rejected!');
+                loadKYCRequests();
+            } catch (error) {
+                console.error("Error rejecting KYC:", error);
+                alert('❌ Error rejecting KYC');
+            }
+        }
+
+        // Filtrele
+        window.filterKYC = function(status) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.filter-btn').classList.add('active');
+            renderKYCList();
+        }
+    </script>
+</body>
+</html>
