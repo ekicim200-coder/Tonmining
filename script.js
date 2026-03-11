@@ -55,16 +55,16 @@ let state = {
 };
 
 const machines = [
-    { id: 1, name: "Nano Chip", price: 5, starPrice: 25, rate: 3, color: "#94a3b8", icon: "fa-microchip" },
-    { id: 2, name: "Micro Core", price: 15, starPrice: 75, rate: 7, color: "#60a5fa", icon: "fa-memory" },
-    { id: 3, name: "Basic Miner", price: 35, starPrice: 175, rate: 16, color: "#2dd4bf", icon: "fa-hammer" },
-    { id: 4, name: "Dual Processor", price: 75, starPrice: 375, rate: 35, color: "#34d399", icon: "fa-microchip" },
-    { id: 5, name: "Quad Engine", price: 150, starPrice: 750, rate: 69, color: "#3b82f6", icon: "fa-cogs" },
-    { id: 6, name: "Hexa Unit", price: 300, starPrice: 1500, rate: 139, color: "#8b5cf6", icon: "fa-server" },
-    { id: 7, name: "Quantum Node", price: 600, starPrice: 3000, rate: 278, color: "#a855f7", icon: "fa-atom" },
-    { id: 8, name: "Fusion Reactor", price: 1200, starPrice: 6000, rate: 556, color: "#ec4899", icon: "fa-rocket" },
-    { id: 9, name: "Dark Matter", price: 2500, starPrice: 12500, rate: 1157, color: "#f43f5e", icon: "fa-bolt" },
-    { id: 10, name: "Plasma Core", price: 5000, starPrice: 25000, rate: 2315, color: "#FFD700", icon: "fa-sun" },
+    { id: 1, name: "Nano Chip", price: 5, starPrice: 800, rate: 3, color: "#94a3b8", icon: "fa-microchip" },
+    { id: 2, name: "Micro Core", price: 15, starPrice: 2400, rate: 7, color: "#60a5fa", icon: "fa-memory" },
+    { id: 3, name: "Basic Miner", price: 35, starPrice: 5600, rate: 16, color: "#2dd4bf", icon: "fa-hammer" },
+    { id: 4, name: "Dual Processor", price: 75, starPrice: 12000, rate: 35, color: "#34d399", icon: "fa-microchip" },
+    { id: 5, name: "Quad Engine", price: 150, starPrice: 24000, rate: 69, color: "#3b82f6", icon: "fa-cogs" },
+    { id: 6, name: "Hexa Unit", price: 300, starPrice: 48000, rate: 139, color: "#8b5cf6", icon: "fa-server" },
+    { id: 7, name: "Quantum Node", price: 600, starPrice: 96000, rate: 278, color: "#a855f7", icon: "fa-atom" },
+    { id: 8, name: "Fusion Reactor", price: 1200, starPrice: 192000, rate: 556, color: "#ec4899", icon: "fa-rocket" },
+    { id: 9, name: "Dark Matter", price: 2500, starPrice: 400000, rate: 1157, color: "#f43f5e", icon: "fa-bolt" },
+    { id: 10, name: "Plasma Core", price: 5000, starPrice: 800000, rate: 2315, color: "#FFD700", icon: "fa-sun" },
     { id: 999, name: "FREE Dark Matter Node", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
 ];
 
@@ -458,7 +458,9 @@ function grantReferralBonus() {
     const basicChip = machines.find(m => m.id === 1);
     if (!basicChip) return;
     
-    state.inv.push({ mid: 1, uid: Date.now(), bonus: true });
+    // Referral bonus machine expires after 7 days
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    state.inv.push({ mid: 1, uid: Date.now(), bonus: true, promoExpiry: Date.now() + sevenDays, promoCode: 'REFERRAL_BONUS' });
     state.hashrate += basicChip.rate;
     state.referralBonusReceived = true;
     
@@ -469,7 +471,7 @@ function grantReferralBonus() {
     renderInv();
     
     setTimeout(() => {
-        showToast("🎁 +3 GH/s Nano Chip!", false);
+        showToast("🎁 +3 GH/s Nano Chip (7 days)!", false);
     }, 1000);
 }
 
@@ -1376,9 +1378,21 @@ function renderInv() {
             badgeStyle = 'background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid #ef4444; padding:5px 10px; border-radius:8px; font-weight:bold;';
         } else if (isPromo) {
             const left = Math.max(0, Math.ceil((i.promoExpiry - now) / 1000));
-            const mins = Math.floor(left / 60);
-            const secs = left % 60;
-            badge = `⏰ ${mins}:${secs.toString().padStart(2,'0')}`;
+            let timeStr;
+            if (left > 86400) {
+                const days = Math.floor(left / 86400);
+                const hrs = Math.floor((left % 86400) / 3600);
+                timeStr = `${days}d ${hrs}h`;
+            } else if (left > 3600) {
+                const hrs = Math.floor(left / 3600);
+                const mins = Math.floor((left % 3600) / 60);
+                timeStr = `${hrs}h ${mins}m`;
+            } else {
+                const mins = Math.floor(left / 60);
+                const secs = left % 60;
+                timeStr = `${mins}:${secs.toString().padStart(2,'0')}`;
+            }
+            badge = `⏰ ${timeStr}`;
             badgeStyle = 'background:rgba(167,139,250,0.2); color:#a78bfa; border:1.5px solid #a78bfa; padding:5px 10px; border-radius:8px; font-weight:bold; font-size:0.75rem;';
         } else if (isBonus) {
             badge = '🎁 BONUS';
