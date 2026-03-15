@@ -143,13 +143,13 @@ body::before {
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
-    filter: drop-shadow(0 4px 12px rgba(64, 224, 208, 0.3));
+    filter: drop-shadow(0 2px 8px rgba(64, 224, 208, 0.2));
 }
 
 .c-bg {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.08);
-    stroke-width: 12;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 10;
 }
 
 .c-seg {
