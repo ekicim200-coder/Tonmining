@@ -94,7 +94,7 @@ module.exports = async (req, res) => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             chat_id: update.message.chat.id,
-                            text: '✅ Ödeme başarılı! Mining makineniz hesabınıza eklendi.\n\n⚡ Uygulamayı açarak kontrol edebilirsiniz.'
+                            text: '✅ Payment successful! Your mining machine has been added.\n\n⚡ Open the app to check your new machine.'
                         })
                     }
                 );
@@ -108,27 +108,69 @@ module.exports = async (req, res) => {
         // ✅ /start KOMUTU
         if (update.message && update.message.text && update.message.text.startsWith('/start')) {
             try {
+                const caption = `⛏️ TON Pro Miner — Cloud Mining Simulator
+
+━━━━━━━━━━━━━━━━━━━━
+
+💎 What is TON Pro Miner?
+Buy virtual mining machines and earn TON cryptocurrency daily. Withdraw your profits directly to your wallet!
+
+━━━━━━━━━━━━━━━━━━━━
+
+🔹 10 Mining Machines — Nano Chip to Plasma Core
+🔹 Daily Passive Income — Earn TON 24/7
+🔹 Free Rewards — Spin wheel, daily bonus, promo codes
+🔹 Referral System — Earn 40% from friends' purchases
+🔹 Clan System — Team up for mining speed bonus
+🔹 Rank System — Bronze to Legendary with perks
+🔹 18 Languages — Available worldwide
+
+━━━━━━━━━━━━━━━━━━━━
+
+🚀 Tap the button below to start mining!`;
+
                 await fetch(
-                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             chat_id: update.message.chat.id,
-                            text: '⛏️ Welcome to TON Pro Miner!\n\n💰 Buy machines, earn TON daily, withdraw profits.\n🎁 Free spin, daily bonus & promo codes!\n\nTap the button below to start mining 👇',
+                            photo: 'https://ton.org/download/ton_symbol.png',
+                            caption: caption,
                             reply_markup: {
-                                inline_keyboard: [[
-                                    {
-                                        text: '⛏️ Start Mining',
-                                        web_app: { url: 'https://tonmining.vercel.app?v=19' }
-                                    }
-                                ]]
+                                inline_keyboard: [
+                                    [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
+                                    [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }],
+                                    [{ text: '📢 Join Channel', url: 'https://t.me/TonProMiner' }]
+                                ]
                             }
                         })
                     }
                 );
             } catch (e) {
-                console.error('⚠️ Start mesajı hatası:', e.message);
+                // Fallback to text if photo fails
+                try {
+                    await fetch(
+                        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: update.message.chat.id,
+                                text: '⛏️ Welcome to TON Pro Miner!\n\n💎 Buy mining machines, earn TON daily, withdraw profits.\n🎁 Free spin, daily bonus & promo codes!\n👥 Referral: 40% commission\n🏰 Clans: Team mining bonus\n\n🚀 Tap the button below to start mining!',
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
+                                        [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }]
+                                    ]
+                                }
+                            })
+                        }
+                    );
+                } catch (e2) {
+                    console.error('⚠️ Start mesajı hatası:', e2.message);
+                }
             }
         }
 
