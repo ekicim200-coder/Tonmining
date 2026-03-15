@@ -115,11 +115,11 @@ module.exports = async (req, res) => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             chat_id: update.message.chat.id,
-                            text: '🚀 TON Pro Miner\'a hoş geldiniz!\n\n⛏ Madenciliğe başlamak için aşağıdaki butona tıklayın.',
+                            text: '⛏️ Welcome to TON Pro Miner!\n\n💰 Buy machines, earn TON daily, withdraw profits.\n🎁 Free spin, daily bonus & promo codes!\n\nTap the button below to start mining 👇',
                             reply_markup: {
                                 inline_keyboard: [[
                                     {
-                                        text: '⛏ Madenciliğe Başla',
+                                        text: '⛏️ Start Mining',
                                         web_app: { url: 'https://tonmining.vercel.app?v=19' }
                                     }
                                 ]]
