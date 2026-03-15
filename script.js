@@ -1114,22 +1114,6 @@ function drawChart() {
     container.innerHTML = '';
 
     // Count machines by type
-    const machineCount = {};
-    state.inv.forEach(i => {
-        if (!machineCount[i.mid]) machineCount[i.mid] = 0;
-        machineCount[i.mid]++;
-    });
-
-    const total = state.inv.reduce((sum, i) => {
-        const m = machines.find(x => x.id === i.mid);
-        return sum + (m?.rate || 0);
-    }, 0);
-
-    if (total === 0) return;
-
-    let currentAngle = 0;
-
-    // Group by machine type
     const grouped = {};
     state.inv.forEach(i => {
         const m = machines.find(x => x.id === i.mid);
@@ -1139,30 +1123,44 @@ function drawChart() {
         grouped[m.id].totalRate += m.rate;
     });
 
-    Object.values(grouped).forEach(g => {
+    const total = state.inv.reduce((sum, i) => {
+        const m = machines.find(x => x.id === i.mid);
+        return sum + (m?.rate || 0);
+    }, 0);
+
+    if (total === 0) return;
+
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+
+    Object.values(grouped).sort((a, b) => b.totalRate - a.totalRate).forEach(g => {
         const percentage = g.totalRate / total;
-        const angle = percentage * 360;
+        const segmentLength = percentage * circumference;
+        const gap = 2; // small gap between segments
 
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        const largeArcFlag = angle > 180 ? 1 : 0;
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", "50");
+        circle.setAttribute("cy", "50");
+        circle.setAttribute("r", String(radius));
+        circle.setAttribute("fill", "none");
+        circle.setAttribute("stroke", g.machine.color);
+        circle.setAttribute("stroke-width", "10");
+        circle.setAttribute("stroke-linecap", "round");
+        circle.setAttribute("stroke-dasharray", `${Math.max(0, segmentLength - gap)} ${circumference}`);
+        circle.setAttribute("stroke-dashoffset", String(-offset));
+        circle.setAttribute("opacity", "0.9");
+        circle.setAttribute("style", "cursor:pointer; transition: stroke-width 0.2s, opacity 0.2s;");
 
-        const startX = 50 + 40 * Math.cos((currentAngle - 90) * Math.PI / 180);
-        const startY = 50 + 40 * Math.sin((currentAngle - 90) * Math.PI / 180);
-        const endX = 50 + 40 * Math.cos((currentAngle + angle - 90) * Math.PI / 180);
-        const endY = 50 + 40 * Math.sin((currentAngle + angle - 90) * Math.PI / 180);
-
-        path.setAttribute("d", `M 50 50 L ${startX} ${startY} A 40 40 0 ${largeArcFlag} 1 ${endX} ${endY} Z`);
-        path.setAttribute("fill", g.machine.color);
-        path.setAttribute("opacity", "0.85");
-        path.setAttribute("style", "cursor:pointer;");
-        
-        path.addEventListener('click', (e) => {
+        circle.addEventListener('mouseenter', () => { circle.setAttribute("stroke-width", "13"); circle.setAttribute("opacity", "1"); });
+        circle.addEventListener('mouseleave', () => { circle.setAttribute("stroke-width", "10"); circle.setAttribute("opacity", "0.9"); });
+        circle.addEventListener('click', (e) => {
             e.stopPropagation();
             showMachinePopup(g.machine, g.count, g.totalRate);
         });
 
-        container.appendChild(path);
-        currentAngle += angle;
+        container.appendChild(circle);
+        offset += segmentLength;
     });
 }
 
