@@ -785,20 +785,20 @@ async function watchAd() {
                         updateUI();
                         drawChart();
                         renderInv();
-                        showToast("✅ FREE Device!", false);
+                        showToast("✅ FREE Quad Engine!", false);
                     } else {
                         showToast("❌ " + (data.error || "Failed"), true);
                     }
                 } catch(e) {
                     // Fallback for non-wallet users
                     grantMachine(999);
-                    showToast("✅ FREE Device!", false);
+                    showToast("✅ FREE Quad Engine!", false);
                 }
             } else {
                 // No wallet — grant locally
                 state.lastAdTime = Date.now();
                 grantMachine(999);
-                showToast("✅ FREE Device!", false);
+                showToast("✅ FREE Quad Engine!", false);
                 saveLocalData();
             }
         }).catch(() => {
