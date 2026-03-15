@@ -119,29 +119,40 @@ module.exports = async (req, res) => {
 
             let sent = false;
 
-            // Try sending with photo first
+            // Try sending with photo (fetch from own server, upload as multipart)
             try {
-                const photoRes = await fetch(
-                    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            photo: 'https://tonmining.vercel.app/banner.png',
-                            caption: caption,
-                            reply_markup: buttons
-                        })
-                    }
-                );
-                const photoData = await photoRes.json();
-                if (photoData.ok) sent = true;
-                else console.log('Photo failed:', photoData.description);
+                const imgRes = await fetch('https://tonmining.vercel.app/banner.png');
+                if (imgRes.ok) {
+                    const imgBuffer = await imgRes.buffer();
+                    const boundary = '----TonMinerBoundary' + Date.now();
+                    
+                    let body = '';
+                    body += `--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`;
+                    body += `--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n`;
+                    body += `--${boundary}\r\nContent-Disposition: form-data; name="reply_markup"\r\n\r\n${JSON.stringify(buttons)}\r\n`;
+                    body += `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="banner.png"\r\nContent-Type: image/png\r\n\r\n`;
+                    
+                    const bodyStart = Buffer.from(body, 'utf8');
+                    const bodyEnd = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+                    const fullBody = Buffer.concat([bodyStart, imgBuffer, bodyEnd]);
+                    
+                    const photoRes = await fetch(
+                        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+                            body: fullBody
+                        }
+                    );
+                    const photoData = await photoRes.json();
+                    if (photoData.ok) sent = true;
+                    else console.log('Photo upload failed:', photoData.description);
+                }
             } catch (e) {
-                console.log('Photo fetch error:', e.message);
+                console.log('Photo error:', e.message);
             }
 
-            // Fallback: send as text message
+            // Fallback: text only
             if (!sent) {
                 try {
                     await fetch(
