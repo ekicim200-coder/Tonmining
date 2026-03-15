@@ -92,7 +92,7 @@ function init() {
     initAdsgram();
 
     setInterval(loop, CFG.tick); 
-    setInterval(autoSave, 60000); 
+    setInterval(autoSave, 300000); 
     setInterval(graphLoop, 300);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
@@ -253,7 +253,7 @@ async function syncToServer() {
     if (!state.wallet || !currentUserUid) return;
     
     const now = Date.now();
-    const MIN_SYNC_INTERVAL = 30000; // 30 seconds minimum between syncs
+    const MIN_SYNC_INTERVAL = 120000; // 120 seconds minimum between syncs
     
     // Throttle: if synced recently, schedule a delayed sync
     if (now - _lastSyncTime < MIN_SYNC_INTERVAL) {
