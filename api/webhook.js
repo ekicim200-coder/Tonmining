@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
         // ✅ /start KOMUTU
         if (update.message && update.message.text && update.message.text.startsWith('/start')) {
             try {
-                const caption = `⛏️ TON Pro Miner — Cloud Mining Simulator
+                const caption = `⛏️ TON Pro Miner — Earn TON Daily
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -136,7 +136,7 @@ Buy virtual mining machines and earn TON cryptocurrency daily. Withdraw your pro
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             chat_id: update.message.chat.id,
-                            photo: 'https://ton.org/download/ton_symbol.png',
+                            photo: 'https://tonmining.vercel.app/banner.png',
                             caption: caption,
                             reply_markup: {
                                 inline_keyboard: [
