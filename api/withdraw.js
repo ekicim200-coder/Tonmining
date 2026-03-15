@@ -10,7 +10,7 @@ const MINING_RATE = 0.000001; // TON per GH/s per second
 const MACHINES = {
     1: { rate: 3 }, 2: { rate: 7 }, 3: { rate: 16 }, 4: { rate: 35 },
     5: { rate: 69 }, 6: { rate: 139 }, 7: { rate: 278 }, 8: { rate: 556 },
-    9: { rate: 1157 }, 10: { rate: 2315 }, 999: { rate: 300 }
+    9: { rate: 1157 }, 10: { rate: 2315 }, 999: { rate: 69 }
 };
 
 module.exports = async (req, res) => {
@@ -102,7 +102,7 @@ module.exports = async (req, res) => {
             });
 
             // Check if stored hashrate matches inventory
-            if (serverHashrate > totalHashrate + 300) { // +300 for free node
+            if (serverHashrate > totalHashrate + 69) { // +69 for free node
                 console.warn(`⚠️ SUSPICIOUS: ${walletAddress} hashrate=${serverHashrate} but inventory total=${totalHashrate}`);
                 throw new Error('Balance integrity check failed — hashrate mismatch');
             }
