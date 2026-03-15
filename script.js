@@ -65,7 +65,7 @@ const machines = [
     { id: 8, name: "Fusion Reactor", price: 1200, starPrice: 192000, rate: 556, color: "#ec4899", icon: "fa-rocket" },
     { id: 9, name: "Dark Matter", price: 2500, starPrice: 400000, rate: 1157, color: "#f43f5e", icon: "fa-bolt" },
     { id: 10, name: "Plasma Core", price: 5000, starPrice: 800000, rate: 2315, color: "#FFD700", icon: "fa-sun" },
-    { id: 999, name: "FREE Dark Matter Node", price: 0, starPrice: 0, rate: 300, color: "#ef4444", icon: "fa-server" }
+    { id: 999, name: "FREE Quad Engine", price: 0, starPrice: 0, rate: 69, color: "#3b82f6", icon: "fa-cogs" }
 ];
 
 let graphData = new Array(40).fill(12.5);
@@ -277,7 +277,7 @@ async function syncToServer() {
             if (m) maxHashrate += m.rate;
         });
         // Add free node if active
-        if (state.freeEnd > Date.now()) maxHashrate += 300;
+        if (state.freeEnd > Date.now()) maxHashrate += 69;
         
         // If client hashrate exceeds inventory, it's been tampered
         if (state.hashrate > maxHashrate + 10) {
