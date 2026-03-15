@@ -108,11 +108,11 @@ module.exports = async (req, res) => {
         // ✅ /start KOMUTU
         if (update.message && update.message.text && update.message.text.startsWith('/start')) {
             const chatId = update.message.chat.id;
-            const caption = `⛏️ TON Pro Miner — Earn TON Daily\n\n━━━━━━━━━━━━━━━━━━━━\n\n💎 What is TON Pro Miner?\nBuy virtual mining machines and earn TON cryptocurrency daily. Withdraw your profits directly to your wallet!\n\n━━━━━━━━━━━━━━━━━━━━\n\n🔹 10 Mining Machines — Nano Chip to Plasma Core\n🔹 Daily Passive Income — Earn TON 24/7\n🔹 Free Rewards — Spin wheel, daily bonus, promo codes\n🔹 Referral System — Earn 40% from friends' purchases\n🔹 Clan System — Team up for mining speed bonus\n🔹 Rank System — Bronze to Legendary with perks\n🔹 18 Languages — Available worldwide\n\n━━━━━━━━━━━━━━━━━━━━\n\n🚀 Tap the button below to start mining!`;
+            const caption = `💎 TON Pro Miner — Start Earning TON Today!\n\n🔥 WHY 1,000,000+ MINERS CHOOSE US:\n\n✅ 100% FREE to Start — No investment needed\n✅ Machines Are PERMANENT — Buy once, earn forever\n✅ Real TON Withdrawals — Direct to your wallet\n✅ Earn While You Sleep — 24/7 passive income\n\n🎁 FREE BONUSES EVERY DAY:\n🎰 Daily Spin Wheel — Win up to 1 TON\n📅 Login Bonus — 7-day streak rewards\n🎟️ Promo Codes — Free machines & TON\n📺 Watch Ads — Free mining power\n\n💰 EARN EVEN MORE:\n👥 Invite Friends → Get 40% of their purchases\n🏰 Join a Clan → Up to +10% mining speed\n⭐ Rank Up → Up to +15% mining bonus\n\n⛏️ 10 Mining Machines from 5 TON\n🌍 Available in 18 Languages\n\n🚀 Tap below to claim your FREE rewards!`;
 
             const buttons = {
                 inline_keyboard: [
-                    [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
+                    [{ text: '🚀 Start Mining — It\'s FREE!', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
                     [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }]
                 ]
             };
