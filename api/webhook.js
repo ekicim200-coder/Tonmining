@@ -107,49 +107,42 @@ module.exports = async (req, res) => {
 
         // ✅ /start KOMUTU
         if (update.message && update.message.text && update.message.text.startsWith('/start')) {
+            const chatId = update.message.chat.id;
+            const caption = `⛏️ TON Pro Miner — Earn TON Daily\n\n━━━━━━━━━━━━━━━━━━━━\n\n💎 What is TON Pro Miner?\nBuy virtual mining machines and earn TON cryptocurrency daily. Withdraw your profits directly to your wallet!\n\n━━━━━━━━━━━━━━━━━━━━\n\n🔹 10 Mining Machines — Nano Chip to Plasma Core\n🔹 Daily Passive Income — Earn TON 24/7\n🔹 Free Rewards — Spin wheel, daily bonus, promo codes\n🔹 Referral System — Earn 40% from friends' purchases\n🔹 Clan System — Team up for mining speed bonus\n🔹 Rank System — Bronze to Legendary with perks\n🔹 18 Languages — Available worldwide\n\n━━━━━━━━━━━━━━━━━━━━\n\n🚀 Tap the button below to start mining!`;
+
+            const buttons = {
+                inline_keyboard: [
+                    [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
+                    [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }]
+                ]
+            };
+
+            let sent = false;
+
+            // Try sending with photo first
             try {
-                const caption = `⛏️ TON Pro Miner — Earn TON Daily
-
-━━━━━━━━━━━━━━━━━━━━
-
-💎 What is TON Pro Miner?
-Buy virtual mining machines and earn TON cryptocurrency daily. Withdraw your profits directly to your wallet!
-
-━━━━━━━━━━━━━━━━━━━━
-
-🔹 10 Mining Machines — Nano Chip to Plasma Core
-🔹 Daily Passive Income — Earn TON 24/7
-🔹 Free Rewards — Spin wheel, daily bonus, promo codes
-🔹 Referral System — Earn 40% from friends' purchases
-🔹 Clan System — Team up for mining speed bonus
-🔹 Rank System — Bronze to Legendary with perks
-🔹 18 Languages — Available worldwide
-
-━━━━━━━━━━━━━━━━━━━━
-
-🚀 Tap the button below to start mining!`;
-
-                await fetch(
+                const photoRes = await fetch(
                     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            chat_id: update.message.chat.id,
+                            chat_id: chatId,
                             photo: 'https://tonmining.vercel.app/banner.png',
                             caption: caption,
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
-                                    [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }],
-                                    [{ text: '📢 Join Channel', url: 'https://t.me/TonProMiner' }]
-                                ]
-                            }
+                            reply_markup: buttons
                         })
                     }
                 );
+                const photoData = await photoRes.json();
+                if (photoData.ok) sent = true;
+                else console.log('Photo failed:', photoData.description);
             } catch (e) {
-                // Fallback to text if photo fails
+                console.log('Photo fetch error:', e.message);
+            }
+
+            // Fallback: send as text message
+            if (!sent) {
                 try {
                     await fetch(
                         `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -157,19 +150,14 @@ Buy virtual mining machines and earn TON cryptocurrency daily. Withdraw your pro
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                chat_id: update.message.chat.id,
-                                text: '⛏️ Welcome to TON Pro Miner!\n\n💎 Buy mining machines, earn TON daily, withdraw profits.\n🎁 Free spin, daily bonus & promo codes!\n👥 Referral: 40% commission\n🏰 Clans: Team mining bonus\n\n🚀 Tap the button below to start mining!',
-                                reply_markup: {
-                                    inline_keyboard: [
-                                        [{ text: '⛏️ Start Mining', web_app: { url: 'https://tonmining.vercel.app?v=19' } }],
-                                        [{ text: '📖 How It Works', url: 'https://tonmining.vercel.app/info.html' }]
-                                    ]
-                                }
+                                chat_id: chatId,
+                                text: caption,
+                                reply_markup: buttons
                             })
                         }
                     );
                 } catch (e2) {
-                    console.error('⚠️ Start mesajı hatası:', e2.message);
+                    console.error('Start message error:', e2.message);
                 }
             }
         }
