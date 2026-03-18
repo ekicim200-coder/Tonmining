@@ -779,7 +779,7 @@ async function watchAd() {
                     if (data.success) {
                         state.freeEnd = data.freeEnd;
                         state.lastAdTime = Date.now();
-                        state.hashrate += 300;
+                        state.hashrate += 69;
                         state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
                         saveLocalData();
                         updateUI();
