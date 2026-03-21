@@ -93,6 +93,25 @@ function init() {
 
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 300000); 
+    
+    // Save on close/minimize/background
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            saveLocalData();
+            syncToServer();
+        }
+    });
+    window.addEventListener('beforeunload', () => { saveLocalData(); });
+    window.addEventListener('pagehide', () => { saveLocalData(); });
+    
+    // Telegram-specific: save when miniapp is about to close
+    try {
+        if (tg && tg.onEvent) {
+            tg.onEvent('viewportChanged', (e) => {
+                if (!e.isStateStable) saveLocalData();
+            });
+        }
+    } catch(e) {}
     setInterval(graphLoop, 300);
     setInterval(termLoop, 2000);
     setInterval(checkFree, 1000);
@@ -642,6 +661,13 @@ function loop() {
     }
     // Periodic integrity check (every ~5 seconds)
     if (Math.random() < 0.02) checkBalanceIntegrity();
+    
+    // Auto-save every 30s during active mining
+    if (!loop._lastSave) loop._lastSave = Date.now();
+    if (Date.now() - loop._lastSave >= 30000) {
+        loop._lastSave = Date.now();
+        saveLocalData();
+    }
 }
 
 function updateUI() {
