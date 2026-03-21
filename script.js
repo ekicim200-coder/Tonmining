@@ -758,12 +758,19 @@ async function watchAd() {
         return;
     }
     
+    // Check if free node already active
+    if (state.freeEnd > Date.now()) {
+        const left = Math.ceil((state.freeEnd - Date.now()) / 60000);
+        showToast(`⏰ Free machine active (${left}m left)`, true);
+        return;
+    }
+    
     showToast("Loading ad...", false);
     
-    // Reward function (same for both ad networks)
+    // Reward function
     async function grantAdReward() {
-        if (state.wallet && currentUserUid) {
-            try {
+        try {
+            if (state.wallet && currentUserUid) {
                 const response = await fetch('/api/free-node', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -780,48 +787,67 @@ async function watchAd() {
                     updateUI();
                     drawChart();
                     renderInv();
-                    showToast("✅ FREE Quad Engine!", false);
+                    showToast("✅ FREE Quad Engine! (+69 GH/s for 30 min)", false);
+                    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
                 } else {
-                    showToast("❌ " + (data.error || "Failed"), true);
+                    // Server rejected — grant locally as fallback
+                    console.log("Server rejected:", data.error);
+                    grantMachineLocally();
                 }
-            } catch(e) {
-                grantMachine(999);
-                showToast("✅ FREE Quad Engine!", false);
+            } else {
+                grantMachineLocally();
             }
-        } else {
-            state.lastAdTime = Date.now();
-            grantMachine(999);
-            showToast("✅ FREE Quad Engine!", false);
-            saveLocalData();
+        } catch(e) {
+            console.log("Server error, granting locally:", e);
+            grantMachineLocally();
         }
     }
     
-    // Try Adsgram first
-    let adShown = false;
+    function grantMachineLocally() {
+        state.freeEnd = Date.now() + (30 * 60 * 1000);
+        state.lastAdTime = Date.now();
+        state.hashrate += 69;
+        state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
+        saveLocalData();
+        updateUI();
+        drawChart();
+        renderInv();
+        showToast("✅ FREE Quad Engine! (+69 GH/s for 30 min)", false);
+        try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
+    }
+    
+    // === TRY AD NETWORKS ===
+    
+    // 1. Adsgram
     if (adsgramController) {
         try {
             await adsgramController.show();
-            adShown = true;
             await grantAdReward();
+            return;
         } catch(e) {
-            console.log("Adsgram failed, trying Monetag...");
+            console.log("Adsgram:", e?.message || "failed");
         }
     }
     
-    // Fallback to Monetag
-    if (!adShown && typeof show_10759190 === 'function') {
-        try {
-            await show_10759190();
-            adShown = true;
-            await grantAdReward();
-        } catch(e) {
-            console.log("Monetag failed:", e);
-        }
+    // 2. Monetag
+    if (typeof show_10759190 === 'function') {
+        return new Promise((resolve) => {
+            try {
+                show_10759190().then(() => {
+                    grantAdReward().finally(resolve);
+                }).catch(() => {
+                    showToast("Ad cancelled", true);
+                    resolve();
+                });
+            } catch(e) {
+                showToast("Ad error", true);
+                resolve();
+            }
+        });
     }
     
-    if (!adShown) {
-        showToast("No ads available, try later", true);
-    }
+    // 3. No ad network available
+    showToast("No ads available, try later", true);
 }
 
 // --- PURCHASE ---
