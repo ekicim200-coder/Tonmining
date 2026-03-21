@@ -94,15 +94,16 @@ function init() {
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 300000); 
     
-    // Save on close/minimize/background
+    // Save on close/minimize/background — FORCE sync (bypass throttle)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             saveLocalData();
+            _lastSyncTime = 0; // bypass throttle
             syncToServer();
         }
     });
-    window.addEventListener('beforeunload', () => { saveLocalData(); });
-    window.addEventListener('pagehide', () => { saveLocalData(); });
+    window.addEventListener('beforeunload', () => { saveLocalData(); _lastSyncTime = 0; syncToServer(); });
+    window.addEventListener('pagehide', () => { saveLocalData(); _lastSyncTime = 0; syncToServer(); });
     
     // Telegram-specific: save when miniapp is about to close
     try {
@@ -367,6 +368,13 @@ async function loadServerData(walletAddress) {
         const serverData = await getUserFromFire(walletAddress);
 
         if (serverData) {
+            // Preserve local free machine state if still active
+            const localFreeEnd = state.freeEnd;
+            const localHasFree = state.inv.some(i => i.mid === 999);
+            const localBalance = state.balance;
+            const localHashrate = state.hashrate;
+            const localInv = [...state.inv];
+            
             // Server is ALWAYS authoritative — use ?? (nullish coalescing)
             // so that 0 from server is NOT treated as "missing"
             state.balance = serverData.balance ?? state.balance;
@@ -386,6 +394,22 @@ async function loadServerData(walletAddress) {
             state.loginStreak = serverData.loginStreak ?? 0;
             state.lastLoginDate = serverData.lastLoginDate ?? null;
             state.clanId = serverData.clanId ?? null;
+            
+            // Merge: if local had active free machine but server doesn't, restore it
+            const now = Date.now();
+            if (localFreeEnd > now && state.freeEnd <= now) {
+                state.freeEnd = localFreeEnd;
+            }
+            if (localFreeEnd > now && localHasFree && !state.inv.some(i => i.mid === 999)) {
+                const freeItem = localInv.find(i => i.mid === 999);
+                if (freeItem) state.inv.push(freeItem);
+                state.hashrate += 69;
+            }
+            
+            // Use higher balance between server and local (prevents loss)
+            if (localBalance > state.balance && localBalance - state.balance < 50) {
+                state.balance = localBalance;
+            }
             
             // Sync claimed tasks from server (prevents localStorage reset exploit)
             if (serverData.claimedTasks && serverData.claimedTasks.length > 0) {
