@@ -2,16 +2,16 @@
 const fetch = require('node-fetch');
 
 const MACHINES = {
-    1: { name: "Nano Chip", starPrice: 25, rate: 3 },
-    2: { name: "Micro Core", starPrice: 75, rate: 7 },
-    3: { name: "Basic Miner", starPrice: 175, rate: 16 },
-    4: { name: "Dual Processor", starPrice: 375, rate: 35 },
-    5: { name: "Quad Engine", starPrice: 750, rate: 69 },
-    6: { name: "Hexa Unit", starPrice: 1500, rate: 139 },
-    7: { name: "Quantum Node", starPrice: 3000, rate: 278 },
-    8: { name: "Fusion Reactor", starPrice: 6000, rate: 556 },
-    9: { name: "Dark Matter", starPrice: 12500, rate: 1157 },
-    10: { name: "Plasma Core", starPrice: 25000, rate: 2315 }
+    1: { name: "Nano Chip", starPrice: 800, rate: 3 },
+    2: { name: "Micro Core", starPrice: 2400, rate: 7 },
+    3: { name: "Basic Miner", starPrice: 5600, rate: 16 },
+    4: { name: "Dual Processor", starPrice: 12000, rate: 35 },
+    5: { name: "Quad Engine", starPrice: 24000, rate: 69 },
+    6: { name: "Hexa Unit", starPrice: 48000, rate: 139 },
+    7: { name: "Quantum Node", starPrice: 96000, rate: 278 },
+    8: { name: "Fusion Reactor", starPrice: 192000, rate: 556 },
+    9: { name: "Dark Matter", starPrice: 400000, rate: 1157 },
+    10: { name: "Plasma Core", starPrice: 800000, rate: 2315 }
 };
 
 module.exports = async (req, res) => {
