@@ -751,11 +751,6 @@ function checkPromoMachines() {
 }
 
 async function watchAd() {
-    if (!adsgramController) {
-        showToast("Ad not ready", true);
-        return;
-    }
-    
     const now = Date.now();
     if (state.lastAdTime && (now - state.lastAdTime) < 60000) {
         const waitTime = Math.ceil((60000 - (now - state.lastAdTime)) / 1000);
@@ -763,50 +758,69 @@ async function watchAd() {
         return;
     }
     
-    try {
-        showToast("Loading ad...", false);
-        await adsgramController.show().then(async () => {
-            // Ad watched successfully — validate on server
-            if (state.wallet && currentUserUid) {
-                try {
-                    const response = await fetch('/api/free-node', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        state.freeEnd = data.freeEnd;
-                        state.lastAdTime = Date.now();
-                        state.hashrate += 69;
-                        state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
-                        saveLocalData();
-                        updateUI();
-                        drawChart();
-                        renderInv();
-                        showToast("✅ FREE Quad Engine!", false);
-                    } else {
-                        showToast("❌ " + (data.error || "Failed"), true);
-                    }
-                } catch(e) {
-                    // Fallback for non-wallet users
-                    grantMachine(999);
+    showToast("Loading ad...", false);
+    
+    // Reward function (same for both ad networks)
+    async function grantAdReward() {
+        if (state.wallet && currentUserUid) {
+            try {
+                const response = await fetch('/api/free-node', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: state.wallet, userId: currentUserUid })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.freeEnd = data.freeEnd;
+                    state.lastAdTime = Date.now();
+                    state.hashrate += 69;
+                    state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
+                    saveLocalData();
+                    updateUI();
+                    drawChart();
+                    renderInv();
                     showToast("✅ FREE Quad Engine!", false);
+                } else {
+                    showToast("❌ " + (data.error || "Failed"), true);
                 }
-            } else {
-                // No wallet — grant locally
-                state.lastAdTime = Date.now();
+            } catch(e) {
                 grantMachine(999);
                 showToast("✅ FREE Quad Engine!", false);
-                saveLocalData();
             }
-        }).catch(() => {
-            showToast("Ad cancelled", true);
-        });
-    } catch (err) {
-        console.error("Ad error:", err);
-        showToast("Ad failed", true);
+        } else {
+            state.lastAdTime = Date.now();
+            grantMachine(999);
+            showToast("✅ FREE Quad Engine!", false);
+            saveLocalData();
+        }
+    }
+    
+    // Try Adsgram first
+    let adShown = false;
+    if (adsgramController) {
+        try {
+            await adsgramController.show();
+            adShown = true;
+            await grantAdReward();
+        } catch(e) {
+            console.log("Adsgram failed, trying Monetag...");
+        }
+    }
+    
+    // Fallback to Monetag
+    if (!adShown && typeof show_10759190 === 'function') {
+        try {
+            await show_10759190();
+            adShown = true;
+            await grantAdReward();
+        } catch(e) {
+            console.log("Monetag failed:", e);
+        }
+    }
+    
+    if (!adShown) {
+        showToast("No ads available, try later", true);
     }
 }
 
