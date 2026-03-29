@@ -691,8 +691,8 @@ function loop() {
             updateUI();
         } else {
             // Only update balance text (lightweight)
-            const totalBal = document.getElementById('totalBal');
-            if (totalBal) totalBal.textContent = state.balance.toFixed(6);
+            if (!loop._balEl) loop._balEl = document.getElementById('totalBal');
+            if (loop._balEl) loop._balEl.textContent = state.balance.toFixed(6);
         }
     }
     // Periodic integrity check (every ~5 seconds)
@@ -2115,9 +2115,17 @@ function updateSpinButton() {
 }
 
 function updateSpinStatus() {
-    const statusEl = document.getElementById('spinStatus');
-    const badgeEl = document.getElementById('spinBadge');
-    const countdownEl = document.getElementById('spinCountdown');
+    if (!updateSpinStatus._el) {
+        updateSpinStatus._el = {
+            status: document.getElementById('spinStatus'),
+            badge: document.getElementById('spinBadge'),
+            countdown: document.getElementById('spinCountdown')
+        };
+    }
+    const el = updateSpinStatus._el;
+    const statusEl = el.status;
+    const badgeEl = el.badge;
+    const countdownEl = el.countdown;
     
     if (canSpin()) {
         if (statusEl) statusEl.textContent = 'Spin to win free TON!';
