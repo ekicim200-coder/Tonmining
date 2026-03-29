@@ -94,16 +94,22 @@ function init() {
     setInterval(loop, CFG.tick); 
     setInterval(autoSave, 300000); 
     
-    // Save on close/minimize/background — FORCE sync (bypass throttle)
+    // Save on close/minimize/background
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             saveLocalData();
-            _lastSyncTime = 0; // bypass throttle
+            // Page is backgrounded but alive — async sync works
+            _lastSyncTime = 0;
+            syncToServer();
+        } else if (document.visibilityState === 'visible') {
+            // Coming back — force sync to push any unsaved local data
+            _lastSyncTime = 0;
             syncToServer();
         }
     });
-    window.addEventListener('beforeunload', () => { saveLocalData(); _lastSyncTime = 0; syncToServer(); });
-    window.addEventListener('pagehide', () => { saveLocalData(); _lastSyncTime = 0; syncToServer(); });
+    // beforeunload/pagehide: page is closing — ONLY localStorage (async fetch won't complete)
+    window.addEventListener('beforeunload', () => { saveLocalData(); });
+    window.addEventListener('pagehide', () => { saveLocalData(); });
     
     // Telegram-specific: save when miniapp is about to close
     try {
@@ -403,7 +409,13 @@ async function loadServerData(walletAddress) {
             if (localFreeEnd > now && localHasFree && !state.inv.some(i => i.mid === 999)) {
                 const freeItem = localInv.find(i => i.mid === 999);
                 if (freeItem) state.inv.push(freeItem);
-                state.hashrate += 69;
+                // Recalculate hashrate from inventory
+                let calcHash = 0;
+                state.inv.forEach(item => {
+                    const m = machines.find(x => x.id === item.mid);
+                    if (m) calcHash += m.rate;
+                });
+                state.hashrate = calcHash;
             }
             
             // Use higher balance between server and local (prevents loss)
@@ -831,8 +843,16 @@ async function watchAd() {
                 if (data.success) {
                     state.freeEnd = data.freeEnd;
                     state.lastAdTime = Date.now();
-                    state.hashrate += 69;
+                    // Remove any existing free machine first
+                    state.inv = state.inv.filter(i => i.mid !== 999);
                     state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
+                    // Recalculate hashrate from actual inventory
+                    let calcHash = 0;
+                    state.inv.forEach(item => {
+                        const m = machines.find(x => x.id === item.mid);
+                        if (m) calcHash += m.rate;
+                    });
+                    state.hashrate = calcHash;
                     saveLocalData();
                     updateUI();
                     drawChart();
@@ -840,24 +860,47 @@ async function watchAd() {
                     showToast("✅ FREE Quad Engine! (+69 GH/s for 30 min)", false);
                     try { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); } catch(e) {}
                 } else {
-                    // Server rejected — grant locally as fallback
-                    console.log("Server rejected:", data.error);
-                    grantMachineLocally();
+                    // Server rejected — DO NOT grant locally (prevents double machine)
+                    const err = data.error || "Failed";
+                    if (err.includes('already active')) {
+                        showToast("⏰ Free machine already active!", true);
+                    } else if (err.includes('cooldown')) {
+                        showToast("⏳ Wait before next ad", true);
+                    } else if (err.includes('Max 20')) {
+                        showToast("📺 Daily ad limit reached", true);
+                    } else {
+                        showToast("❌ " + err, true);
+                    }
                 }
             } else {
                 grantMachineLocally();
             }
         } catch(e) {
-            console.log("Server error, granting locally:", e);
+            // Network error (server unreachable) — grant locally as fallback
+            console.log("Server unreachable, granting locally:", e);
             grantMachineLocally();
         }
     }
     
     function grantMachineLocally() {
+        // Prevent double free machine
+        if (state.freeEnd > Date.now()) return;
+        
+        // Remove any existing 999 first
+        state.inv = state.inv.filter(i => i.mid !== 999);
+        
         state.freeEnd = Date.now() + (30 * 60 * 1000);
         state.lastAdTime = Date.now();
-        state.hashrate += 69;
+        state.hashrate = Math.max(0, state.hashrate);
+        // Recalculate hashrate from inv
+        let calcHash = 0;
+        state.inv.forEach(item => {
+            const m = machines.find(x => x.id === item.mid);
+            if (m) calcHash += m.rate;
+        });
         state.inv.push({ mid: 999, uid: Date.now(), bonus: false });
+        state.hashrate = calcHash + 69;
+        
         saveLocalData();
         updateUI();
         drawChart();
